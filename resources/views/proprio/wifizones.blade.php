@@ -21,7 +21,7 @@
             <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">Gérez vos emplacements physiques.</p>
         </div>
         <button onclick="openWizard()" class="bg-brand-sidebarLight dark:bg-brand-sidebarDark text-white px-5 py-3 rounded-xl text-sm font-bold shadow-lg hover:brightness-110 transition flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            <i class="fas fa-plus w-4 h-4"></i>
             Ajouter une Wifi Zone
         </button>
     </div>
@@ -38,7 +38,7 @@
                     <div>
                         <h3 class="text-xl font-bold text-gray-800 dark:text-white">{{ $zone->nom_zone }}</h3>
                         <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                            <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            <i class="fas fa-location-dot w-3 h-3 inline mr-1"></i>
                             {{ $zone->adresse ?? 'Adresse non spécifiée' }}
                         </p>
                     </div>
@@ -53,7 +53,7 @@
                     
                     <!-- Lien Magique -->
                     <button onclick="copyToClipboard('{{ url('/portal/login?z=' . $zone->token) }}')" class="w-full flex items-center justify-center gap-2 text-xs font-bold text-brand-blue hover:underline py-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                        <i class="fas fa-sync w-4 h-4"></i>
                         Copier lien d'intégration
                     </button>
                 </div>
@@ -64,7 +64,7 @@
                         GÉRER LE STOCK
                     </button>
                     <button class="w-10 flex items-center justify-center bg-gray-100 dark:bg-slate-700 text-gray-500 rounded-xl hover:text-brand-blue transition">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
+                        <i class="fas fa-cog w-5 h-5"></i>
                     </button>
                 </div>
             </div>
@@ -73,9 +73,7 @@
             <!-- ÉTAT VIDE : AUCUNE ZONE -->
             <div class="col-span-full flex flex-col items-center justify-center py-20 bg-white/50 dark:bg-brand-cardDark/50 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-[3rem]">
                 <div class="w-20 h-20 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
-                    <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8.111 16.404a5.5 5.5 0 117.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.257-3.905 14.162 0M1.354 16.354c5.273-5.273 13.819-5.273 19.092 0"></path>
-                    </svg>
+                    <i class="fas fa-wifi w-10 h-10 text-gray-400"></i>
                 </div>
                 <h3 class="text-xl font-bold text-gray-800 dark:text-white">Aucune zone WiFi</h3>
                 <p class="text-gray-500 dark:text-gray-400 mb-6 text-center max-w-xs">Vous n'avez pas encore ajouté de zone WiFi à votre compte propriétaire.</p>
@@ -100,12 +98,12 @@
             <!-- VUE 2 : DÉTAIL D'UNE ZONE -->
             <div id="zone-detail" class="hidden animate-fade-in">
                 <div class="flex justify-between items-center mb-6">
-                    <button onclick="showList()" class="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-brand-dark transition text-sm font-bold"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>Retour aux zones</button>
+                    <button onclick="showList()" class="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-brand-dark transition text-sm font-bold"><i class="fas fa-arrow-left w-4 h-4"></i>Retour aux zones</button>
                     <div class="bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 font-mono text-xs px-3 py-1.5 rounded-lg">ID: <span id="display-zone-id" class="text-gray-800 dark:text-white font-bold">WZ-XXXX</span></div>
                 </div>
                 <div class="flex items-start gap-5 mb-8">
                     <div class="w-16 h-16 rounded-2xl bg-brand-blue flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <i class="fas fa-location-dot w-8 h-8"></i>
                     </div>
                     <div>
                         <h2 class="text-3xl font-bold text-gray-800 dark:text-white" id="zone-title">Titre de la zone</h2>
@@ -139,7 +137,7 @@
                         <div class="lg:col-span-2 bg-white dark:bg-brand-cardDark p-8 rounded-3xl shadow-sm">
                             <div class="flex items-center gap-3 mb-6">
                                 <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-400">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                                    <i class="fas fa-sync w-5 h-5"></i>
                                 </div>
                                 <div>
                                     <h3 class="text-lg font-bold text-gray-800 dark:text-white">Lien d'authentification</h3>
@@ -149,11 +147,11 @@
                             <div class="bg-slate-900 dark:bg-black rounded-2xl p-5 relative group border border-slate-700 shadow-inner">
                                 <code class="text-brand-blue font-mono text-xs break-all block pr-10 leading-relaxed">https://auth.wifizone-manager.com/connect?zone_id=<span class="text-white font-bold" id="code-zone-id">WZ-8821-XJ</span>&mac=$(mac)&ip=$(ip)</code>
                                 <button class="absolute top-4 right-4 text-gray-400 hover:text-white" title="Copier">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                                    <i class="fas fa-copy w-5 h-5"></i>
                                 </button>
                             </div>
                             <div class="mt-6 bg-yellow-50 dark:bg-yellow-900/50 border border-yellow-100 dark:border-yellow-800 rounded-xl p-4 flex gap-3">
-                                <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                <i class="fas fa-exclamation-triangle w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0"></i>
                                 <p class="text-xs text-yellow-800 dark:text-yellow-200">Assurez-vous que le <strong>Walled Garden</strong> est configuré.</p>
                             </div>
                         </div>
@@ -162,11 +160,11 @@
                             <p class="text-xs text-gray-400 dark:text-gray-500 mb-4">Domaines à autoriser (Allow) IP List.</p>
                             <ul class="space-y-3 text-xs font-mono text-gray-600 dark:text-gray-300">
                                 <li class="flex items-center gap-2">
-                                    <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    <i class="fas fa-check w-4 h-4 text-green-500"></i>
                                     *.wifizone-manager.com
                                 </li>
                                 <li class="flex items-center gap-2">
-                                    <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    <i class="fas fa-check w-4 h-4 text-green-500"></i>
                                     *.cinetpay.com
                                 </li>
                             </ul>
@@ -243,9 +241,7 @@
     <div class="pt-4 flex justify-end">
         <button onclick="goToStep2()" class="bg-brand-blue text-white px-6 py-3 rounded-xl text-sm font-bold hover:brightness-110 transition flex items-center gap-2">
             Suivant 
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
-            </svg>
+            <i class="fas fa-arrow-right w-4 h-4"></i>
         </button>
     </div>
 </div>
