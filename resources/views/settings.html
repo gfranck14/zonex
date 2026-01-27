@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WifiProfit - Paramètres</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="assets/js/config.js"></script>
+    <link rel="stylesheet" href="assets/css/style.css">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-brand-sidebarLight dark:bg-brand-sidebarDark text-slate-800 dark:text-slate-100 h-screen w-screen overflow-hidden flex transition-colors duration-300">
+    <div id="sidebar-container"></div>
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 py-4 pr-4 pl-0 h-full relative">
+        <div class="bg-brand-bgLight dark:bg-brand-bgDark w-full h-full rounded-2xl shadow-2xl overflow-y-auto no-scrollbar relative p-6 pb-10 transition-colors duration-300">
+            <div id="header-container"></div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
+                <!-- 1. MON PROFIL -->
+                <div class="lg:col-span-2 space-y-8">
+                    <div class="bg-white dark:bg-brand-cardDark p-8 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700">
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2"><i class="fas fa-user w-5 h-5 text-brand-blue"></i>Informations Personnelles</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="input-floating-group">
+                                <input type="text" value="Caleb G." placeholder=" " class="input-floating">
+                                <label class="floating-label">Nom du Vendeur</label>
+                            </div>
+                            <div class="input-floating-group">
+                                <input type="email" value="caleb.g@exemple.com" placeholder=" " class="input-floating">
+                                <label class="floating-label">Email de contact</label>
+                            </div>
+                            <div class="input-floating-group">
+                                <div class="relative" id="settings-phone-container">
+                                    <!-- Bouton Pays -->
+                                    <button type="button" onclick="toggleCountryMenu('settings')" class="absolute left-1 top-2 bottom-1 flex items-center gap-2 px-3 rounded-lg bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 transition border border-transparent focus:border-brand-blue z-20">
+                                        <img id="settings-flag" src="https://flagcdn.com/w40/bj.png" class="w-5 h-auto rounded-sm shadow-sm" alt="Flag">
+                                        <span id="settings-code" class="text-sm font-bold text-gray-700 dark:text-gray-200">+229</span>
+                                        <i class="fas fa-chevron-down w-3 h-3 text-gray-400"></i>
+                                    </button>
+
+                                    <!-- Menu Déroulant -->
+                                    <div id="settings-country-menu" class="hidden absolute top-full left-0 mt-2 w-64 bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-slate-600 rounded-xl shadow-xl z-50 overflow-hidden">
+                                        <ul class="max-h-48 overflow-y-auto no-scrollbar">
+                                            <li onclick="selectCountry('bj', '+229', 'settings')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-50 dark:border-slate-700/50"><img src="https://flagcdn.com/w40/bj.png" class="w-6 rounded-sm"><span class="text-sm font-bold text-gray-700 dark:text-gray-200">+229</span></li>
+                                            <li onclick="selectCountry('tg', '+228', 'settings')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-50 dark:border-slate-700/50"><img src="https://flagcdn.com/w40/tg.png" class="w-6 rounded-sm"><span class="text-sm font-bold text-gray-700 dark:text-gray-200">+228</span></li>
+                                        </ul>
+                                    </div>
+
+                                    <!-- Input (Padding 32 pour laisser place au bouton) -->
+                                    <input 
+                                        type="tel" 
+                                        id="settings-phone"
+                                        placeholder=" " 
+                                        class="input-floating pl-32" 
+                                        value="66 00 11 22"
+                                        oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                    >
+                                    <!-- Label décalé aussi (left-32) -->
+                                    <label class="floating-label left-32">Téléphone</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-8 pt-6 border-t border-gray-50 dark:border-slate-700 flex justify-end"><button class="bg-brand-blue text-white px-8 py-3 rounded-xl text-sm font-bold hover:brightness-110 transition shadow-lg shadow-blue-500/20">Sauvegarder les modifications</button></div>
+                    </div>
+                    <!-- Sécurité -->
+                    <div class="bg-white dark:bg-brand-cardDark p-8 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700">
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2"><i class="fas fa-shield-alt w-5 h-5 text-red-400"></i>Sécurité</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                            <div class="input-floating-group">
+                                <input type="password" placeholder=" " class="input-floating">
+                                <label class="floating-label">Nouveau mot de passe</label>
+                            </div>
+                            <div class="input-floating-group">
+                                <input type="password" placeholder=" " class="input-floating">
+                                <label class="floating-label">Confirmer</label>
+                            </div>
+                            <button class="bg-brand-blue text-white px-6 py-3 rounded-xl text-sm font-bold hover:brightness-110 transition h-[50px]">Mettre à jour</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- 2. NOTIFICATIONS -->
+                <div class="space-y-8">
+                    <div class="bg-white dark:bg-brand-cardDark p-8 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 h-full flex flex-col">
+                        
+                        <!-- Header Section -->
+                        <div class="mb-8">
+                            <div class="w-12 h-12 bg-green-50 dark:bg-green-900/20 rounded-2xl flex items-center justify-center mb-4">
+                                <i class="fas fa-bell w-6 h-6 text-brand-green"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2">Alertes Stock & Ventes</h3>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
+                                Soyez notifié sur WhatsApp dès qu'un stock devient critique ou qu'une anomalie est détectée.
+                            </p>
+                        </div>
+
+                        <div class="space-y-8 flex-1">
+                            
+                            <!-- Toggle Switch (Style Carte) -->
+                            <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-slate-700">
+                                <span class="text-sm font-bold text-gray-700 dark:text-gray-300">Activer les notifications</span>
+                                <div class="relative inline-block w-10 h-6 align-middle select-none transition duration-200 ease-in">
+                                    <input type="checkbox" name="toggle" id="wa-toggle" checked class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-brand-green right-0 transition-all duration-300"/>
+                                    <label for="wa-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-brand-green cursor-pointer transition-colors duration-300"></label>
+                                </div>
+                            </div>
+
+                            <!-- Input WhatsApp Conforme -->
+                            <div class="input-floating-group">
+                                <div class="relative" id="wa-phone-container">
+                                    <!-- Bouton Pays -->
+                                    <button type="button" onclick="toggleCountryMenu('wa')" class="absolute left-1 top-2 bottom-1 flex items-center gap-2 px-3 rounded-lg bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 transition border border-transparent focus:border-brand-blue z-20">
+                                        <img id="wa-flag" src="https://flagcdn.com/w40/bj.png" class="w-5 h-auto rounded-sm shadow-sm" alt="Flag">
+                                        <span id="wa-code" class="text-sm font-bold text-gray-700 dark:text-gray-200">+229</span>
+                                        <i class="fas fa-chevron-down w-3 h-3 text-gray-400"></i>
+                                    </button>
+
+                                    <!-- Menu Déroulant -->
+                                    <div id="wa-country-menu" class="hidden absolute top-full left-0 mt-2 w-64 bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-slate-600 rounded-xl shadow-xl z-50 overflow-hidden">
+                                        <ul class="max-h-48 overflow-y-auto no-scrollbar">
+                                            <li onclick="selectCountry('bj', '+229', 'wa')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-50 dark:border-slate-700/50"><img src="https://flagcdn.com/w40/bj.png" class="w-6 rounded-sm"><span class="text-sm font-bold text-gray-700 dark:text-gray-200">+229</span></li>
+                                            <li onclick="selectCountry('tg', '+228', 'wa')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-50 dark:border-slate-700/50"><img src="https://flagcdn.com/w40/tg.png" class="w-6 rounded-sm"><span class="text-sm font-bold text-gray-700 dark:text-gray-200">+228</span></li>
+                                        </ul>
+                                    </div>
+
+                                    <!-- Input -->
+                                    <input 
+                                        type="tel" 
+                                        id="wa-phone"
+                                        placeholder=" " 
+                                        class="input-floating pl-32" 
+                                        value="66 12 34 56"
+                                        oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                    >
+                                    <label class="floating-label left-32">Numéro WhatsApp</label>
+                                </div>
+                            </div>
+
+                            <!-- Slider Seuil Critique -->
+                            <div>
+                                <div class="flex justify-between items-center mb-4">
+                                    <label class="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Seuil d'alerte Stock</label>
+                                    <span class="bg-brand-blue/10 text-brand-blue px-3 py-1 rounded-lg text-xs font-bold">
+                                        <span id="slider-value">15</span> tickets
+                                    </span>
+                                </div>
+                                
+                                <input type="range" min="5" max="50" value="15" 
+                                       class="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand-blue"
+                                       oninput="document.getElementById('slider-value').innerText = this.value">
+                                
+                                <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-3 flex items-center gap-2">
+                                    <i class="fas fa-info-circle w-3 h-3"></i>
+                                    Une alerte sera envoyée si un forfait a moins de 15 tickets.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Footer Bouton -->
+                        <div class="mt-8 pt-6 border-t border-gray-50 dark:border-slate-700 text-right">
+                            <button class="text-xs font-bold text-gray-400 hover:text-brand-blue transition">Envoyer un message de test</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="assets/js/main.js"></script>
+</body>
+</html>

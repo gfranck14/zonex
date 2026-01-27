@@ -62,8 +62,8 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             @foreach($zone->forfaits as $forfait)
                 <div class="border rounded-xl p-4">
-                    <p class="font-bold">{{ $forfait->nom }}</p>
-                    <p>{{ $forfait->prix }} F</p>
+                    <p class="font-bold">{{ $forfait->profile_name }}</p>
+                    <p>{{ $forfait->prix_vente }} F</p>
 
                     <button
                         class="btn-modifier"
@@ -272,7 +272,7 @@
                 <label class="block text-xs font-bold text-gray-400 uppercase mb-2">
                     Nom du forfait
                 </label>
-                <input type="text" name="nom" id="nom"
+                <input type="text" name="profile_name" id="profile_name"
                        required
                        class="w-full rounded-xl border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white p-3 text-sm">
             </div>
@@ -303,7 +303,7 @@
                 <label class="block text-xs font-bold text-gray-400 uppercase mb-2">
                     Prix (FCFA)
                 </label>
-                <input type="number" name="prix" id="prix"
+                <input type="number" name="prix_vente" id="prix_vente"
                        required
                        class="w-full rounded-xl border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white p-3 text-sm">
             </div>
@@ -356,10 +356,10 @@ async function openEditForfaitModal(forfaitId) {
     document.getElementById('wifi_zone_id').value = data.wifi_zone_id;
     document.getElementById('zone_nom').value = data.wifi_zone.nom;
 
-    document.getElementById('nom').value = data.nom;
+    document.getElementById('profile_name').value = data.profile_name;
     document.getElementById('time_limit').value = data.time_limit;
     document.getElementById('validite').value = data.validite;
-    document.getElementById('prix').value = data.prix;
+    document.getElementById('prix_vente').value = data.prix_vente;
 
     showModal();
 }

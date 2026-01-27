@@ -11,11 +11,11 @@ class Forfait extends Model
 
     // Champs remplissables
     protected $fillable = [
-        'wifi_zone_id',  // clé étrangère vers WifiZone
-        'nom',           // nom du forfait
-        'time_limit',    // durée en minutes (ou selon ton besoin)
+        'wifizones_id',  // clé étrangère vers WifiZone
+        'profile_name',   // nom du forfait (correspond à la migration)
+        'time_limit',    // durée en minutes
         'validite',      // validité en heures
-        'prix',          // prix du forfait
+        'prix_vente',    // prix du forfait (correspond à la migration)
     ];
 
     /**
@@ -23,7 +23,7 @@ class Forfait extends Model
      */
     public function wifiZone()
     {
-        return $this->belongsTo(WifiZone::class, 'wifi_zone_id');
+        return $this->belongsTo(WifiZone::class, 'wifizones_id');
     }
 
     /**
