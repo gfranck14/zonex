@@ -73,7 +73,7 @@
             <!-- ÉTAT VIDE : AUCUNE ZONE -->
             <div class="col-span-full flex flex-col items-center justify-center py-20 bg-white/50 dark:bg-brand-cardDark/50 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-[3rem]">
                 <div class="w-20 h-20 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
-                    <i class="fas fa-wifi w-10 h-10 text-gray-400"></i>
+                    <i class="fas fa-wifi w-16 h-16 text-gray-400"></i>
                 </div>
                 <h3 class="text-xl font-bold text-gray-800 dark:text-white">Aucune zone WiFi</h3>
                 <p class="text-gray-500 dark:text-gray-400 mb-6 text-center max-w-xs">Vous n'avez pas encore ajouté de zone WiFi à votre compte propriétaire.</p>
