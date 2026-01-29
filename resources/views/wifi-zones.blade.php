@@ -350,8 +350,33 @@
             </div>
         </div>
     </div>
-    <script src="assets/js/main.js"></script>
+
+    <!-- MODALE D'ERREUR PERSONNALISÉE -->
+    <div id="error-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl border border-gray-100 dark:border-slate-700">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-red-500">
+                    <i class="fas fa-exclamation-triangle text-3xl"></i>
+                </div>
+                <h3 id="error-title" class="text-xl font-bold text-gray-800 dark:text-white mb-3">Erreur</h3>
+                <p id="error-message" class="text-gray-600 dark:text-gray-300 mb-6">Message d'erreur</p>
+                <button onclick="closeErrorModal()" class="w-full bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl text-sm font-bold transition shadow-lg">
+                    Fermer
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        function showErrorModal(title, message) {
+            document.getElementById('error-title').innerText = title;
+            document.getElementById('error-message').innerText = message;
+            document.getElementById('error-modal').classList.remove('hidden');
+        }
+
+        function closeErrorModal() {
+            document.getElementById('error-modal').classList.add('hidden');
+        }
         /* --- WIZARD LOGIC --- */
 
         function openWizard() {
@@ -370,7 +395,10 @@
 
         function goToStep2() {
             const name = document.getElementById('new-zone-name').value;
-            if(!name) { alert("Veuillez donner un nom à la zone !"); return; }
+            if(!name) { 
+                showErrorModal("Oups !", "Veuillez donner un nom à la zone !"); 
+                return; 
+            }
 
             // Transition visuelle
             document.getElementById('step-1').classList.add('hidden');

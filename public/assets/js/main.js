@@ -452,19 +452,22 @@ function initImportsTable() {
     const tbody = document.getElementById('imports-tbody');
     if (!tbody) return;
 
-    // Récupérer toutes les données du tableau
-    allData = Array.from(tbody.querySelectorAll('tr')).map(row => ({
-        element: row,
-        date: row.cells[0].textContent.trim(),
-        fichier: row.cells[1].textContent.trim(),
-        zone: row.cells[2].textContent.trim(),
-        forfait: row.cells[3].textContent.trim(),
-        quantite: row.cells[4].textContent.trim(),
-        statut: row.cells[5].textContent.trim(),
-        forfaitValue: row.dataset.forfait || '',
-        statutValue: row.dataset.statut || '',
-        zoneValue: row.dataset.zone || ''
-    }));
+    // --- CORRECTION : Filtrer les lignes vides ou messages ---
+    // On ajoute .filter(row => row.cells.length > 1) pour ignorer la ligne "Aucun résultat"
+    allData = Array.from(tbody.querySelectorAll('tr'))
+        .filter(row => row.cells.length > 1) // Empêche le crash sur les lignes vides/messages
+        .map(row => ({
+            element: row,
+            date: row.cells[0]?.textContent.trim() || '', // Ajout de '?' par sécurité
+            fichier: row.cells[1]?.textContent.trim() || '',
+            zone: row.cells[2]?.textContent.trim() || '',
+            forfait: row.cells[3]?.textContent.trim() || '',
+            quantite: row.cells[4]?.textContent.trim() || '',
+            statut: row.cells[5]?.textContent.trim() || '',
+            forfaitValue: row.dataset.forfait || '',
+            statutValue: row.dataset.statut || '',
+            zoneValue: row.dataset.zone || ''
+        }));
 
     filteredData = [...allData];
     
@@ -797,40 +800,60 @@ function cancelEdit() {
     if(editForm) editForm.classList.add('hidden');
 }
 
-/* --- GESTION SÉLECTEUR DE PAYS POUR MODALE RETRAIT --- */
-function toggleCountryMenu(context = 'withdrawal') {
-    const menuId = context === 'withdrawal' ? 'withdrawal-country-menu' : 'country-menu';
-    const menu = document.getElementById(menuId);
-    if(menu) menu.classList.toggle('hidden');
+/* --- GESTION SÉLECTEUR DE PAYS GÉNÉRIQUE --- */
+function toggleCountryMenu(prefix) {
+    const menu = document.getElementById(prefix + '-country-menu');
+    if (menu) {
+        menu.classList.toggle('hidden');
+        
+        // Fermer les autres menus s'ils sont ouverts
+        document.querySelectorAll('[id$="-country-menu"]').forEach(otherMenu => {
+            if (otherMenu.id !== prefix + '-country-menu') {
+                otherMenu.classList.add('hidden');
+            }
+        });
+    }
 }
 
-function selectCountry(code, dial, context = 'withdrawal') {
-    let flagId, codeId, inputId, menuId;
+function selectCountry(countryCode, phoneCode, prefix) {
+    // Mettre à jour le drapeau
+    const flag = document.getElementById(prefix + '-flag');
+    if (flag) {
+        flag.src = `https://flagcdn.com/w40/${countryCode}.png`;
+        flag.alt = countryCode.toUpperCase();
+    }
     
-    if (context === 'withdrawal') {
-        flagId = 'withdrawal-flag';
-        codeId = 'withdrawal-code';
-        inputId = 'withdrawal-phone';
-        menuId = 'withdrawal-country-menu';
+    // Mettre à jour le code visible
+    const codeText = document.getElementById(prefix + '-code');
+    if (codeText) {
+        codeText.textContent = phoneCode;
+    }
+    
+    // Mettre à jour le champ hidden s'il existe
+    const hiddenField = document.getElementById(prefix + '-phone-code');
+    if (hiddenField) {
+        hiddenField.value = phoneCode;
+    }
+    
+    // Fermer le menu
+    const menu = document.getElementById(prefix + '-country-menu');
+    if (menu) {
+        menu.classList.add('hidden');
     }
 
-    // 1. Mettre à jour l'affichage
-    document.getElementById(flagId).src = `https://flagcdn.com/w40/${code}.png`;
-    document.getElementById(codeId).innerText = dial;
-    
-    // 2. Fermer le menu
-    document.getElementById(menuId).classList.add('hidden');
-    
-    // 3. Focus
-    document.getElementById(inputId).focus();
+    // Donner le focus à l'input
+    const input = document.getElementById(prefix + '-phone');
+    if (input) {
+        input.focus();
+    }
 }
 
-// Fermeture au clic dehors pour la modal de retrait
+// Fermeture au clic dehors pour tous les menus pays
 document.addEventListener('click', function(event) {
-    const container = document.getElementById('withdrawal-phone-container');
-    const menu = document.getElementById('withdrawal-country-menu');
-    if (container && !container.contains(event.target) && menu) {
-        menu.classList.add('hidden');
+    if (!event.target.closest('[id$="-country-menu"]') && !event.target.closest('button[onclick^="toggleCountryMenu"]')) {
+        document.querySelectorAll('[id$="-country-menu"]').forEach(menu => {
+            menu.classList.add('hidden');
+        });
     }
 });
 
@@ -862,7 +885,10 @@ function openWithdrawalModal() {
         // Réinitialiser les radio buttons
         const radios = document.querySelectorAll('input[name="network"]');
         radios.forEach(radio => radio.checked = false);
-        document.querySelector('input[name="network"][value="mtn"]').checked = true;
+        const mtnRadio = document.querySelector('input[name="network"][value="mtn"]');
+        if (mtnRadio) {
+            mtnRadio.checked = true;
+        }
     }
 }
 
@@ -1115,94 +1141,5 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Attacher l'événement au bouton d'importation
-    const importButton = document.getElementById('import-button');
-    if (importButton) {
-        importButton.addEventListener('click', startImportAnalysis);
-    }
-
-    /* --- LOGIQUE IMPORTATION CSV --- */
-    let importInterval;
-
-    function startImportAnalysis() {
-        const modal = document.getElementById('import-process-modal');
-        if (!modal) return;
-
-        const stepLoading = document.getElementById('import-step-loading');
-        const stepConfirm = document.getElementById('import-step-confirm');
-        const progressBar = document.getElementById('import-progress-bar');
-        const progressText = document.getElementById('import-percent');
-
-        // 1. Reset et Affichage Forcé
-        modal.classList.remove('hidden');
-        modal.style.display = 'flex';
-        modal.style.width = '';
-        modal.style.height = '';
-        stepLoading.classList.remove('hidden');
-        stepConfirm.classList.add('hidden');
-
-        // Reset Barre (Rouge au début)
-        progressBar.style.width = '0%';
-
-        progressBar.className = 'h-full bg-red-500 rounded-full transition-all duration-300 linear';
-        progressText.innerText = '0%';
-        progressText.className = 'text-xs font-bold text-red-500 mt-2 text-right';
-
-        // 2. Animation
-        let width = 0;
-
-        importInterval = setInterval(() => {
-            if (width >= 100) {
-                clearInterval(importInterval);
-
-                setTimeout(() => {
-                    stepLoading.classList.add('hidden');
-                    stepConfirm.classList.remove('hidden');
-                }, 500);
-            } else {
-                width += 1;
-                if(width > 100) width = 100;
-                
-                progressBar.style.width = width + '%';
-                progressText.innerText = width + '%';
-
-                // --- LOGIQUE COULEURS ---
-                progressBar.classList.remove('bg-red-500', 'bg-yellow-500', 'bg-brand-green', 'bg-brand-blue');
-                progressText.classList.remove('text-red-500', 'text-yellow-500', 'text-brand-green', 'text-brand-blue');
-
-                if (width < 30) {
-                    progressBar.classList.add('bg-red-500');
-                    progressText.classList.add('text-red-500');
-                } else if (width < 60) {
-                    progressBar.classList.add('bg-yellow-500');
-                    progressText.classList.add('text-yellow-500');
-                } else if (width < 80) {
-                    progressBar.classList.add('bg-brand-green');
-                    progressText.classList.add('text-brand-green');
-                } else {
-                    progressBar.classList.add('bg-brand-blue');
-                    progressText.classList.add('text-brand-blue');
-                }
-            }
-        }, 100);
-    }
-
-    function closeImportModal() {
-        clearInterval(importInterval);
-        const modal = document.getElementById('import-process-modal');
-        if (modal) {
-            modal.classList.add('hidden');
-            modal.style.display = '';
-        }
-    }
-
-    function finalizeImport() {
-        closeImportModal();
-        showToast('Succès ! 48 tickets ajoutés au stock.', 'success');
-    }
-
-    // Exposer les fonctions à la fenêtre globale pour les boutons onclick
-    window.startImportAnalysis = startImportAnalysis;
-    window.closeImportModal = closeImportModal;
-    window.finalizeImport = finalizeImport;
+    // La logique d'import CSV est gérée dans la vue tickets.blade.php
 });

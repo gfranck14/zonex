@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function() {
-    generateSidebar();
+    // generateSidebar(); // Supprimé - on utilise layout.blade
     
     // Détecter la page actuelle et générer le header approprié
     const path = window.location.pathname;
@@ -83,92 +83,6 @@ function generateHeader(title, subtitle) {
         overlay.onclick = closeMobileMenu;
         document.body.appendChild(overlay);
     }
-}
-
-function generateSidebar() {
-    const sidebarContainer = document.getElementById('sidebar-container');
-    if (!sidebarContainer) return;
-
-    // 1. Détecter la page actuelle
-    const path = window.location.pathname;
-    const page = path.split("/").pop() || "index.html"; // Par défaut index.html
-
-    // 2. Définir les classes (Actif vs Inactif)
-    const activeClass = "nav-item-active flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all shadow-md";
-    const inactiveClass = "nav-item-inactive flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all hover:text-white";
-
-    // 3. Fonction helper pour générer un lien
-    const getLinkClass = (targetPage) => {
-        return page === targetPage ? activeClass : inactiveClass;
-    };
-
-    // 4. Le HTML de la Sidebar (Exactement ton design validé)
-    const sidebarHTML = `
-    <aside class="w-64 flex-shrink-0 flex flex-col justify-between py-6 px-4 h-full bg-brand-sidebarLight dark:bg-brand-sidebarDark transition-colors duration-300 text-white">
-        <div>
-            <!-- LOGO -->
-            <div class="flex items-center gap-3 px-4 mb-8">
-                <div class="w-10 h-10 bg-gradient-to-br from-brand-blue to-brand-green rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50">
-                    <i class="fas fa-wifi text-white"></i>
-                </div>
-                <div>
-                    <h1 class="text-lg font-bold text-white tracking-tight leading-none">WiFi<span class="text-brand-blue">Profit</span></h1>
-                    <p class="text-[10px] text-blue-200 uppercase tracking-widest">Manager</p>
-                </div>
-            </div>
-
-            <!-- MENU -->
-            <nav class="space-y-2">
-                <a href="index.html" class="${getLinkClass('index.html')}">
-                    <i class="fas fa-th-large w-5 h-5"></i>
-                    <span class="font-medium">Dashboard</span>
-                </a>
-                <a href="wifi-zones.html" class="${getLinkClass('wifi-zones.html')}">
-                    <i class="fas fa-map-marker-alt w-5 h-5"></i>
-                    <span class="font-medium">Wifi Zones</span>
-                </a>
-                <a href="tickets.html" class="${getLinkClass('tickets.html')}">
-                    <i class="fas fa-ticket-alt w-5 h-5"></i>
-                    <span class="font-medium">Forfaits & Tickets</span>
-                </a>
-                <a href="clients.html" class="${getLinkClass('clients.html')}">
-                    <i class="fas fa-users w-5 h-5"></i>
-                    <span class="font-medium">Clients</span>
-                </a>
-                <a href="paiements.html" class="${getLinkClass('paiements.html')}">
-                    <i class="fas fa-credit-card w-5 h-5"></i>
-                    <span class="font-medium">Paiements</span>
-                </a>
-                
-                <a href="settings.html" class="${getLinkClass('settings.html')} mt-8">
-                    <i class="fas fa-cog w-5 h-5"></i>
-                    <span class="font-medium">Paramètres</span>
-                </a>
-            </nav>
-        </div>
-
-        <!-- FOOTER SIDEBAR (Dark Mode + Profil) -->
-        <div class="mt-auto">
-            <button onclick="toggleTheme()" class="w-full flex items-center justify-between bg-black/20 hover:bg-black/30 px-4 py-2 rounded-xl mb-4 text-xs font-bold transition">
-                <span>Mode Apparence</span>
-                <div class="flex items-center gap-2">
-                    <i class="fas fa-sun w-4 h-4 text-yellow-300 block dark:hidden"></i>
-                    <i class="fas fa-moon w-4 h-4 text-white hidden dark:block"></i>
-                </div>
-            </button>
-
-            <p class="px-4 text-[10px] text-blue-200 font-mono mb-2 opacity-60">v2.4.0-stable</p>
-            <div class="pt-4 border-t border-white/10">
-                <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 cursor-pointer transition">
-                    <div class="w-10 h-10 rounded-full bg-brand-light border-2 border-brand-blue flex items-center justify-center overflow-hidden"><img src="https://i.pravatar.cc/150?img=11"></div>
-                    <div><p class="text-sm font-bold text-white">Caleb G.</p><p class="text-[10px] text-blue-200">Propriétaire</p></div>
-                </div>
-            </div>
-        </div>
-    </aside>
-    `;
-
-    sidebarContainer.innerHTML = sidebarHTML;
 }
 
 // Fonction pour gérer le menu mobile

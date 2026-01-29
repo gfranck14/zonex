@@ -114,47 +114,41 @@
                     <form onsubmit="event.preventDefault(); window.location.href='index.html';" class="space-y-5">
                         <div>
                             <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Téléphone</label>
-                            <div class="relative" id="login-phone-container">
-                                
-                                <!-- Bouton Sélecteur (Login) -->
-                                <button type="button" onclick="toggleCountryMenu('login')" class="absolute left-1 top-1 bottom-1 flex items-center gap-2 px-3 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 transition border border-transparent focus:border-brand-blue z-20">
-                                    <img id="login-flag" src="https://flagcdn.com/w40/bj.png" class="w-5 h-auto rounded-sm shadow-sm" alt="Flag">
+                            <div class="flex relative group">
+                                <!-- ZONE GAUCHE : SÉLECTEUR PAYS -->
+                                <button type="button" onclick="toggleCountryMenu('login')" class="flex items-center gap-2 px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 border-r-0 rounded-l-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition relative z-20">
+                                    <img id="login-flag" src="https://flagcdn.com/w40/bj.png" class="w-5 h-auto rounded-sm shadow-sm" alt="Benin">
                                     <span id="login-code" class="text-sm font-bold text-gray-700 dark:text-gray-200">+229</span>
-                                    <i class="fas fa-chevron-down w-3 h-3 text-gray-400"></i>
+                                    <i class="fas fa-chevron-down text-[10px] text-gray-400 ml-1"></i>
                                 </button>
 
-                                <!-- Menu Déroulant (Login) -->
-                                <div id="login-country-menu" class="hidden absolute top-full left-0 mt-2 w-64 bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-slate-600 rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in">
-                                    <ul class="max-h-48 overflow-y-auto no-scrollbar">
-                                        <!-- On passe le paramètre 'login' pour cibler les bons éléments -->
-                                        <li onclick="selectCountry('bj', '+229', 'login')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition border-b border-gray-50 dark:border-slate-700/50 last:border-0">
-                                            <img src="https://flagcdn.com/w40/bj.png" class="w-6 rounded-sm" alt="BJ">
-                                            <span class="text-sm font-bold text-gray-700 dark:text-gray-200">+229</span> <span class="text-xs text-gray-500">Bénin</span>
+                                <!-- MENU DÉROULANT -->
+                                <div id="login-country-menu" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-[#1e293b] border border-gray-100 dark:border-slate-600 rounded-xl shadow-2xl z-50 overflow-hidden animate-fade-in ring-1 ring-black/5">
+                                    <ul class="max-h-56 overflow-y-auto custom-scrollbar">
+                                        <li onclick="selectCountry('bj', '+229', 'login')" class="flex items-center gap-4 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-50 dark:border-slate-700/50 transition-colors group">
+                                            <img src="https://flagcdn.com/w40/bj.png" class="w-8 h-auto rounded shadow-sm group-hover:scale-110 transition-transform">
+                                            <span class="text-sm font-bold text-gray-700 dark:text-gray-200">Bénin (+229)</span>
                                         </li>
-                                        <li onclick="selectCountry('tg', '+228', 'login')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition border-b border-gray-50 dark:border-slate-700/50 last:border-0">
-                                            <img src="https://flagcdn.com/w40/tg.png" class="w-6 rounded-sm" alt="TG">
-                                            <span class="text-sm font-bold text-gray-700 dark:text-gray-200">+228</span> <span class="text-xs text-gray-500">Togo</span>
-                                        </li>
-                                        <li onclick="selectCountry('ci', '+225', 'login')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition border-b border-gray-50 dark:border-slate-700/50 last:border-0">
-                                            <img src="https://flagcdn.com/w40/ci.png" class="w-6 rounded-sm" alt="CI">
-                                            <span class="text-sm font-bold text-gray-700 dark:text-gray-200">+225</span> <span class="text-xs text-gray-500">Côte d'Ivoire</span>
-                                        </li>
-                                        <li onclick="selectCountry('sn', '+221', 'login')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition border-b border-gray-50 dark:border-slate-700/50 last:border-0">
-                                            <img src="https://flagcdn.com/w40/sn.png" class="w-6 rounded-sm" alt="SN">
-                                            <span class="text-sm font-bold text-gray-700 dark:text-gray-200">+221</span> <span class="text-xs text-gray-500">Sénégal</span>
+                                        <li onclick="selectCountry('tg', '+228', 'login')" class="flex items-center gap-4 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-50 dark:border-slate-700/50 transition-colors group">
+                                            <img src="https://flagcdn.com/w40/tg.png" class="w-8 h-auto rounded shadow-sm group-hover:scale-110 transition-transform">
+                                            <span class="text-sm font-bold text-gray-700 dark:text-gray-200">Togo (+228)</span>
                                         </li>
                                     </ul>
                                 </div>
 
-                                <!-- Input -->
-                                <input 
-                                    type="tel" 
-                                    placeholder="01000000" 
-                                    id="login-phone"
-                                    class="input-standard pl-32" 
-                                    oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                                    required
-                                >
+                                <!-- INPUT -->
+                                <div class="relative flex-1">
+                                    <input 
+                                        type="tel" 
+                                        placeholder="XX XX XX XX" 
+                                        id="login-phone"
+                                        class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-600 rounded-r-xl text-sm font-bold focus:ring-2 focus:ring-custom-blue/20 outline-none transition placeholder-gray-400" 
+                                        oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                        required
+                                    >
+                                    <i class="fas fa-mobile-alt absolute right-4 top-3.5 text-gray-400"></i>
+                                </div>
+                                <input type="hidden" id="login-phone-code" value="+229">
                             </div>
                         </div>
                         <div class="input-floating-group">
@@ -209,53 +203,51 @@
                             </div>
                         </div>
                         <div class="input-floating-group">
+                            <input 
+                                type="email" 
+                                name="email"
+                                placeholder=" " 
+                                class="input-floating"
+                            >
+                            <label class="floating-label">Email (Optionnel)</label>
+                        </div>
+                        <div class="input-floating-group">
                             <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Téléphone</label>
-                            <div class="relative" id="phone-container">
-                                
-                                <!-- Bouton Sélecteur Pays -->
-                                <button type="button" onclick="toggleCountryMenu()" class="absolute left-1 top-1 bottom-1 flex items-center gap-2 px-3 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 transition border border-transparent focus:border-brand-blue z-20">
-                                    <img id="current-flag" src="https://flagcdn.com/w40/bj.png" class="w-5 h-auto rounded-sm shadow-sm" alt="Flag">
-                                    <span id="current-code" class="text-sm font-bold text-gray-700 dark:text-gray-200">+229</span>
-                                    <i class="fas fa-chevron-down w-3 h-3 text-gray-400"></i>
+                            <div class="flex relative group">
+                                <!-- ZONE GAUCHE : SÉLECTEUR PAYS -->
+                                <button type="button" onclick="toggleCountryMenu('signup')" class="flex items-center gap-2 px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 border-r-0 rounded-l-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition relative z-20">
+                                    <img id="signup-flag" src="https://flagcdn.com/w40/bj.png" class="w-5 h-auto rounded-sm shadow-sm" alt="Benin">
+                                    <span id="signup-code" class="text-sm font-bold text-gray-700 dark:text-gray-200">+229</span>
+                                    <i class="fas fa-chevron-down text-[10px] text-gray-400 ml-1"></i>
                                 </button>
 
-                                <!-- Menu Déroulant (Caché par défaut) -->
-                                <div id="country-menu" class="hidden absolute top-full left-0 mt-2 w-64 bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-slate-600 rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in">
-                                    <ul class="max-h-48 overflow-y-auto no-scrollbar">
-                                        <!-- Liste des pays -->
-                                        <li onclick="selectCountry('bj', '+229')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition border-b border-gray-50 dark:border-slate-700/50 last:border-0">
-                                            <img src="https://flagcdn.com/w40/bj.png" class="w-6 rounded-sm" alt="BJ">
-                                            <span class="text-sm font-bold text-gray-700 dark:text-gray-200">+229</span>
-                                            <span class="text-xs text-gray-500">Bénin</span>
+                                <!-- MENU DÉROULANT -->
+                                <div id="signup-country-menu" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-[#1e293b] border border-gray-100 dark:border-slate-600 rounded-xl shadow-2xl z-50 overflow-hidden animate-fade-in ring-1 ring-black/5">
+                                    <ul class="max-h-56 overflow-y-auto custom-scrollbar">
+                                        <li onclick="selectCountry('bj', '+229', 'signup')" class="flex items-center gap-4 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-50 dark:border-slate-700/50 transition-colors group">
+                                            <img src="https://flagcdn.com/w40/bj.png" class="w-8 h-auto rounded shadow-sm group-hover:scale-110 transition-transform">
+                                            <span class="text-sm font-bold text-gray-700 dark:text-gray-200">Bénin (+229)</span>
                                         </li>
-                                        <li onclick="selectCountry('tg', '+228')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition border-b border-gray-50 dark:border-slate-700/50 last:border-0">
-                                            <img src="https://flagcdn.com/w40/tg.png" class="w-6 rounded-sm" alt="TG">
-                                            <span class="text-sm font-bold text-gray-700 dark:text-gray-200">+228</span>
-                                            <span class="text-xs text-gray-500">Togo</span>
-                                        </li>
-                                        <li onclick="selectCountry('ci', '+225')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition border-b border-gray-50 dark:border-slate-700/50 last:border-0">
-                                            <img src="https://flagcdn.com/w40/ci.png" class="w-6 rounded-sm" alt="CI">
-                                            <span class="text-sm font-bold text-gray-700 dark:text-gray-200">+225</span>
-                                            <span class="text-xs text-gray-500">Côte d'Ivoire</span>
-                                        </li>
-                                        <li onclick="selectCountry('sn', '+221')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition border-b border-gray-50 dark:border-slate-700/50 last:border-0">
-                                            <img src="https://flagcdn.com/w40/sn.png" class="w-6 rounded-sm" alt="SN">
-                                            <span class="text-sm font-bold text-gray-700 dark:text-gray-200">+221</span>
-                                            <span class="text-xs text-gray-500">Sénégal</span>
+                                        <li onclick="selectCountry('tg', '+228', 'signup')" class="flex items-center gap-4 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-50 dark:border-slate-700/50 transition-colors group">
+                                            <img src="https://flagcdn.com/w40/tg.png" class="w-8 h-auto rounded shadow-sm group-hover:scale-110 transition-transform">
+                                            <span class="text-sm font-bold text-gray-700 dark:text-gray-200">Togo (+228)</span>
                                         </li>
                                     </ul>
                                 </div>
 
-                                <!-- Input Téléphone (Padding ajusté pour laisser la place au bouton) -->
-                                <input 
-                                    type="tel" 
-                                    placeholder="01000000" 
-                                    id="signup-phone"
-                                    oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                                    required 
-                                    class="input-standard pl-32"
-                                >
-                                <label class="floating-label">Téléphone</label>
+                                <!-- INPUT -->
+                                <div class="relative flex-1">
+                                    <input 
+                                        type="tel" 
+                                        placeholder="XX XX XX XX" 
+                                        id="signup-phone"
+                                        class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-600 rounded-r-xl text-sm font-bold focus:ring-2 focus:ring-custom-blue/20 outline-none transition placeholder-gray-400" 
+                                        oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                        required
+                                    >
+                                    <i class="fas fa-mobile-alt absolute right-4 top-3.5 text-gray-400"></i>
+                                </div>
+                                <input type="hidden" id="signup-phone-code" value="+229">
                             </div>
                         </div>
                         <div class="input-floating-group">
@@ -380,45 +372,39 @@
             startResendCountdown();
         }
 
-        // GESTION DU SÉLECTEUR DE PAYS (Unifié)
-        function toggleCountryMenu(context = 'signup') {
-            // Si context est 'login', on cherche 'login-country-menu', sinon 'country-menu'
-            const menuId = context === 'login' ? 'login-country-menu' : 'country-menu';
-            const menu = document.getElementById(menuId);
-            if(menu) menu.classList.toggle('hidden');
-        }
-
-        function selectCountry(code, dial, context = 'signup') {
-            // Définition des IDs selon le contexte
-            const flagId = context === 'login' ? 'login-flag' : 'current-flag';
-            const codeId = context === 'login' ? 'login-code' : 'current-code';
-            const inputId = context === 'login' ? 'login-phone' : 'signup-phone';
-            const menuId = context === 'login' ? 'login-country-menu' : 'country-menu';
-
-            // 1. Mettre à jour l'affichage
-            document.getElementById(flagId).src = `https://flagcdn.com/w40/${code}.png`;
-            document.getElementById(codeId).innerText = dial;
-            
-            // 2. Fermer le menu
-            document.getElementById(menuId).classList.add('hidden');
-            
-            // 3. Focus
-            document.getElementById(inputId).focus();
-        }
-
-        // Fermeture au clic dehors (Gère les deux menus)
-        document.addEventListener('click', function(event) {
-            // Pour Signup
-            const containerSign = document.getElementById('phone-container');
-            const menuSign = document.getElementById('country-menu');
-            if (containerSign && !containerSign.contains(event.target) && menuSign) {
-                menuSign.classList.add('hidden');
+        // GESTION DU SÉLECTEUR DE PAYS GÉNÉRIQUE
+        function toggleCountryMenu(prefix) {
+            const menu = document.getElementById(prefix + '-country-menu');
+            if (menu) {
+                menu.classList.toggle('hidden');
             }
-            // Pour Login
-            const containerLog = document.getElementById('login-phone-container');
-            const menuLog = document.getElementById('login-country-menu');
-            if (containerLog && !containerLog.contains(event.target) && menuLog) {
-                menuLog.classList.add('hidden');
+        }
+
+        function selectCountry(countryCode, phoneCode, prefix) {
+            const flag = document.getElementById(prefix + '-flag');
+            if (flag) {
+                flag.src = `https://flagcdn.com/w40/${countryCode}.png`;
+            }
+            const codeText = document.getElementById(prefix + '-code');
+            if (codeText) {
+                codeText.textContent = phoneCode;
+            }
+            const menu = document.getElementById(prefix + '-country-menu');
+            if (menu) {
+                menu.classList.add('hidden');
+            }
+            const input = document.getElementById(prefix + '-phone');
+            if (input) {
+                input.focus();
+            }
+        }
+
+        // Fermeture au clic dehors
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('[id$="-country-menu"]') && !event.target.closest('button[onclick^="toggleCountryMenu"]')) {
+                document.querySelectorAll('[id$="-country-menu"]').forEach(menu => {
+                    menu.classList.add('hidden');
+                });
             }
         });
 

@@ -14,39 +14,51 @@ class AuthProprioController extends Controller
         $data = $request->validate([
             'nom' => ['required', 'string', 'max:255'],
             'prenom' => ['required', 'string', 'max:255'],
-            'numero' => ['required', 'digits_between:8,10', 'unique:proprio,numero'],
-            'password' => ['required', 'min:6'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'phone_code' => ['required', 'string'],
+            'numero' => ['required', 'string', 'max:20', 'unique:proprio,numero'],
+            'password' => ['required', 'min:6', 'regex:/[a-z]/', 'regex:/[A-Z]/', 'regex:/[0-9]/'],
         ]);
+
+        $fullPhone = $data['phone_code'] . ' ' . $data['numero'];
+
+        // Vérifier si le numéro complet existe déjà
+        if (Proprio::where('numero', $fullPhone)->exists()) {
+            return back()->withErrors(['numero' => 'Ce numéro est déjà utilisé'])->withInput();
+        }
 
         $proprio = Proprio::create([
             'nom' => $data['nom'],
             'prenom' => $data['prenom'],
-            'numero' => $data['numero'],
+            'email' => $data['email'],
+            'numero' => $fullPhone,
             'password' => Hash::make($data['password']),
         ]);
 
-Auth::guard('proprio')->login($proprio);
+        Auth::guard('proprio')->login($proprio);
         return redirect()->route('dashboard');
     }
 
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'numero' => ['required', 'digits_between:8,10'],
+        $data = $request->validate([
+            'phone_code' => ['required', 'string'],
+            'numero' => ['required', 'string'],
             'password' => ['required'],
         ]);
 
-        $proprio = Proprio::where('numero', $credentials['numero'])->first();
+        $fullPhone = $data['phone_code'] . ' ' . $data['numero'];
+        $proprio = Proprio::where('numero', $fullPhone)->first();
 
-        if (!$proprio || !Hash::check($credentials['password'], $proprio->password)) {
+        if (!$proprio || !Hash::check($data['password'], $proprio->password)) {
             return back()
                 ->withErrors(['login' => 'Numéro ou mot de passe incorrect'])
                 ->withInput();
         }
 
-        Auth::guard('proprio')->login($proprio); // ✅ utiliser le guard correct
+        Auth::guard('proprio')->login($proprio);
 
-          return redirect()->route('dashboard'); 
+        return redirect()->route('dashboard'); 
     }
 
     public function logout(Request $request)

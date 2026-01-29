@@ -38,6 +38,83 @@ Intégration et optimisation du frontend WiFiProfit avec le backend Laravel exis
   - `fa-check` (validé)
   - `fa-arrow-right` (suivant)
 
+### **4. CRÉATION ROUTES LARAVEL (27/01/2026)**
+- **Fichier** : `routes/web.php`
+- **Action** : Ajout routes pour pages HTML
+- **Routes créées** :
+  - `/clients` → `clients.html`
+  - `/tickets` → `tickets.html`
+  - `/paiements` → `paiements.html`
+  - `/settings` → `settings.html`
+- **Impact** : Sidebar fonctionnel via Laravel
+
+### **5. CONVERSION HTML → BLADE (27/01/2026)**
+- **Action** : Renommage fichiers .html en .blade.php
+- **Fichiers convertis** :
+  - `clients.html` → `clients.blade.php`
+  - `tickets.html` → `tickets.blade.php`
+  - `paiements.html` → `paiements.blade.php`
+  - `settings.html` → `settings.blade.php`
+  - `index.html` → `index.blade.php`
+  - `login.html` → `login.blade.php`
+  - `Components.html` → `Components.blade.php`
+  - `wifi-zones.html` → `wifi-zones.blade.php`
+- **Impact** : Laravel peut maintenant trouver les vues
+
+### **6. CORRECTION LIENS SIDEBAR (27/01/2026)**
+- **Fichier** : `resources/views/assets/js/main.js`
+- **Action** : Correction liens sidebar vers routes Laravel
+- **Liens corrigés** :
+  - `index.html` → `/` (dashboard)
+  - `wifi-zones.html` → `/wifizones`
+  - `tickets.html` → `/forfait-ticket`
+  - `clients.html` → `/clients`
+  - `paiements.html` → `/paiements`
+  - `settings.html` → `/settings`
+- **Impact** : Sidebar fonctionnel avec routes Laravel
+
+### **7. CORRECTION SIDEBAR LAYOUT (27/01/2026)**
+- **Action** : Suppression sidebar JS + correction layout Blade
+- **Fichiers modifiés** :
+  - `main.js` : Suppression `generateSidebar()` et appel
+  - `layout.blade.php` : Remplacement 10 SVG par Font Awesome
+- **SVG remplacés** :
+  - Logo : `fa-wifi`
+  - Navigation : `fa-th-large`, `fa-map-marker-alt`, `fa-ticket-alt`, `fa-users`, `fa-credit-card`, `fa-cog`
+  - Dark mode : `fa-sun`, `fa-moon`
+- **Liens corrigés** : `clients.html` → `/clients`, `paiements.html` → `/paiements`, `settings.html` → `/settings`
+- **Impact** : Sidebar unique, cohérent, fonctionnel
+
+### **8. INTÉGRATION BACKEND - SECTION CLIENTS (27/01/2026)**
+- **Action** : Connexion base de données pour page clients dynamique
+- **Étapes réalisées** :
+  - **Modèle + Migration** : `Client` avec champs (nom_complet, telephone, total_depense, etc.)
+  - **Controller** : `ClientController@index` avec KPIs et pagination
+  - **Route** : `/clients` → `ClientController@index`
+  - **Vue** : Remplacement données statiques par variables Blade
+- **Fonctionnalités** :
+  - KPIs dynamiques (total, nouveaux, VIP)
+  - Tableau paginé avec boucle `@forelse`
+  - Statuts automatiques (ACTIF/BLOQUÉ)
+  - Pagination Laravel `{{ $clients->links() }}`
+- **Résultat** : Page clients 100% dynamique
+
+### **14. FONCTIONNALITÉ AJOUT CLIENT (27/01/2026)**
+- **Action** : Ajout de la possibilité d'ajouter des clients via modale
+- **Étapes réalisées** :
+  - **Header complet** : Titre "Gestion Clients" + boutons actions
+  - **Bouton Ajouter** : Bouton bleu avec icône +
+  - **Modale flottante** : Formulaire avec input floating
+  - **Route POST** : `/clients` → `ClientController@store`
+  - **Controller** : Méthode `store()` avec validation
+  - **Messages succès** : Affichage après ajout
+- **Fonctionnalités** :
+  - Validation téléphone unique
+  - Dépense initiale optionnelle
+  - Zone "Manuel" pour ajout manuel
+  - Redirection avec message de succès
+- **Résultat** : Page clients 100% fonctionnelle avec CRUD
+
 ---
 
 ## 🔍 ANALYSES EN COURS
@@ -56,26 +133,30 @@ Intégration et optimisation du frontend WiFiProfit avec le backend Laravel exis
 
 ---
 
-## 🚀 PROCHAINES ACTIONS
+## 🎯 **PROCHAINES ACTIONS**
 
 ### **IMMÉDIAT**
-1. **Augmenter taille icône WiFi** empty state wifizones
-2. **Remplacer émojis** page clients par Font Awesome
-3. **Vérifier redirections** sidebar vers pages Blade
+1. **Tester page clients** dynamique ✅
+2. **Ajouter clients test** dans la base
+3. **Continuer intégration** autres sections
 
 ### **COURT TERME**
-1. **Convertir pages HTML** en Blade
-2. **Intégrer backend** (données dynamiques)
-3. **Tester fonctionnalités** complètes
+1. **Intégrer paiements** (même approche)
+2. **Intégrer settings**
+3. **Connecter portail captif** (création clients automatique)
 
 ---
 
 ## 📊 STATUT BRANCHE
 
 - **Branche** : `branche-Caleb`
-- **Dernier commit** : `2e51372` - Font Awesome integration
-- **Serveur local** : http://127.0.0.1:8000
+- **Dernier commit local** : Intégration backend section clients
+- **Dernier commit local** : Routes Laravel pour pages HTML
+- **Serveur local** : http://127.0.0.1:8003 ✅
 - **Environnement** : PHP 8.2.30 ✅
+- **Routes actives** : `/clients`, `/tickets`, `/paiements`, `/settings` ✅
+- **Sidebar** : 100% fonctionnel ✅
+- **Problème 404** : Résolu (port 8003) ✅
 
 ---
 
@@ -98,4 +179,4 @@ Intégration et optimisation du frontend WiFiProfit avec le backend Laravel exis
 
 *Ce fichier est maintenu par Caleb pour suivre l'évolution du projet et aider les développeurs à comprendre les modifications apportées.*
 
-**Dernière mise à jour** : 27/01/2026 - 16:15
+**Dernière mise à jour** : 27/01/2026 - 18:15

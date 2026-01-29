@@ -111,6 +111,25 @@ input, select, textarea, .bg-gray-50 {
     border-color: var(--border-color) !important;
 }
 
+/* Exception : Sélecteur de zone (force le bleu) */
+.zone-filter-select {
+    background-color: #072b47 !important;
+    color: #FFFFFF !important;
+    border: none !important;
+}
+
+/* Options du dropdown principal (fond normal) */
+.zone-filter-select option {
+    background-color: #FFFFFF !important;
+    color: #1E293B !important;
+}
+
+/* Options du dropdown principal en mode sombre */
+.dark .zone-filter-select option {
+    background-color: #1E293B !important;
+    color: #FFFFFF !important;
+}
+
 /* --- NAVIGATION MODERNISÉE --- */
 
 /* Item Actif : Design "Glass" avec barre latérale */
