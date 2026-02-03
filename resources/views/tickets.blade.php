@@ -152,9 +152,17 @@
                             Modifier
                         </button>
                         
-                        <!-- Bouton Poubelle -->
+                        <!-- Bouton Supprimer Tickets -->
+                        @if(($forfait->tickets_count ?? 0) > 0)
+                        <button onclick="previewBulkDelete('forfait', {{ $forfait->id }}, '{{ addslashes($forfait->nom) }}')" 
+                                class="w-12 h-11 flex items-center justify-center bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm" title="Supprimer tous les tickets de ce forfait">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                        @endif
+                        
+                        <!-- Bouton Poubelle (Supprimer le forfait) -->
                         <button onclick="prepDeletePackage('{{ $forfait->id }}', '{{ addslashes($forfait->nom) }}', {{ $forfait->tickets_count ?? 0 }})" 
-                                class="w-12 h-11 flex items-center justify-center bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm">
+                                class="w-11 h-11 flex items-center justify-center bg-gray-100 dark:bg-slate-700 text-gray-400 rounded-xl hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all shadow-sm">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
@@ -957,6 +965,36 @@
         </div>
     </div>
 
+    <!-- MODALE SUPPRESSION EN MASSE -->
+    <div id="bulk-delete-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeBulkDeleteModal()"></div>
+        <div class="bg-white dark:bg-brand-cardDark w-full max-w-md rounded-[2.5rem] p-8 relative z-10 text-center shadow-2xl border border-gray-100 dark:border-slate-700">
+            <!-- Icône dynamique (Danger ou Avertissement) -->
+            <div id="bulk-delete-icon-box" class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-orange-100 dark:bg-orange-900/30 text-orange-500">
+                <i id="bulk-delete-icon" class="fas fa-exclamation-triangle text-2xl"></i>
+            </div>
+
+            <h3 id="bulk-delete-title" class="text-xl font-bold text-gray-800 dark:text-white mb-2">Suppression en Masse !</h3>
+            <p id="bulk-delete-message" class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed"></p>
+            
+            <!-- Warning for sold tickets -->
+            <div id="bulk-delete-warning" class="hidden bg-red-50 dark:bg-red-900/20 p-4 rounded-xl mb-6 text-left">
+                <p id="bulk-delete-warning-text" class="text-xs text-red-600 dark:text-red-400"></p>
+            </div>
+
+            <form id="bulk-delete-form" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir continuer?');">
+                @csrf @method('DELETE')
+                <input type="hidden" id="bulk-delete-date" name="date">
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeBulkDeleteModal()" class="flex-1 py-3 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-xl transition">Annuler</button>
+                    <button type="submit" id="bulk-delete-confirm-btn" class="flex-1 py-3 text-white rounded-xl text-sm font-bold shadow-lg transition bg-orange-600 hover:bg-orange-700">
+                        Confirmer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- MODALE FORMAT INVALIDE -->
     <div id="invalid-format-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeInvalidFormatModal()"></div>
@@ -1398,6 +1436,120 @@
 
     function closeDeletePackageModal() {
         document.getElementById('delete-package-modal').classList.add('hidden');
+    }
+
+    // --- GESTION SUPPRESSION EN MASSE ---
+    async function previewBulkDelete(type, id, name) {
+        const modal = document.getElementById('bulk-delete-modal');
+        const title = document.getElementById('bulk-delete-title');
+        const msg = document.getElementById('bulk-delete-message');
+        const warningDiv = document.getElementById('bulk-delete-warning');
+        const warningText = document.getElementById('bulk-delete-warning-text');
+        const form = document.getElementById('bulk-delete-form');
+        const iconBox = document.getElementById('bulk-delete-icon-box');
+        const icon = document.getElementById('bulk-delete-icon');
+
+        // Hide warning by default
+        warningDiv.classList.add('hidden');
+
+        // Determine endpoint
+        let endpoint = '';
+        let modalTitle = '';
+        let modalMessage = '';
+        let hasSoldTickets = false;
+
+        if (type === 'forfait') {
+            endpoint = `/tickets/by-forfait/${id}`;
+            modalTitle = "Supprimer tous les tickets ?";
+            modalMessage = `Voulez-vous supprimer <strong>tous les tickets</strong> du forfait "<strong>${name}</strong>" ?`;
+            hasSoldTickets = await checkForSoldTickets(id, 'forfait');
+        } else if (type === 'zone') {
+            endpoint = `/tickets/by-zone/${id}`;
+            modalTitle = "Supprimer tous les tickets ?";
+            modalMessage = `Voulez-vous supprimer <strong>tous les tickets</strong> de la zone "<strong>${name}</strong>" ?`;
+            hasSoldTickets = await checkForSoldTickets(id, 'zone');
+        } else if (type === 'date') {
+            endpoint = `/tickets/by-date`;
+            modalTitle = "Supprimer tous les tickets ?";
+            modalMessage = `Voulez-vous supprimer <strong>tous les tickets</strong> créés le <strong>${formatDate(id)}</strong> ?`;
+            hasSoldTickets = await checkForSoldTickets(id, 'date');
+        }
+
+        if (hasSoldTickets) {
+            warningDiv.classList.remove('hidden');
+            warningText.innerText = "Attention : Cette opération inclut des tickets déjà vendus !";
+            iconBox.className = "w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-red-50 dark:bg-red-900/20 text-red-500";
+            icon.className = "fas fa-exclamation-triangle text-2xl";
+        } else {
+            iconBox.className = "w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-orange-100 dark:bg-orange-900/30 text-orange-500";
+            icon.className = "fas fa-exclamation-triangle text-2xl";
+        }
+
+        form.action = endpoint;
+        title.innerText = modalTitle;
+        msg.innerHTML = modalMessage;
+        modal.classList.remove('hidden');
+    }
+
+    async function checkForSoldTickets(id, type) {
+        try {
+            let url = `/tickets/preview?type=${type}&id=${id}`;
+            if (type === 'date') {
+                // For date type, get the current zone ID
+                const currentZoneId = document.getElementById('filter-zone')?.value;
+                if (currentZoneId && currentZoneId !== 'all') {
+                    url += `&zone_id=${currentZoneId}`;
+                }
+            }
+            
+            const response = await fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.data) {
+                    // Display the actual preview data
+                    const warningDiv = document.getElementById('bulk-delete-warning');
+                    const warningText = document.getElementById('bulk-delete-warning-text');
+                    const msg = document.getElementById('bulk-delete-message');
+                    
+                    // Update message with actual counts
+                    if (type === 'forfait') {
+                        msg.innerHTML = `Voulez-vous supprimer <strong>${data.data.total_count} ticket(s)</strong> du forfait "<strong>${data.data.forfait_name}</strong>" ?`;
+                    } else if (type === 'zone') {
+                        msg.innerHTML = `Voulez-vous supprimer <strong>${data.data.total_count} ticket(s)</strong> de la zone "<strong>${data.data.zone_name}</strong>" ?`;
+                    } else if (type === 'date') {
+                        msg.innerHTML = `Voulez-vous supprimer <strong>${data.data.total_count} ticket(s)</strong> créés le <strong>${formatDate(id)}</strong> ?`;
+                    }
+                    
+                    // Show warning if there are sold tickets
+                    if (data.data.vendu_count > 0) {
+                        warningDiv.classList.remove('hidden');
+                        warningText.innerHTML = `Attention : <strong>${data.data.vendu_count} ticket(s) ont déjà été vendus</strong> et seront supprimés.`;
+                    } else {
+                        warningDiv.classList.add('hidden');
+                    }
+                    
+                    return data.data.vendu_count > 0;
+                }
+            }
+        } catch (error) {
+            console.error('Error checking tickets:', error);
+        }
+        return false;
+    }
+
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function closeBulkDeleteModal() {
+        document.getElementById('bulk-delete-modal').classList.add('hidden');
     }
 
     function updatePreview() {

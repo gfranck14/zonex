@@ -18,6 +18,7 @@ class AuthProprioController extends Controller
             'phone_code' => ['required', 'string'],
             'numero' => ['required', 'string', 'max:20', 'unique:proprio,numero'],
             'password' => ['required', 'min:6', 'regex:/[a-z]/', 'regex:/[A-Z]/', 'regex:/[0-9]/'],
+            'password_confirmation' => ['required', 'same:password'],
         ]);
 
         $fullPhone = $data['phone_code'] . ' ' . $data['numero'];

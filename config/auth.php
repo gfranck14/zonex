@@ -44,6 +44,14 @@ return [
         'driver' => 'session',
         'provider' => 'proprios',
     ],
+    'superadmin' => [
+        'driver' => 'session',
+        'provider' => 'superadmins',
+    ],
+    'client' => [
+        'driver' => 'session',
+        'provider' => 'clients',
+    ],
 ],
 
 'providers' => [
@@ -54,6 +62,14 @@ return [
     'proprios' => [
         'driver' => 'eloquent',
         'model' => App\Models\Proprio::class,
+    ],
+    'superadmins' => [
+        'driver' => 'eloquent',
+        'model' => App\SuperAdmin\Models\SuperAdmin::class,
+    ],
+    'clients' => [
+        'driver' => 'eloquent',
+        'model' => App\Models\Client::class,
     ],
 ],
 

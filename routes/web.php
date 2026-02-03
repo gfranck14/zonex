@@ -6,13 +6,40 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\WifizoneController;
 use App\Http\Controllers\ForfaitController;
 use App\Http\Controllers\PortalController;
+use App\Http\Controllers\ClientPortalController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\PaiementController;
 use App\Http\Controllers\WithdrawalController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\TicketController;
+
 
 // =============================================================================
-// ZONEX - ROUTES DE L'APPLICATION
+// 3. ROUTES DU PORTAIL CLIENT (Front-Office)
+// =============================================================================
+// Routes pour le parcours client: Landing, Auth, Shop, Ticket
+
+// Route racine : redirige vers le portail client pour la démo
+Route::get('/', function () {
+    return redirect()->route('client.landing');
+});
+
+// Groupe Portail Client
+Route::prefix('portal')->name('client.')->group(function () {
+    // Publiques
+    Route::get('/landing', [ClientPortalController::class, 'landing'])->name('landing');
+    Route::post('/register', [ClientPortalController::class, 'register'])->name('register');
+    Route::post('/login', [ClientPortalController::class, 'login'])->name('login');
+    
+    // Protégées (Besoin d'être connecté en tant que 'client')
+    Route::middleware('auth:client')->group(function () {
+        Route::get('/shop', [ClientPortalController::class, 'shop'])->name('shop');
+        Route::post('/buy/{forfait}', [ClientPortalController::class, 'buy'])->name('buy');
+        Route::get('/ticket/{ticket}', [ClientPortalController::class, 'ticket'])->name('ticket');
+        Route::post('/logout', [ClientPortalController::class, 'logout'])->name('logout');
+    });
+});
+
 // =============================================================================
 // Application de gestion de zones WiFi et de ventes de tickets
 // Développée pour les propriétaires de zones WiFi (bars, restaurants, hôtels, etc.)
@@ -65,8 +92,22 @@ Route::middleware('auth:proprio')->group(function () {
      * Route racine qui redirige vers le dashboard
      * Utile pour les accès directs à la racine du site
      */
-    Route::get('/', function () {  
-        return redirect()->route('dashboard');  
+    // Route racine redirigée globalement plus bas vers le portail client
+    // Route::get('/', ...); 
+
+    // Routes Portail Client
+    Route::prefix('portal')->name('client.')->group(function () {
+        Route::get('/landing', [ClientPortalController::class, 'landing'])->name('landing');
+        Route::post('/register', [ClientPortalController::class, 'register'])->name('register');
+        Route::post('/login', [ClientPortalController::class, 'login'])->name('login');
+        
+        // Routes protégées client
+        Route::middleware('auth:client')->group(function () {
+            Route::get('/shop', [ClientPortalController::class, 'shop'])->name('shop');
+            Route::post('/buy/{forfait}', [ClientPortalController::class, 'buy'])->name('buy');
+            Route::get('/ticket/{ticket}', [ClientPortalController::class, 'ticket'])->name('ticket');
+            Route::post('/logout', [ClientPortalController::class, 'logout'])->name('logout');
+        });
     });
 
     // -------------------------------------------------------------------------
@@ -171,6 +212,41 @@ Route::middleware('auth:proprio')->group(function () {
      * Nom de route: tickets.destroy
      */
     Route::delete('/tickets/{id}', [ForfaitController::class, 'destroyTicket'])->name('tickets.destroy');
+
+    // -------------------------------------------------------------------------
+    // ROUTES DE SUPPRESSION EN MASSE DE TICKETS
+    // -------------------------------------------------------------------------
+
+    /**
+     * Prévisualise les tickets à supprimer avant confirmation
+     * Retourne le nombre de tickets libres et vendus
+     * Nom de route: tickets.preview
+     */
+    Route::get('/tickets/preview', [TicketController::class, 'previewDelete'])->name('tickets.preview');
+
+    /**
+     * Supprime tous les tickets d'un forfait spécifique
+     * Nom de route: tickets.delete.forfait
+     */
+    Route::delete('/tickets/by-forfait/{forfait}', [TicketController::class, 'deleteByForfait'])->name('tickets.delete.forfait');
+
+    /**
+     * Supprime tous les tickets d'une zone WiFi (tous forfaits)
+     * Nom de route: tickets.delete.zone
+     */
+    Route::delete('/tickets/by-zone/{zone}', [TicketController::class, 'deleteByZone'])->name('tickets.delete.zone');
+
+    /**
+     * Supprime tous les tickets créés à une date spécifique
+     * Nom de route: tickets.delete.date
+     */
+    Route::delete('/tickets/by-date', [TicketController::class, 'deleteByDate'])->name('tickets.delete.date');
+
+    /**
+     * Supprime tous les tickets d'un batch d'import spécifique
+     * Nom de route: tickets.delete.batch
+     */
+    Route::delete('/tickets/by-batch/{batch}', [TicketController::class, 'deleteByBatch'])->name('tickets.delete.batch');
 
     // -------------------------------------------------------------------------
     // ROUTES DES CLIENTS
@@ -317,33 +393,3 @@ Route::middleware('auth:proprio')->group(function () {
      */
     Route::post('/logout', [AuthProprioController::class, 'logout'])->name('proprio.logout');
 });
-
-// =============================================================================
-// 3. ROUTES DU PORTAIL CAPTIF (Public)
-// =============================================================================
-// Ces routes sont accessibles sans authentification pour les clients WiFi
-// Elles servent au login et à la vérification des tickets
-
-/**
- * Affiche la page de login du portail captif pour les clients
- * Nom de route: portal.login
- */
-Route::get('/portal/login', [PortalController::class, 'showLogin'])->name('portal.login');
-
-/**
- * Traite l'authentification des clients via le portail captif
- * Nom de route: portal.auth
- */
-Route::post('/portal/auth', [PortalController::class, 'authenticate'])->name('portal.auth');
-
-/**
- * Affiche la page de succès après une authentification réussie
- * Nom de route: portal.success
- */
-Route::get('/portal/success', [PortalController::class, 'success'])->name('portal.success');
-
-/**
- * API endpoint: Vérifie la validité d'un ticket
- * Nom de route: api.check-ticket
- */
-Route::post('/api/check-ticket', [PortalController::class, 'checkTicket'])->name('api.check-ticket');

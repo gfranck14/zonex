@@ -31,12 +31,13 @@ class Ticket extends Model
      * - date_vente: Date de vente du ticket
      */
     protected $fillable = [
-        'forfaits_id', 
-        'username', 
-        'password', 
-        'statut', 
+        'forfaits_id',
+        'username',
+        'password',
+        'statut',
         'client_id',
-        'date_vente'
+        'date_vente',
+        'import_batch_id'
     ];
 
     /**

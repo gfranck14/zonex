@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\WifiZone;   
+use App\Models\WifiZone;
+use App\Models\Ticket;   
 use Illuminate\Support\Str;  
 
 class WifizoneController extends Controller
@@ -86,6 +87,9 @@ class WifizoneController extends Controller
             $data = $request->validate([
                 'nom_zone' => 'required|string|max:255',
                 'adresse' => 'nullable|string|max:255',
+                'display_name' => 'nullable|string|max:255',
+                'welcome_message' => 'nullable|string',
+                'primary_color' => 'nullable|string|max:50',
             ]);
 
             $zone->update($data);
@@ -149,6 +153,77 @@ class WifizoneController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Zone introuvable'], 404);
+        }
+    }
+
+    /**
+     * Récupère l'impact de la suppression des tickets d'une zone (avec détail sold vs free)
+     */
+    public function getTicketsImpact($id)
+    {
+        try {
+            $zone = WifiZone::where('id', $id)
+                ->where('proprio_id', Auth::guard('proprio')->id())
+                ->with(['forfaits' => function($q) {
+                    $q->with(['tickets' => function($t) {
+                        $t->select('id', 'statut', 'forfaits_id');
+                    }]);
+                }])
+                ->firstOrFail();
+
+            $totalTickets = 0;
+            $freeTickets = 0;
+            $soldTickets = 0;
+
+            foreach ($zone->forfaits as $forfait) {
+                foreach ($forfait->tickets as $ticket) {
+                    $totalTickets++;
+                    if ($ticket->statut === 'libre') {
+                        $freeTickets++;
+                    } else {
+                        $soldTickets++;
+                    }
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'total' => $totalTickets,
+                'libre' => $freeTickets,
+                'vendu' => $soldTickets
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Zone introuvable'], 404);
+        }
+    }
+
+    /**
+     * Supprime tous les tickets d'une zone WiFi
+     */
+    public function deleteZoneTickets($id)
+    {
+        try {
+            $zone = WifiZone::where('id', $id)
+                ->where('proprio_id', Auth::guard('proprio')->id())
+                ->with('forfaits')
+                ->firstOrFail();
+
+            // Récupérer les IDs des forfaits associés à la zone
+            $forfaitIds = $zone->forfaits->pluck('id')->toArray();
+
+            // Supprimer tous les tickets des forfaits de la zone
+            $deletedCount = Ticket::whereIn('forfaits_id', $forfaitIds)->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => $deletedCount . ' ticket(s) supprimé(s) avec succès',
+                'count' => $deletedCount
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la suppression : ' . $e->getMessage()
+            ], 500);
         }
     }
 }

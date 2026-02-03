@@ -304,12 +304,35 @@
                             <input 
                                 type="password" 
                                 name="password"
+                                id="signup-password"
                                 placeholder=" " 
                                 required 
-                                class="input-floating"
+                                class="input-floating pr-10"
                             >
                             <label class="floating-label">Mot de passe</label>
+                            <button type="button" onclick="togglePasswordVisibility('signup-password')" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors">
+                                <i class="far fa-eye" id="icon-signup-password"></i>
+                            </button>
                             @error('password')
+                                <p class="text-red-500 text-[10px] font-bold mt-1 uppercase tracking-tight"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Champ de confirmation du mot de passe -->
+                        <div class="input-floating-group">
+                            <input 
+                                type="password" 
+                                name="password_confirmation"
+                                id="signup-password-confirmation"
+                                placeholder=" " 
+                                required 
+                                class="input-floating pr-10"
+                            >
+                            <label class="floating-label">Confirmer le mot de passe</label>
+                            <button type="button" onclick="togglePasswordVisibility('signup-password-confirmation')" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors">
+                                <i class="far fa-eye" id="icon-signup-password-confirmation"></i>
+                            </button>
+                            @error('password_confirmation')
                                 <p class="text-red-500 text-[10px] font-bold mt-1 uppercase tracking-tight"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
                             @enderror
                         </div>
@@ -467,7 +490,6 @@
                 document.documentElement.classList.add('dark');
                 localStorage.theme = 'dark';
             }
-        }
         }
 
         function togglePasswordVisibility(id) {

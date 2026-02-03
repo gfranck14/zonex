@@ -33,6 +33,9 @@ class WifiZone extends Model
         'nom_zone',
         'adresse',
         'token',
+        'display_name',
+        'welcome_message',
+        'primary_color',
     ];
 
     /**
