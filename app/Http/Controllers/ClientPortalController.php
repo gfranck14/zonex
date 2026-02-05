@@ -9,6 +9,7 @@ use App\Models\Wifizone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class ClientPortalController extends Controller
@@ -18,6 +19,11 @@ class ClientPortalController extends Controller
      */
     public function landing(Request $request)
     {
+        Log::info('ClientPortalController::landing - Route atteinte');
+        Log::info('ClientPortalController::landing - Request URI: ' . $request->getRequestUri());
+        Log::info('ClientPortalController::landing - Auth client: ' . (Auth::guard('client')->check() ? 'Connecté' : 'Déconnecté'));
+        Log::info('ClientPortalController::landing - Auth proprio: ' . (Auth::guard('proprio')->check() ? 'Connecté' : 'Déconnecté'));
+        
         // Détecter la zone via ID (param URL) ou Session
         $zoneId = $request->get('zone_id') ?? session('zone_id');
         

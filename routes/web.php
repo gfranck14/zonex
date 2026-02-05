@@ -95,20 +95,7 @@ Route::middleware('auth:proprio')->group(function () {
     // Route racine redirigée globalement plus bas vers le portail client
     // Route::get('/', ...); 
 
-    // Routes Portail Client
-    Route::prefix('portal')->name('client.')->group(function () {
-        Route::get('/landing', [ClientPortalController::class, 'landing'])->name('landing');
-        Route::post('/register', [ClientPortalController::class, 'register'])->name('register');
-        Route::post('/login', [ClientPortalController::class, 'login'])->name('login');
-        
-        // Routes protégées client
-        Route::middleware('auth:client')->group(function () {
-            Route::get('/shop', [ClientPortalController::class, 'shop'])->name('shop');
-            Route::post('/buy/{forfait}', [ClientPortalController::class, 'buy'])->name('buy');
-            Route::get('/ticket/{ticket}', [ClientPortalController::class, 'ticket'])->name('ticket');
-            Route::post('/logout', [ClientPortalController::class, 'logout'])->name('logout');
-        });
-    });
+
 
     // -------------------------------------------------------------------------
     // ROUTES DU DASHBOARD

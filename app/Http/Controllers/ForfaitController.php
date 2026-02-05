@@ -257,6 +257,7 @@ class ForfaitController extends Controller
             $duplicateTicketCount = 0;
             $profileErrorCount = 0;
             $detectedProfile = null;
+            $importBatchId = uniqid('import_', true);
             if (($handle = fopen($file->getPathname(), "r")) !== FALSE) {
                 // Lire les en-têtes
                 $headers = fgetcsv($handle, 1000, ",");
@@ -333,7 +334,8 @@ class ForfaitController extends Controller
                         'forfaits_id' => $forfaitId,
                         'username' => $username,
                         'password' => $password,
-                        'statut' => 'libre'
+                        'statut' => 'libre',
+                        'import_batch_id' => $importBatchId
                     ]);
                     $importedCount++;
                 }
@@ -349,7 +351,8 @@ class ForfaitController extends Controller
                     'forfait_nom' => $forfait->nom,
                     'quantite' => $importedCount,
                     'statut' => 'echec',
-                    'observation' => "Erreur système: " . $e->getMessage()
+                    'observation' => "Erreur système: " . $e->getMessage(),
+                    'import_batch_id' => $importBatchId
                 ]);
                 return response()->json([
                     'success' => false,
@@ -403,6 +406,7 @@ class ForfaitController extends Controller
             'quantite' => $importedCount,
             'statut' => $statut,
             'observation' => $observation, // Save the observation
+            'import_batch_id' => $importBatchId
         ]);
 
         return response()->json([

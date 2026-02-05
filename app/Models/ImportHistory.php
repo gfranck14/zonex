@@ -33,7 +33,8 @@ class ImportHistory extends Model
         'forfait_nom',
         'quantite',
         'statut',
-        'observation'
+        'observation',
+        'import_batch_id'
     ];
 
     /**

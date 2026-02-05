@@ -447,6 +447,9 @@
                                     Statut <i class="fas fa-sort text-xs ml-1"></i>
                                 </th>
                                 <th class="p-5 cursor-pointer hover:text-gray-600 dark:hover:text-gray-300" onclick="sortTable(6, 'imports-table')">
+                                    BATCH ID <i class="fas fa-sort text-xs ml-1"></i>
+                                </th>
+                                <th class="p-5 cursor-pointer hover:text-gray-600 dark:hover:text-gray-300" onclick="sortTable(7, 'imports-table')">
                                     OBSERVATION <i class="fas fa-sort text-xs ml-1"></i>
                                 </th>
                             </tr>
@@ -487,6 +490,9 @@
                                         </span>
                                     @endif
                                 </td>
+                                <td class="p-5 font-mono text-xs text-gray-600 dark:text-gray-300">
+                                    {{ $import->import_batch_id ?? '-' }}
+                                </td>
                                 <td class="p-5 text-xs text-gray-500 dark:text-gray-400 max-w-xs break-words">
                                     @if($import->statut == 'succes' && ($import->observation == 'Aucune' || empty($import->observation)))
                                         <span class="opacity-50">-</span>
@@ -497,7 +503,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="7" class="p-8 text-center text-gray-400">
+                                <td colspan="8" class="p-8 text-center text-gray-400">
                                     Aucun historique d'importation disponible.
                                 </td>
                             </tr>
@@ -1473,6 +1479,21 @@
             modalTitle = "Supprimer tous les tickets ?";
             modalMessage = `Voulez-vous supprimer <strong>tous les tickets</strong> créés le <strong>${formatDate(id)}</strong> ?`;
             hasSoldTickets = await checkForSoldTickets(id, 'date');
+            // Set the hidden date input for date deletion
+            document.getElementById('bulk-delete-date').value = id;
+            // Also add zone filter if selected
+            const currentZoneId = document.getElementById('filter-zone')?.value;
+            if (currentZoneId && currentZoneId !== 'all') {
+                let hiddenZoneInput = document.getElementById('bulk-delete-zone');
+                if (!hiddenZoneInput) {
+                    hiddenZoneInput = document.createElement('input');
+                    hiddenZoneInput.type = 'hidden';
+                    hiddenZoneInput.id = 'bulk-delete-zone';
+                    hiddenZoneInput.name = 'zone_id';
+                    document.getElementById('bulk-delete-form').appendChild(hiddenZoneInput);
+                }
+                hiddenZoneInput.value = currentZoneId;
+            }
         }
 
         if (hasSoldTickets) {
