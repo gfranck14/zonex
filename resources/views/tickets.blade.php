@@ -634,6 +634,7 @@
                             <select name="filter_statut" onchange="this.form.submit()" class="px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border-none rounded-xl text-gray-600 dark:text-gray-300 font-bold cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 transition">
                                 <option value="">Tous statuts</option>
                                 <option value="libre" {{ request('filter_statut') == 'libre' ? 'selected' : '' }}>Libre</option>
+                                <option value="pending" {{ request('filter_statut') == 'pending' ? 'selected' : '' }}>En attente</option>
                                 <option value="vendu" {{ request('filter_statut') == 'vendu' ? 'selected' : '' }}>Vendu</option>
                             </select>
 
@@ -689,7 +690,7 @@
 
                                 <!-- 5. Vendu à -->
                                 <td class="p-5 font-bold text-gray-800 dark:text-white text-sm">
-                                    {{ $ticket->client ? $ticket->client->nom : '-' }}
+                                    {{ $ticket->client ? $ticket->client->nom_complet : '-' }}
                                 </td>
 
                                 <!-- 6. Date Vente -->
@@ -702,6 +703,10 @@
                                     @if($ticket->statut == 'libre')
                                         <span class="bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 px-2 py-1 rounded-lg text-[10px] font-bold border border-gray-200 dark:border-slate-600">
                                             LIBRE
+                                        </span>
+                                    @elseif($ticket->statut == 'pending')
+                                        <span class="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-2 py-1 rounded-lg text-[10px] font-bold border border-orange-200 dark:border-orange-800">
+                                            EN ATTENTE
                                         </span>
                                     @else
                                         <span class="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-1 rounded-lg text-[10px] font-bold border border-green-200 dark:border-green-800">
@@ -764,6 +769,38 @@
                                     <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25 lignes</option>
                                     <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 lignes</option>
                                 </select>
+                                <script>
+                                    document.addEventListener('DOMContentLoaded', function() {
+                                        // S'assurer que le formulaire de pagination conserve bien l'onglet actif
+                                        const perPageForm = document.querySelector('select[name="per_page"]').closest('form');
+                                        if (perPageForm) {
+                                            perPageForm.addEventListener('submit', function(e) {
+                                                // Vérifier que le champ tab est bien présent
+                                                let tabInput = this.querySelector('input[name="tab"]');
+                                                if (!tabInput) {
+                                                    // Si le champ tab n'existe pas, l'ajouter
+                                                    tabInput = document.createElement('input');
+                                                    tabInput.type = 'hidden';
+                                                    tabInput.name = 'tab';
+                                                    tabInput.value = 'list';
+                                                    this.appendChild(tabInput);
+                                                }
+                                                tabInput.value = 'list'; // Forcer la valeur
+                                            });
+                                        }
+                                        
+                                        // Intercepter tous les clics sur les liens de pagination pour conserver l'onglet
+                                        const paginationLinks = document.querySelectorAll('a[href*="page="]');
+                                        paginationLinks.forEach(link => {
+                                            link.addEventListener('click', function(e) {
+                                                const url = new URL(this.href);
+                                                // S'assurer que le paramètre tab est présent
+                                                url.searchParams.set('tab', 'list');
+                                                this.href = url.toString();
+                                            });
+                                        });
+                                    });
+                                </script>
                             </form>
                         </div>
                         

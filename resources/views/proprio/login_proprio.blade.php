@@ -472,8 +472,8 @@
 
         // Auto-fill pour la démo
         function fillLogin() {
-            document.getElementById('login-phone').value = '41513430';
-            document.getElementById('login-password').value = '123456';
+            document.getElementById('login-phone').value = '62800782';
+            document.getElementById('login-password').value = '10102233';
         }
 
         // Dark Mode

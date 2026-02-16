@@ -8,19 +8,14 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
-        health: '/up',
-        then: function () {
-            // Routes superadmin
-            Route::middleware('web')
-                ->group(base_path('routes/superadmin.php'));
-        }
+        health: '/up'
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Enregistrer les alias de middleware superadmin
         $middleware->alias([
-            'superadmin.auth' => \App\SuperAdmin\Http\Middleware\SuperAdminAuth::class,
-            'superadmin.role' => \App\SuperAdmin\Http\Middleware\SuperAdminRole::class,
-            'superadmin.audit' => \App\SuperAdmin\Http\Middleware\AuditMiddleware::class,
+            'superadmin.auth' => \App\Http\Middleware\SuperAdmin\SuperAdminAuth::class,
+            'superadmin.role' => \App\Http\Middleware\SuperAdmin\SuperAdminRole::class,
+            'superadmin.audit' => \App\Http\Middleware\SuperAdmin\AuditMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

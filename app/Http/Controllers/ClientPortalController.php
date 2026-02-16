@@ -15,34 +15,31 @@ use Illuminate\Support\Str;
 class ClientPortalController extends Controller
 {
     /**
-     * Page d'accueil / Landing (Login & Register)
+     * Page d'accueil / Landing (Login & Register) - Token obligatoire
      */
-    public function landing(Request $request)
+    public function landing(Request $request, $token)
     {
         Log::info('ClientPortalController::landing - Route atteinte');
         Log::info('ClientPortalController::landing - Request URI: ' . $request->getRequestUri());
+        Log::info('ClientPortalController::landing - Token: ' . $token);
         Log::info('ClientPortalController::landing - Auth client: ' . (Auth::guard('client')->check() ? 'Connecté' : 'Déconnecté'));
         Log::info('ClientPortalController::landing - Auth proprio: ' . (Auth::guard('proprio')->check() ? 'Connecté' : 'Déconnecté'));
         
-        // Détecter la zone via ID (param URL) ou Session
-        $zoneId = $request->get('zone_id') ?? session('zone_id');
+        // Le token est obligatoire - chercher la zone WiFi via le token
+        $wifizone = \App\Models\Wifizone::where('token', $token)->first();
         
-        if (!$zoneId) {
-            // Fallback ou erreur si pas de zone identifiée
-            // Pour le dev, on peut prendre la première zone
-            $wifizone = Wifizone::first();
-        } else {
-            $wifizone = Wifizone::find($zoneId);
+        if (!$wifizone) {
+            // Si le token n'est pas valide, rediriger vers une page d'erreur
+            abort(404, 'Token invalide ou expiré. Veuillez contacter le support.');
         }
-
-        if ($wifizone) {
-            session(['zone_id' => $wifizone->id]);
-        }
+        
+        // Stocker la zone en session
+        session(['zone_id' => $wifizone->id]);
 
         // Récupérer MAC address (depuis URL Mikrotik)
         $mac = $request->get('mac_address') ?? $request->get('mac');
 
-        return view('PortailClient.landing', compact('wifizone', 'mac'));
+        return view('PortailClient.landing', compact('wifizone', 'mac', 'token'));
     }
 
     /**
@@ -50,12 +47,23 @@ class ClientPortalController extends Controller
      */
     public function register(Request $request)
     {
-        $request->validate([
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'pseudo' => 'required|string|max:255',
             'telephone' => 'required|string|unique:clients,telephone', // Simplifié pour démo
             'password' => 'required|string|min:4|confirmed',
             'mac' => 'nullable|string',
         ]);
+
+        if ($validator->fails()) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur de validation',
+                    'errors' => $validator->errors()->all()
+                ], 422);
+            }
+            return back()->withErrors($validator)->onlyInput('telephone', 'pseudo');
+        }
 
         $client = Client::create([
             'pseudo' => $request->pseudo,
@@ -70,6 +78,14 @@ class ClientPortalController extends Controller
         // Auto login
         Auth::guard('client')->login($client);
 
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Compte créé avec succès !',
+                'redirect' => route('client.shop')
+            ]);
+        }
+
         return redirect()->route('client.shop');
     }
 
@@ -78,10 +94,23 @@ class ClientPortalController extends Controller
      */
     public function login(Request $request)
     {
-        $credentials = $request->validate([
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'telephone' => 'required|string',
             'password' => 'required|string',
         ]);
+
+        if ($validator->fails()) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur de validation',
+                    'errors' => $validator->errors()->all()
+                ], 422);
+            }
+            return back()->withErrors($validator)->onlyInput('telephone');
+        }
+
+        $credentials = $request->only('telephone', 'password');
 
         if (Auth::guard('client')->attempt($credentials)) {
             $request->session()->regenerate();
@@ -93,7 +122,23 @@ class ClientPortalController extends Controller
                 $client->save();
             }
 
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Connexion réussie !',
+                    'redirect' => route('client.shop')
+                ]);
+            }
+
             return redirect()->route('client.shop');
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Identifiants incorrects.',
+                'errors' => ['Identifiants incorrects.']
+            ], 401);
         }
 
         return back()->withErrors([
@@ -102,21 +147,29 @@ class ClientPortalController extends Controller
     }
 
     /**
-     * La Boutique (Shop)
+     * Page boutique (après connexion)
      */
-    public function shop()
+    public function shop(Request $request)
     {
-        $client = Auth::guard('client')->user();
+        $client = auth('client')->user();
         $zoneId = session('zone_id');
         
         if (!$zoneId) {
-            // Rediriger vers landing si pas de zone (ex: session expirée)
-            return redirect()->route('client.landing');
+            return redirect()->route('client.landing')->with('error', 'Session expirée. Veuillez vous reconnecter.');
         }
-
-        $wifizone = Wifizone::find($zoneId);
-        $forfaits = Forfait::where('wifizones_id', $zoneId)->get();
-
+        
+        $wifizone = \App\Models\Wifizone::find($zoneId);
+        if (!$wifizone) {
+            return redirect()->route('client.landing')->with('error', 'Zone non trouvée. Veuillez vous reconnecter.');
+        }
+        
+        // Récupérer les forfaits de cette zone avec vérification des tickets disponibles
+        $forfaits = \App\Models\Forfait::where('wifizones_id', $wifizone->id)
+            ->withCount(['tickets' => function($query) {
+                $query->where('statut', 'libre');
+            }])
+            ->get();
+        
         return view('PortailClient.shop', compact('client', 'wifizone', 'forfaits'));
     }
 

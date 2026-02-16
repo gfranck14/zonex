@@ -7,18 +7,25 @@
                 <div class="bg-brand-sidebarLight dark:bg-slate-800 p-8 rounded-3xl shadow-lg text-white relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-64 h-64 bg-brand-blue opacity-10 rounded-full blur-3xl -translate-y-10 translate-x-20"></div>
                     <div class="relative z-10">
-                        <div class="flex justify-between items-start mb-8">
+                        <div class="flex justify-between items-start mb-6">
                             <div></div>
                         </div>
-                        <div class="flex justify-between items-start mb-8">
-                            <div><p class="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Solde Disponible</p><h3 id="solde-display" class="text-5xl font-bold tracking-tight text-white">{{ number_format($balances['total'] ?? 0, 0, ',', ' ') }} <span class="text-2xl text-brand-blue font-normal">F</span></h3></div>
-                            <div class="bg-white/10 p-2 rounded-xl"><i class="fas fa-credit-card w-6 h-6 text-white"></i></div>
+                        <!-- Zone Selector -->
+                        <div class="mb-4">
+                            <form method="GET" action="{{ route('paiements') }}">
+                                <select name="filter_zone" onchange="this.form.submit()" class="bg-white/10 dark:bg-slate-700 text-white border border-white/20 rounded-xl py-2 px-4 text-xs font-bold outline-none cursor-pointer hover:bg-white/20 transition w-full">
+                                    <option value="">Toutes les zones</option>
+                                    @foreach($zones as $zone)
+                                        <option value="{{ $zone->id }}" {{ $filterZone == $zone->id ? 'selected' : '' }}>{{ $zone->nom_zone }}</option>
+                                    @endforeach
+                                </select>
+                            </form>
                         </div>
-                        <div class="grid grid-cols-3 gap-4">
-                            <div class="bg-white/5 p-3 rounded-2xl border border-white/5 flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center text-black font-bold text-[10px] shadow-lg">MTN</div><div><p class="text-[10px] text-gray-400 uppercase">MTN</p><p class="font-bold">{{ number_format($balances['mtn'] ?? 0, 0, ',', ' ') }} F</p></div></div>
-                            <div class="bg-white/5 p-3 rounded-2xl border border-white/5 flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-blue-400 flex items-center justify-center text-white font-bold text-[10px] shadow-lg">MO</div><div><p class="text-[10px] text-gray-400 uppercase">Moov</p><p class="font-bold">{{ number_format($balances['moov'] ?? 0, 0, ',', ' ') }} F</p></div></div>
-                            <div class="bg-white/5 p-3 rounded-2xl border border-white/5 flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-[10px] shadow-lg">CE</div><div><p class="text-[10px] text-gray-400 uppercase">Celtiis</p><p class="font-bold">{{ number_format($balances['celtiis'] ?? 0, 0, ',', ' ') }} F</p></div></div>
+                        <div class="flex justify-between items-end mb-2">
+                            <div><p class="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Solde Disponible</p><h3 id="solde-display" class="text-5xl font-bold tracking-tight text-white">{{ number_format($balance ?? 0, 0, ',', ' ') }} <span class="text-2xl text-brand-blue font-normal">F</span></h3></div>
+                            <div class="bg-white/10 p-3 rounded-xl"><i class="fas fa-wallet w-6 h-6 text-white"></i></div>
                         </div>
+                        <p class="text-xs text-gray-400">{{ $filterZone ? 'Solde de la zone sélectionnée' : 'Solde total de toutes vos zones' }}</p>
                     </div>
                 </div>
                 <!-- Widget Retrait Rapide -->
@@ -70,19 +77,20 @@
             </div>
             <div class="bg-white dark:bg-brand-cardDark rounded-3xl shadow-sm overflow-hidden animate-fade-in">
                 <div class="p-6 border-b border-gray-100 dark:border-slate-700 flex flex-wrap justify-between items-center gap-4">
-                    <h3 class="font-bold text-lg text-gray-800 dark:text-white">Historique des Transactions</h3>
+                    <h3 class="font-bold text-lg text-gray-800 dark:text-white">Historique d'achats</h3>
                     <form method="GET" action="{{ route('paiements') }}" class="flex gap-3">
                         <select name="filter_zone" onchange="this.form.submit()" class="bg-gray-50 dark:bg-slate-700 dark:text-white border-none text-xs font-bold text-gray-600 dark:text-gray-300 rounded-xl py-2 px-4 outline-none cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600">
                             <option value="">Toutes les Zones</option>
                             @foreach($zones as $zone)
-                                <option value="{{ $zone->id }}" {{ request('filter_zone') == $zone->id ? 'selected' : '' }}>{{ $zone->nom }}</option>
+                                <option value="{{ $zone->id }}" {{ request('filter_zone') == $zone->id ? 'selected' : '' }}>{{ $zone->nom_zone }}</option>
                             @endforeach
                         </select>
                         <select name="filter_status" onchange="this.form.submit()" class="bg-gray-50 dark:bg-slate-700 dark:text-white border-none text-xs font-bold text-gray-600 dark:text-gray-300 rounded-xl py-2 px-4 outline-none cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600">
                             <option value="">Tous statuts</option>
-                            <option value="success" {{ request('filter_status') == 'success' ? 'selected' : '' }}>Succès (Vert)</option>
-                            <option value="pending" {{ request('filter_status') == 'pending' ? 'selected' : '' }}>En attente (Jaune)</option>
-                            <option value="failed" {{ request('filter_status') == 'failed' ? 'selected' : '' }}>Échec (Rouge)</option>
+                            <option value="reussi" {{ request('filter_status') == 'reussi' ? 'selected' : '' }}>Succès</option>
+                            <option value="en_attente" {{ request('filter_status') == 'en_attente' ? 'selected' : '' }}>En attente</option>
+                            <option value="echoue" {{ request('filter_status') == 'echoue' ? 'selected' : '' }}>Échoué</option>
+                            <option value="annule" {{ request('filter_status') == 'annule' ? 'selected' : '' }}>Annulé</option>
                         </select>
                         <input type="date" name="filter_date" value="{{ request('filter_date') }}" onchange="this.form.submit()" class="bg-gray-50 dark:bg-slate-700 dark:text-white border-none text-xs font-bold text-gray-600 dark:text-gray-300 rounded-xl py-2 px-4 outline-none cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600">
                         @if(request('filter_zone') || request('filter_status') || request('filter_date'))
@@ -94,37 +102,35 @@
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
-                        <thead class="bg-gray-50/50 dark:bg-slate-700/50 text-gray-400 dark:text-gray-300 text-[10px] uppercase font-bold tracking-wider"><tr><th class="p-5">Réf. Transaction</th><th class="p-5">Date & Heure</th><th class="p-5">Client</th><th class="p-5">Zone</th><th class="p-5">Opérateur</th><th class="p-5">Montant</th><th class="p-5">Statut</th></tr></thead>
+                        <thead class="bg-gray-50/50 dark:bg-slate-700/50 text-gray-400 dark:text-gray-300 text-[10px] uppercase font-bold tracking-wider"><tr><th class="p-5">ID Transaction</th><th class="p-5">Date & Heure</th><th class="p-5">Client</th><th class="p-5">Zone</th><th class="p-5">Forfait</th><th class="p-5">Montant</th><th class="p-5">Statut</th></tr></thead>
                         <tbody class="text-sm divide-y divide-gray-50 dark:divide-slate-700">
-                            @forelse($transactions as $t)
+                            @forelse($paiements as $p)
                                 <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-800 transition cursor-pointer">
-                                    <td class="p-5 font-mono text-gray-500 dark:text-gray-300 text-xs">{{ $t->reference }}</td>
-                                    <td class="p-5 text-gray-600 dark:text-gray-300">{{ $t->created_at->format('d M, H:i') }}</td>
+                                    <td class="p-5 font-mono text-gray-500 dark:text-gray-300 text-xs">
+                                        {{ $p->fedapay_transaction_id ?? '-' }}
+                                    </td>
+                                    <td class="p-5 text-gray-600 dark:text-gray-300">{{ $p->created_at->format('d M, H:i') }}</td>
                                     <td class="p-5 font-medium text-gray-800 dark:text-white">
-                                        {{ $t->client->nom_complet ?? 'Inconnu' }}
+                                        {{ $p->client->nom_complet ?? 'Inconnu' }}
                                     </td>
                                     <td class="p-5">
                                         <span class="bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 px-2 py-1 rounded-lg text-[10px] font-bold">
-                                            {{ $t->wifizone->nom ?? '-' }}
+                                            {{ $p->forfait->wifizone->nom_zone ?? '-' }}
                                         </span>
                                     </td>
                                     <td class="p-5">
-                                        @php
-                                            $opClass = match(strtolower($t->operator)) {
-                                                'mtn' => 'text-yellow-600 bg-yellow-50',
-                                                'moov' => 'text-orange-600 bg-orange-50',
-                                                'celtiis' => 'text-blue-600 bg-blue-50',
-                                                default => 'text-gray-600 bg-gray-50'
-                                            };
-                                        @endphp
-                                        <span class="text-xs font-bold {{ $opClass }} px-2 py-1 rounded">{{ strtoupper($t->operator) }}</span>
+                                        <span class="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-lg text-[10px] font-bold">
+                                            {{ $p->forfait->nom ?? '-' }}
+                                        </span>
                                     </td>
-                                    <td class="p-5 font-bold text-gray-800 dark:text-white">{{ number_format($t->amount, 0, ',', ' ') }} F</td>
+                                    <td class="p-5 font-bold text-gray-800 dark:text-white">{{ number_format($p->montant, 0, ',', ' ') }} F</td>
                                     <td class="p-5">
-                                        @if($t->status === 'success')
+                                        @if($p->statut === 'reussi')
                                             <span class="bg-green-100 text-green-700 px-2 py-1 rounded-lg text-[10px] font-bold">SUCCÈS</span>
-                                        @elseif($t->status === 'pending')
+                                        @elseif($p->statut === 'en_attente')
                                             <span class="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 px-2 py-1 rounded-lg text-[10px] font-bold">⏳ EN ATTENTE</span>
+                                        @elseif($p->statut === 'annule')
+                                            <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-lg text-[10px] font-bold">ANNULÉ</span>
                                         @else
                                             <span class="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-[10px] font-bold">ÉCHEC</span>
                                         @endif
@@ -132,43 +138,79 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="p-10 text-center text-gray-400">Aucune transaction trouvée.</td>
+                                    <td colspan="7" class="p-10 text-center text-gray-400">Aucun achat trouvé.</td>
                                 </tr>
                             @endforelse
                         </tbody>
                     </table>
                     <div class="p-6 border-t border-gray-100 dark:border-slate-700">
                         <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                            <!-- Info Affichage -->
+                            
+                            <!-- GAUCHE : Info Affichage (Achats) -->
                             <div class="flex items-center gap-2 order-2 md:order-1">
                                 <span class="text-xs text-gray-400">Affichage de</span>
-                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">{{ $transactions->firstItem() ?? 0 }}</span>
+                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">{{ $paiements->firstItem() ?? 0 }}</span>
                                 <span class="text-xs text-gray-400">à</span>
-                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">{{ $transactions->lastItem() ?? 0 }}</span>
+                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">{{ $paiements->lastItem() ?? 0 }}</span>
                                 <span class="text-xs text-gray-400">sur</span>
-                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">{{ $transactions->total() }}</span>
-                                <span class="text-xs text-gray-400">transactions</span>
+                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">{{ $paiements->total() }}</span>
+                                <span class="text-xs text-gray-400">achats</span>
                             </div>
                             
-                            <!-- Sélecteur lignes -->
+                            <!-- MILIEU : Sélecteur lignes -->
                             <div class="flex items-center gap-2 order-3 md:order-2">
                                 <span class="text-xs text-gray-400">Afficher</span>
                                 <form method="GET" action="{{ route('paiements') }}" class="inline-block">
                                     @if(request('filter_zone')) <input type="hidden" name="filter_zone" value="{{ request('filter_zone') }}"> @endif
                                     @if(request('filter_status')) <input type="hidden" name="filter_status" value="{{ request('filter_status') }}"> @endif
                                     @if(request('filter_date')) <input type="hidden" name="filter_date" value="{{ request('filter_date') }}"> @endif
-                                    <select name="per_page" onchange="this.form.submit()" class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg text-xs font-bold p-1 px-2 outline-none cursor-pointer">
-                                        <option value="5" {{ request('per_page') == 5 ? 'selected' : '' }}>5</option>
-                                        <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10</option>
-                                        <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
-                                        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
+                                    <select name="per_page" onchange="this.form.submit()" class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg text-xs font-bold p-1 px-2 focus:ring-2 focus:ring-brand-blue outline-none cursor-pointer">
+                                        <option value="5" {{ request('per_page') == 5 ? 'selected' : '' }}>5 lignes</option>
+                                        <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10 lignes</option>
+                                        <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25 lignes</option>
+                                        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 lignes</option>
                                     </select>
                                 </form>
                             </div>
                             
-                            <!-- Pagination -->
+                            <!-- DROITE : Pagination Séquentielle -->
                             <div class="flex items-center gap-2 order-1 md:order-3">
-                                {{ $transactions->appends(request()->except('page'))->onEachSide(1)->links() }}
+                                <!-- Bouton Précédent -->
+                                @if ($paiements->onFirstPage())
+                                    <button disabled class="px-3 py-1 text-sm bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg text-gray-300 cursor-not-allowed">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                @else
+                                    <a href="{{ $paiements->appends(request()->query())->previousPageUrl() }}" class="px-3 py-1 text-sm bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                @endif
+                                
+                                <!-- NUMÉROS DE PAGES -->
+                                <div class="flex gap-1">
+                                    @foreach ($paiements->linkCollection() as $link)
+                                        @if (!str_contains($link['label'], 'Previous') && !str_contains($link['label'], 'Next'))
+                                            @if ($link['active'])
+                                                <button class="px-3 py-1 rounded-lg bg-brand-blue text-white text-xs font-bold shadow-sm">{{ $link['label'] }}</button>
+                                            @elseif ($link['label'] === '...')
+                                                <span class="px-2 text-gray-400 text-xs py-1">...</span>
+                                            @else
+                                                <a href="{{ $link['url'] }}" class="px-3 py-1 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400 text-xs font-bold hover:bg-gray-100 dark:hover:bg-slate-700 transition">{{ $link['label'] }}</a>
+                                            @endif
+                                        @endif
+                                    @endforeach
+                                </div>
+
+                                <!-- Bouton Suivant -->
+                                @if ($paiements->hasMorePages())
+                                    <a href="{{ $paiements->appends(request()->query())->nextPageUrl() }}" class="px-3 py-1 text-sm bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                @else
+                                    <button disabled class="px-3 py-1 text-sm bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg text-gray-300 cursor-not-allowed">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -339,7 +381,7 @@
                         <tr>
                             <th class="p-4 text-left">Date</th>
                             <th class="p-4 text-left">Montant</th>
-                            <th class="p-4 text-left">Opérateur</th>
+                            <th class="p-4 text-left">Référence de paiement</th>
                             <th class="p-4 text-left">Bénéficiaire</th>
                             <th class="p-4 text-left">Destination</th>
                             <th class="p-4 text-left">Réf. Mobile Money</th>
@@ -488,13 +530,6 @@
 
         withdrawals.forEach(w => {
             const date = new Date(w.requested_at).toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-            
-            const operatorStyles = {
-                'mtn': 'text-yellow-600 bg-yellow-50',
-                'moov': 'text-orange-600 bg-orange-50',
-                'celtiis': 'text-blue-600 bg-blue-50'
-            };
-            const opClass = operatorStyles[w.operator] || 'text-gray-600 bg-gray-50';
 
             const statusStyles = {
                 'pending': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30',
@@ -516,7 +551,7 @@
             tr.innerHTML = `
                 <td class="p-4 text-gray-600 dark:text-gray-300 text-xs">${date}</td>
                 <td class="p-4 font-bold text-red-600">-${parseFloat(w.amount).toLocaleString()} F</td>
-                <td class="p-4"><span class="text-xs font-bold ${opClass} px-2 py-1 rounded">${w.operator.toUpperCase()}</span></td>
+                <td class="p-4 font-mono text-gray-600 dark:text-gray-300 text-xs">${w.fedapay_payout_id || '-'}</td>
                 <td class="p-4 font-medium text-gray-800 dark:text-white">${w.beneficiary_name}</td>
                 <td class="p-4 font-mono text-gray-600 dark:text-gray-300 text-xs">${w.phone_number}</td>
                 <td class="p-4 font-mono text-gray-500 dark:text-gray-400 text-xs">${w.mobile_money_ref || w.reference}</td>

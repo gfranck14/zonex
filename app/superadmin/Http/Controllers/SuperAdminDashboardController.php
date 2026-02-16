@@ -7,7 +7,7 @@ use App\Models\Proprio;
 use App\Models\Wifizone;
 use App\Models\Client;
 use App\Models\Transaction;
-use App\Models\Withdrawal;
+use App\Models\Retrait;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -35,7 +35,7 @@ class SuperAdminDashboardController extends Controller
                 ->where('status', 'success')
                 ->sum('amount'),
             'revenue_total' => Transaction::where('status', 'success')->sum('amount'),
-            'pending_withdrawals' => Withdrawal::where('status', 'pending')->count(),
+            'pending_withdrawals' => Retrait::where('status', 'pending')->count(),
         ];
 
         // Top 5 propriétaires par revenue
@@ -85,7 +85,7 @@ class SuperAdminDashboardController extends Controller
             'revenue_today' => Transaction::whereDate('created_at', today())
                 ->where('status', 'success')
                 ->sum('amount'),
-            'pending_withdrawals' => Withdrawal::where('status', 'pending')->count(),
+            'pending_withdrawals' => Retrait::where('status', 'pending')->count(),
             'transactions_today' => Transaction::whereDate('created_at', today())->count(),
         ]);
     }

@@ -2,17 +2,50 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Withdrawal;
+use App\Models\Retrait;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
+/**
+ * Contrôleur de compatibilité pour les retraits.
+ * 
+ * Ce contrôleur utilise désormais le modèle Retrait avec la table 'retraits'.
+ * Les anciennes routes API continuent de fonctionner pour la compatibilité.
+ * 
+ * @deprecated Utiliser PayoutController pour les nouvelles fonctionnalités
+ */
 class WithdrawalController extends Controller
 {
     /**
-     * Store a new withdrawal request
+     * Récupère la liste des retraits pour l'utilisateur connecté.
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function index(Request $request)
+    {
+        $proprio = Auth::guard('proprio')->user();
+        $perPage = $request->input('per_page', 10);
+
+        // Utiliser le modèle Retrait avec la colonne user_id
+        $withdrawals = Retrait::where('user_id', $proprio->id)
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'withdrawals' => $withdrawals,
+        ]);
+    }
+
+    /**
+     * Crée une nouvelle demande de retrait.
+     * Note: Pour une intégration complète avec FedaPay, utiliser PayoutController::store()
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function store(Request $request)
     {
@@ -20,10 +53,11 @@ class WithdrawalController extends Controller
 
         // Validation
         $validator = Validator::make($request->all(), [
-            'amount' => 'required|numeric|min:1000|max:1000000',
+            'amount' => 'required|numeric|min:100|max:10000000',
             'operator' => 'required|in:mtn,moov,celtiis',
             'phone_number' => 'required|string|max:20',
             'beneficiary_name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
@@ -34,91 +68,72 @@ class WithdrawalController extends Controller
             ], 422);
         }
 
-        // Check available balance for the selected operator
-        $balance = $this->getOperatorBalance($proprio->id, $request->operator);
-
-        if ($balance < $request->amount) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Solde insuffisant pour cet opérateur',
-                'available_balance' => $balance,
-            ], 400);
-        }
-
-        // Create withdrawal request
-        $withdrawal = Withdrawal::create([
-            'reference' => Withdrawal::generateReference(),
-            'proprio_id' => $proprio->id,
+        // Créer le retrait avec le modèle Retrait
+        $retrait = Retrait::create([
+            'reference' => Retrait::generateReference(),
+            'user_id' => $proprio->id,
             'amount' => $request->amount,
             'operator' => $request->operator,
+            'mode' => Retrait::getModeFromOperator($request->operator),
             'phone_number' => $request->phone_number,
             'beneficiary_name' => $request->beneficiary_name,
             'status' => 'pending',
+            'description' => $request->description ?? 'Retrait ZONEX',
+            'merchant_reference' => Retrait::generateMerchantReference(),
             'requested_at' => now(),
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Demande de retrait enregistrée avec succès',
-            'withdrawal' => $withdrawal,
+            'withdrawal' => $retrait,
         ], 201);
     }
 
     /**
-     * Get withdrawal history for current user
-     */
-    public function index(Request $request)
-    {
-        $proprio = Auth::guard('proprio')->user();
-        $perPage = $request->input('per_page', 10);
-
-        $withdrawals = Withdrawal::query()
-            ->where('proprio_id', $proprio->id)
-            ->orderBy('requested_at', 'desc')
-            ->paginate($perPage);
-
-        return response()->json([
-            'success' => true,
-            'withdrawals' => $withdrawals,
-        ]);
-    }
-
-    /**
-     * Cancel a pending withdrawal
+     * Annule une demande de retrait en attente.
+     * 
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
      */
     public function cancel($id)
     {
         $proprio = Auth::guard('proprio')->user();
 
-        $withdrawal = Withdrawal::where('id', $id)
-            ->where('proprio_id', $proprio->id)
+        // Utiliser le modèle Retrait
+        $retrait = Retrait::where('id', $id)
+            ->where('user_id', $proprio->id)
             ->first();
 
-        if (!$withdrawal) {
+        if (!$retrait) {
             return response()->json([
                 'success' => false,
                 'message' => 'Retrait introuvable',
             ], 404);
         }
 
-        if (!$withdrawal->isCancellable()) {
+        if (!$retrait->isCancellable()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Ce retrait ne peut plus être annulé',
             ], 400);
         }
 
-        $withdrawal->cancel();
+        $retrait->cancel();
 
         return response()->json([
             'success' => true,
             'message' => 'Retrait annulé avec succès',
-            'withdrawal' => $withdrawal,
+            'withdrawal' => $retrait,
         ]);
     }
 
     /**
-     * Update withdrawal status (Admin only)
+     * Met à jour le statut d'un retrait (Admin uniquement).
+     * 
+     * @param int $id
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function updateStatus($id, Request $request)
     {
@@ -135,39 +150,20 @@ class WithdrawalController extends Controller
             ], 422);
         }
 
-        $withdrawal = Withdrawal::findOrFail($id);
+        $retrait = Retrait::findOrFail($id);
 
         if ($request->status === 'completed') {
-            $withdrawal->markAsProcessed($request->mobile_money_ref);
+            $retrait->markAsProcessed($request->mobile_money_ref);
         } elseif ($request->status === 'processing') {
-            $withdrawal->markAsProcessing();
+            $retrait->markAsProcessing();
         } elseif ($request->status === 'failed') {
-            $withdrawal->markAsFailed();
+            $retrait->markAsFailed();
         }
 
         return response()->json([
             'success' => true,
             'message' => 'Statut mis à jour avec succès',
-            'withdrawal' => $withdrawal,
+            'withdrawal' => $retrait,
         ]);
-    }
-
-    /**
-     * Calculate available balance for a specific operator
-     */
-    private function getOperatorBalance($proprioId, $operator)
-    {
-        // Revenue from successful transactions
-        $revenue = Transaction::where('operator', $operator)
-            ->where('status', 'success')
-            ->sum('amount');
-
-        // Withdrawals (completed + processing)
-        $withdrawals = Withdrawal::where('proprio_id', $proprioId)
-            ->where('operator', $operator)
-            ->whereIn('status', ['completed', 'processing'])
-            ->sum('amount');
-
-        return $revenue - $withdrawals;
     }
 }

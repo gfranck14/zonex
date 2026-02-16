@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /**
  * Modèle représentant un propriétaire de zone WiFi.
@@ -12,6 +13,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  */
 class Proprio extends Authenticatable
 {
+    use HasFactory;
+
     /**
      * Nom de la table dans la base de données.
      */
@@ -52,4 +55,26 @@ class Proprio extends Authenticatable
     protected $hidden = [
         'password'
     ];
+
+    /**
+     * Relation avec les zones WiFi.
+     * 
+     * Un propriétaire peut avoir plusieurs zones WiFi (relation one-to-many).
+     * 
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function wifizones()
+    {
+        return $this->hasMany(WifiZone::class, 'proprio_id');
+    }
+
+    /**
+     * Relation avec les transactions.
+     * 
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class, 'proprio_id');
+    }
 }

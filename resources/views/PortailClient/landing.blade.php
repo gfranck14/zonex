@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Connexion WiFi</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -110,11 +111,20 @@
         </div>
 
         <h1 class="text-xl font-bold text-gray-900 text-center leading-tight">
-            {{ $wifizone->display_name ?? $wifizone->nom_zone ?? 'Zone WiFi' }}
+            {{ $wifizone->display_name ?? $wifizone->nom_zone }}
         </h1>
         <p class="text-sm text-gray-500 mt-2 font-medium">
             {{ $wifizone->welcome_message ?? 'Bienvenue !' }}
         </p>
+        
+        <div class="mt-3 flex items-center space-x-2">
+            <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
+                <i class="fas fa-check-circle mr-1"></i>Zone Active
+            </span>
+            <span class="bg-gray-100 text-gray-600 text-xs font-mono px-2 py-1 rounded-full">
+                Token: {{ substr($token, 0, 8) }}...
+            </span>
+        </div>
     </div>
 
     <!-- Formulaire -->
@@ -200,6 +210,17 @@
                 </button>
             </div>
 
+            <!-- Password Confirmation (Register Only) -->
+            <div id="password_confirmation_field" class="hidden input-floating-group">
+                <input type="password" name="password_confirmation" id="password_confirmation_input"
+                    class="input-floating font-bold tracking-widest"
+                    placeholder=" ">
+                <label class="floating-label">Confirmer le mot de passe</label>
+                 <button type="button" onclick="togglePasswordVisibility('password_confirmation_input')" class="absolute right-3 top-4 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors">
+                    <i class="far fa-eye" id="icon-password_confirmation_input"></i>
+                </button>
+            </div>
+
             <!-- Action Button -->
             <div class="pt-2">
                 <button type="submit" id="submit-btn" class="w-full bg-custom-blue text-white py-3.5 rounded-xl text-sm font-bold hover:bg-[#062b42] transition shadow-lg shadow-blue-900/10 uppercase tracking-wider btn-hover-lift">
@@ -216,6 +237,61 @@
     <script>
         let currentMode = 'login'; // login | register
 
+        // Fonction Toast (importée depuis la plateforme)
+        function showToast(message, type = 'success') {
+            // 1. Créer le conteneur s'il n'existe pas
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none';
+                document.body.appendChild(container);
+            }
+
+            // 2. Définir les couleurs selon le type
+            let colors, icon;
+            switch(type) {
+                case 'success':
+                    colors = 'bg-[#083e5f] text-white';
+                    icon = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                    break;
+                case 'error':
+                    colors = 'bg-red-500 text-white';
+                    icon = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+                    break;
+                case 'warning':
+                    colors = 'bg-orange-500 text-white';
+                    icon = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>';
+                    break;
+                default:
+                    colors = 'bg-[#083e5f] text-white';
+                    icon = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+            }
+
+            // 3. Créer l'élément Toast
+            const toast = document.createElement('div');
+            toast.className = `${colors} px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transform transition-all duration-500 translate-y-10 opacity-0 pointer-events-auto min-w-[300px] border border-white/10`;
+            toast.innerHTML = `
+                <div class="bg-white/20 rounded-full p-1">${icon}</div>
+                <p class="text-sm font-bold whitespace-pre-line">${message}</p>
+            `;
+
+            // 4. Ajouter au DOM et Animer
+            container.appendChild(toast);
+            
+            // Animation Entrée
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-10', 'opacity-0');
+            });
+
+            // 5. Suppression auto après 5s (plus long pour les warnings)
+            const duration = type === 'warning' ? 5000 : 3000;
+            setTimeout(() => {
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => toast.remove(), 500);
+            }, duration);
+        }
+
         // LocalStorage Logic
         document.addEventListener('DOMContentLoaded', () => {
             const savedPhone = localStorage.getItem('user_phone_display'); // New key for display number
@@ -225,10 +301,73 @@
             }
         });
 
-        document.getElementById('auth-form').addEventListener('submit', () => {
-             const phone = document.getElementById('phone_display').value;
-             if(phone) localStorage.setItem('user_phone_display', phone);
-             updateRealPhone(); // Ensure hidden field is up to date
+        document.getElementById('auth-form').addEventListener('submit', function(e) {
+            e.preventDefault(); // Empêcher la soumission normale
+            
+            const phone = document.getElementById('phone_display').value;
+            if(phone) localStorage.setItem('user_phone_display', phone);
+            updateRealPhone(); // Ensure hidden field is up to date
+            
+            // Désactiver le bouton et montrer le chargement
+            const submitBtn = document.getElementById('submit-btn');
+            const originalText = submitBtn.innerText;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Chargement...';
+            
+            // Soumettre le formulaire via fetch pour gérer la réponse
+            const formData = new FormData(this);
+            const url = this.action;
+            
+            fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json().then(data => {
+                        if (data.success) {
+                            // Succès - Afficher toast et rediriger
+                            showToast(data.message || 'Opération réussie !', 'success');
+                            setTimeout(() => {
+                                window.location.href = data.redirect || window.location.href;
+                            }, 1500);
+                        } else {
+                            // Erreur retournée par le serveur
+                            const errorMsg = data.errors && data.errors.length > 0 
+                                ? data.errors.join(' ') 
+                                : data.message || 'Erreur lors de l\'opération';
+                            showToast(errorMsg, 'error');
+                            submitBtn.disabled = false;
+                            submitBtn.innerText = originalText;
+                        }
+                    });
+                } else {
+                    // Erreur HTTP (422, 401, etc.)
+                    return response.json().then(data => {
+                        const errorMsg = data.errors && data.errors.length > 0 
+                            ? data.errors.join(' ') 
+                            : data.message || 'Erreur lors de l\'opération';
+                        showToast(errorMsg, 'error');
+                        submitBtn.disabled = false;
+                        submitBtn.innerText = originalText;
+                    }).catch(() => {
+                        // Si la réponse n'est pas du JSON
+                        showToast('Erreur lors de la connexion', 'error');
+                        submitBtn.disabled = false;
+                        submitBtn.innerText = originalText;
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                showToast('Erreur de connexion. Veuillez réessayer.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerText = originalText;
+            });
         });
 
         function updateRealPhone() {
@@ -262,6 +401,7 @@
             currentMode = mode;
             const form = document.getElementById('auth-form');
             const pseudoField = document.getElementById('pseudo-field');
+            const passwordConfirmField = document.getElementById('password_confirmation_field');
             const btnLogin = document.getElementById('btn-login');
             const btnRegister = document.getElementById('btn-register');
             const helperText = document.getElementById('helper-text');
@@ -270,7 +410,9 @@
             if (mode === 'register') {
                 form.action = "{{ route('client.register') }}";
                 pseudoField.classList.remove('hidden');
+                passwordConfirmField.classList.remove('hidden');
                 document.getElementById('pseudo_input').required = true;
+                document.getElementById('password_confirmation_input').required = true;
                 
                 btnLogin.className = "px-6 py-1.5 rounded-full text-xs font-bold transition-all text-gray-500 hover:text-gray-700";
                 btnRegister.className = "px-6 py-1.5 rounded-full text-xs font-bold transition-all bg-white text-gray-800 shadow-sm";
@@ -280,7 +422,9 @@
             } else {
                 form.action = "{{ route('client.login') }}";
                 pseudoField.classList.add('hidden');
+                passwordConfirmField.classList.add('hidden');
                 document.getElementById('pseudo_input').required = false;
+                document.getElementById('password_confirmation_input').required = false;
 
                 btnLogin.className = "px-6 py-1.5 rounded-full text-xs font-bold transition-all bg-white text-gray-800 shadow-sm";
                 btnRegister.className = "px-6 py-1.5 rounded-full text-xs font-bold transition-all text-gray-500 hover:text-gray-700";
@@ -327,6 +471,45 @@
                  menu.classList.add('hidden');
              }
         });
+
+        // Afficher un message de bienvenue si token est valide
+        @if(session('success'))
+            setTimeout(() => {
+                showToast('{{ session('success') }}', 'success');
+            }, 1000);
+        @endif
+
+        @if(session('error'))
+            setTimeout(() => {
+                showToast('{{ session('error') }}', 'error');
+            }, 1000);
+        @endif
+
+        // Fonction pour acheter un forfait
+        function acheterForfait(forfaitId) {
+            // Vérifier si l'utilisateur est connecté
+            fetch('/portal/shop', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                }
+            })
+            .then(response => {
+                if (response.redirected) {
+                    // L'utilisateur n'est pas connecté, rediriger vers la landing
+                    window.location.href = response.url;
+                } else {
+                    // L'utilisateur est connecté, rediriger vers la page de paiement
+                    window.location.href = `/portal/payment/${forfaitId}`;
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                showToast('Erreur lors de l\'achat. Veuillez réessayer.', 'error');
+            });
+        }
     </script>
+
 </body>
 </html>

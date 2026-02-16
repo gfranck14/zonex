@@ -17,7 +17,7 @@ class AuthProprioController extends Controller
             'email' => ['nullable', 'email', 'max:255'],
             'phone_code' => ['required', 'string'],
             'numero' => ['required', 'string', 'max:20', 'unique:proprio,numero'],
-            'password' => ['required', 'min:6', 'regex:/[a-z]/', 'regex:/[A-Z]/', 'regex:/[0-9]/'],
+            'password' => ['required', 'string', 'min:6'],
             'password_confirmation' => ['required', 'same:password'],
         ]);
 

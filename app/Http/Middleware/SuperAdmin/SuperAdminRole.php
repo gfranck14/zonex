@@ -1,34 +1,27 @@
 <?php
 
-namespace App\SuperAdmin\Http\Middleware;
+namespace App\Http\Middleware\SuperAdmin;
 
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
 
-/**
- * Middleware SuperAdminRole
- * 
- * Vérifie que le superadmin a l'un des rôles requis.
- */
 class SuperAdminRole
 {
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @param  string  ...$roles Rôles autorisés (god, admin, support)
-     * @return mixed
+     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next, ...$roles)
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
         if (!Auth::guard('superadmin')->check()) {
             return redirect()->route('superadmin.login')
                 ->with('error', 'Veuillez vous connecter');
         }
 
-        $superadmin = Auth::guard('superadmin')->user();
+        $user = Auth::guard('superadmin')->user();
 
         // Si aucun rôle n'est spécifié, juste vérifier l'authentification
         if (empty($roles)) {
@@ -36,7 +29,7 @@ class SuperAdminRole
         }
 
         // Vérifier si l'utilisateur a au moins un des rôles spécifiés
-        if (!in_array($superadmin->role, $roles)) {
+        if (!in_array($user->role, $roles)) {
             if ($request->expectsJson()) {
                 return response()->json(['error' => 'Rôle insuffisant'], 403);
             }
