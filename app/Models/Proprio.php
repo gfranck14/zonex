@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Paiement;
+use App\Models\Retrait;
 
 /**
  * Modèle représentant un propriétaire de zone WiFi.
@@ -43,6 +45,8 @@ class Proprio extends Authenticatable
         'wa_notifications_enabled',
         'wa_alert_threshold',
         'password',
+        'password_reset_token',
+        'password_reset_expires_at',
         'is_active',
         'deactivation_reason'
     ];
@@ -76,5 +80,37 @@ class Proprio extends Authenticatable
     public function transactions()
     {
         return $this->hasMany(Transaction::class, 'proprio_id');
+    }
+
+    /**
+     * Calcule le solde du propriétaire.
+     * 
+     * Formule: Total des paiements réussis (via forfaits/zones) - Total des retraits
+     * Utilise la même logique que PaiementController::calculateBalance()
+     * 
+     * @return int
+     */
+    public function getBalance()
+    {
+        $zoneIds = $this->wifizones->pluck('id');
+        
+        if ($zoneIds->isEmpty()) {
+            return 0;
+        }
+        
+        // Total des paiements réussis (statut='reussi')
+        // Via: Paiement -> Forfait -> WifiZone
+        $totalPaiements = Paiement::whereHas('forfait.wifizone', function($q) use ($zoneIds) {
+                $q->whereIn('id', $zoneIds);
+            })
+            ->where('statut', 'reussi')
+            ->sum('montant');
+        
+        // Total des retraits (status='completed' ou 'processing')
+        $totalRetraits = Retrait::where('proprio_id', $this->id)
+            ->whereIn('status', ['completed', 'processing'])
+            ->sum('amount');
+        
+        return (int) ($totalPaiements - $totalRetraits);
     }
 }

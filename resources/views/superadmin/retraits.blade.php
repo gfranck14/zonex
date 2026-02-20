@@ -48,8 +48,8 @@
                 'pending_amount' => $retraits->where('status', 'pending')->sum('amount'),
                 'completed_count' => $retraits->where('status', 'completed')->count(),
                 'completed_amount' => $retraits->where('status', 'completed')->sum('amount'),
-                'cancelled_count' => $retraits->where('status', 'cancelled')->count(),
-                'cancelled_amount' => $retraits->where('status', 'cancelled')->sum('amount'),
+                'total_sent' => $retraits->where('status', 'completed')->sum('amount'),
+                'total_commission' => $retraits->where('status', 'completed')->sum('ccorp_fee'),
             ];
         @endphp
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -68,9 +68,9 @@
                     <i class="fas fa-check"></i>
                 </div>
                 <div>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Approuvés</p>
-                    <p class="text-xl font-bold text-gray-800 dark:text-white">{{ $stats['completed_count'] }}</p>
-                    <p class="text-xs text-gray-400">{{ number_format($stats['completed_amount'], 0, ',', ' ') }} F</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Total envoyés</p>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white">{{ number_format($stats['total_sent'], 0, ',', ' ') }}</p>
+                    <p class="text-xs text-gray-400">F CFA</p>
                 </div>
             </div>
             <div class="bg-white dark:bg-brand-cardDark p-5 rounded-3xl shadow-sm flex items-center gap-4">
@@ -78,19 +78,19 @@
                     <i class="fas fa-money-bill-wave"></i>
                 </div>
                 <div>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Payés</p>
-                    <p class="text-xl font-bold text-gray-800 dark:text-white">{{ $stats['completed_count'] }}</p>
-                    <p class="text-xs text-gray-400">{{ number_format($stats['completed_amount'], 0, ',', ' ') }} F</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Total commission</p>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white">{{ number_format($stats['total_commission'], 0, ',', ' ') }}</p>
+                    <p class="text-xs text-gray-400">F CFA</p>
                 </div>
             </div>
             <div class="bg-white dark:bg-brand-cardDark p-5 rounded-3xl shadow-sm flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-red-100 dark:bg-red-900/50 flex items-center justify-center text-red-600 dark:text-red-400 font-bold text-xl">
-                    <i class="fas fa-times-circle"></i>
+                <div class="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-400 font-bold text-xl">
+                    <i class="fas fa-list"></i>
                 </div>
                 <div>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Annulés</p>
-                    <p class="text-xl font-bold text-gray-800 dark:text-white">{{ $stats['cancelled_count'] }}</p>
-                    <p class="text-xs text-gray-400">{{ number_format($stats['cancelled_amount'], 0, ',', ' ') }} F</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Payés</p>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white">{{ $stats['completed_count'] }}</p>
+                    <p class="text-xs text-gray-400">transactions</p>
                 </div>
             </div>
         </div>
@@ -136,6 +136,9 @@
                                     <th class="p-5">Numéro Momo</th>
                                     <th class="p-5">Nom du compte Momo</th>
                                     <th class="p-5">Montant</th>
+                                    <th class="p-5">Frais FedaPay</th>
+                                    <th class="p-5">Commission</th>
+                                    <th class="p-5">À Payer</th>
                                     <th class="p-5">Date demande</th>
                                     <th class="p-5">Reference de paiement</th>
                                     <th class="p-5">Statut</th>
@@ -145,24 +148,24 @@
                             <tbody class="text-sm divide-y divide-gray-50 dark:divide-slate-700">
                                 @forelse($retraits as $retrait)
                                 @php
-                                    $ownerInitial = $retrait->proprio ? substr($retrait->proprio->prenom, 0, 1) . substr($retrait->proprio->nom, 0, 1) : 'XX';
-                                    $ownerName = $retrait->proprio ? $retrait->proprio->prenom . ' ' . $retrait->proprio->nom : 'Inconnu';
-                                    $statusClass = match($retrait->status) {
+                                    $ownerInitial = $retrait->proprio ? (isset($retrait->proprio->prenom) ? substr($retrait->proprio->prenom, 0, 1) : 'X') . (isset($retrait->proprio->nom) ? substr($retrait->proprio->nom, 0, 1) : 'X') : 'XX';
+                                    $ownerName = $retrait->proprio ? (isset($retrait->proprio->prenom) ? $retrait->proprio->prenom : '') . ' ' . (isset($retrait->proprio->nom) ? $retrait->proprio->nom : '') : 'Inconnu';
+                                    $statusClass = match($retrait->status ?? 'unknown') {
                                         'pending' => 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400',
                                         'completed', 'paid' => 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
                                         'cancelled' => 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
                                         default => 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
                                     };
-                                    $statusLabel = match($retrait->status) {
+                                    $statusLabel = match($retrait->status ?? 'unknown') {
                                         'pending' => 'En attente',
                                         'completed', 'paid' => 'Payé',
                                         'cancelled' => 'Annulé',
                                         default => ucfirst($retrait->status),
                                     };
-                                    $canTakeAction = in_array($retrait->status, ['pending']);
+                                    $canTakeAction = in_array($retrait->status ?? null, ['pending']);
                                 @endphp
                                 <tr class="hover:bg-gray-50 dark:hover:bg-slate-800 transition cursor-pointer" onclick="showRetraitDetail('{{ $retrait->id }}')">
-                                    <td class="p-5 font-mono text-gray-500 dark:text-gray-400">{{ $retrait->reference }}</td>
+                                    <td class="p-5 font-mono text-gray-500 dark:text-gray-300">{{ $retrait->reference ?? $retrait->id }}</td>
                                     <td class="p-5">
                                         <div class="flex items-center gap-3">
                                             <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs">{{ $ownerInitial }}</div>
@@ -171,11 +174,14 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="p-5 font-mono text-gray-600 dark:text-gray-300">{{ $retrait->momo_number }}</td>
-                                    <td class="p-5 text-gray-600 dark:text-gray-300">{{ $retrait->momo_name ?: '-' }}</td>
+                                    <td class="p-5 font-mono text-gray-600 dark:text-gray-300">{{ $retrait->momo_number ?? $retrait->phone_number ?? '-' }}</td>
+                                    <td class="p-5 text-gray-600 dark:text-gray-300">{{ $retrait->momo_name ?? $retrait->beneficiary_name ?? '-' }}</td>
                                     <td class="p-5 font-bold text-brand-blue">{{ number_format($retrait->amount, 0, ',', ' ') }} F</td>
-                                    <td class="p-5 text-gray-500 dark:text-gray-400">{{ $retrait->created_at->format('d M Y à H:i') }}</td>
-                                    <td class="p-5 font-mono text-gray-600 dark:text-gray-300">{{ $retrait->fedapay_payout_id ?: '-' }}</td>
+                                    <td class="p-5 text-gray-600 dark:text-gray-300">{{ number_format($retrait->fedapay_fee ?? 0, 0, ',', ' ') }} F</td>
+                                    <td class="p-5 text-gray-600 dark:text-gray-300">{{ number_format($retrait->ccorp_fee ?? 0, 0, ',', ' ') }} F</td>
+                                    <td class="p-5 font-bold text-green-600">{{ number_format(($retrait->amount ?? 0) - ($retrait->fedapay_fee ?? 0) - ($retrait->ccorp_fee ?? 0), 0, ',', ' ') }} F</td>
+                                    <td class="p-5 text-gray-500 dark:text-gray-400">{{ isset($retrait->created_at) ? $retrait->created_at->format('d M Y à H:i') : (isset($retrait->requested_at) ? $retrait->requested_at->format('d M Y à H:i') : '-') }}</td>
+                                    <td class="p-5 font-mono text-gray-600 dark:text-gray-300">{{ $retrait->fedapay_payout_id ?? $retrait->mobile_money_ref ?? '-' }}</td>
                                     <td class="p-5">
                                         <span class="{{ $statusClass }} px-2 py-1 rounded-lg text-[10px] font-bold">{{ $statusLabel }}</span>
                                     </td>
@@ -191,7 +197,7 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="9" class="p-8 text-center text-gray-400">Aucun retrait trouvé.</td>
+                                    <td colspan="12" class="p-8 text-center text-gray-400">Aucun retrait trouvé.</td>
                                 </tr>
                                 @endforelse
                             </tbody>
@@ -199,20 +205,35 @@
                     </div>
                     <!-- Pagination Footer -->
                     <div class="p-6 border-t border-gray-100 dark:border-slate-700">
-                        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                            <div class="flex items-center gap-2 order-2 md:order-1">
+                        <div class="flex flex-wrap justify-between items-center gap-4">
+                            <!-- GAUCHE : Indicateur de position -->
+                            <div class="flex items-center gap-2 order-1">
                                 <span class="text-xs text-gray-400">Affichage de</span>
-                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">1</span>
+                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">{{ $retraits->firstItem() ?? 0 }}</span>
                                 <span class="text-xs text-gray-400">à</span>
-                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">{{ $retraits->count() }}</span>
+                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">{{ $retraits->lastItem() ?? 0 }}</span>
                                 <span class="text-xs text-gray-400">sur</span>
-                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">{{ $retraits->count() }}</span>
+                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">{{ $retraits->total() }}</span>
                                 <span class="text-xs text-gray-400">retraits</span>
                             </div>
-                            <div class="flex items-center gap-2 order-1 md:order-3">
-                                <button class="px-3 py-1 bg-gray-50 dark:bg-slate-800 rounded-lg text-xs font-bold text-gray-400">Précédent</button>
-                                <button class="px-3 py-1 bg-brand-blue text-white rounded-lg text-xs font-bold">1</button>
-                                <button class="px-3 py-1 bg-gray-50 dark:bg-slate-800 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">Suivant</button>
+                            
+                            <!-- CENTRE : Sélecteur lignes -->
+                            <div class="flex items-center gap-2 order-2">
+                                <span class="text-xs text-gray-400">Afficher</span>
+                                <form method="GET" action="{{ route('superadmin.retraits') }}" class="inline-block">
+                                    @if(request('filter_status')) <input type="hidden" name="filter_status" value="{{ request('filter_status') }}"> @endif
+                                    <select name="per_page" onchange="this.form.submit()" class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 p-1 px-2 focus:ring-2 focus:ring-brand-blue outline-none cursor-pointer">
+                                        <option value="5" {{ request('per_page') == 5 ? 'selected' : '' }}>5 lignes</option>
+                                        <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10 lignes</option>
+                                        <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25 lignes</option>
+                                        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 lignes</option>
+                                    </select>
+                                </form>
+                            </div>
+                            
+                            <!-- DROITE : Pagination links -->
+                            <div class="flex items-center gap-2 order-3">
+                                {{ $retraits->appends(request()->except('page'))->links('pagination::tailwind') }}
                             </div>
                         </div>
                     </div>

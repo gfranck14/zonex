@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\WifiZone;
 use App\Models\Ticket;
 use App\Models\Forfait;
+use App\Models\BlockedClient;
 
 class PortalController extends Controller
 {
@@ -60,6 +61,11 @@ class PortalController extends Controller
 
         if (!$ticket) {
             return back()->withErrors(['login' => 'Identifiants incorrects ou ticket déjà utilisé']);
+        }
+
+        // Vérifier si le client est bloqué par ce propriétaire
+        if ($ticket->client_id && BlockedClient::isBlocked($ticket->client_id, $zone->proprio_id)) {
+            return back()->withErrors(['login' => 'Vous êtes bloqué sur cette zone. Veuillez contacter le support.']);
         }
 
         // Marquer le ticket comme utilisé

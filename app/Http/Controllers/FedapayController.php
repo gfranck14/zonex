@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Client;
@@ -15,6 +16,7 @@ use FedaPay\Transaction;
 
 class FedapayController extends Controller
 {
+    private $apiKey;
     private $webhookSecret;
     private $baseUrl; // Ajout pour compatibilité
 
@@ -22,11 +24,12 @@ class FedapayController extends Controller
     {
         // Configuration du SDK FedaPay
         $apiKey = config('services.fedapay.secret_key');
-        $environment = config('services.fedapay.env', 'sandbox');
+        $environment = config('services.fedapay.env', 'live');
         
         FedaPay::setApiKey($apiKey);
         FedaPay::setEnvironment($environment);
         
+        $this->apiKey = config('services.fedapay.secret_key');
         $this->webhookSecret = config('services.fedapay.webhook_secret');
         
         // Pour compatibilité avec les méthodes REST
@@ -60,9 +63,9 @@ class FedapayController extends Controller
                 'forfait_nom' => $forfait->nom
             ]);
             
-            // Vérifier si le forfait a des tickets disponibles
+            // Vérifier si le forfait a des tickets disponibles (libre ou pending)
             $ticketsDisponibles = Ticket::where('forfaits_id', $forfait->id)
-                ->where('statut', 'libre')
+                ->whereIn('statut', ['libre', 'pending'])
                 ->count();
                 
             if ($ticketsDisponibles === 0) {
@@ -71,6 +74,22 @@ class FedapayController extends Controller
                     'message' => 'Ce forfait n\'a plus de tickets disponibles.'
                 ], 400);
             }
+            
+            // Réserver un ticket en pending AVANT de créer la transaction Fedapay
+            $ticket = $this->reserveTicketForPayment($forfait->id, $client->id);
+            
+            if (!$ticket) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Impossible de réserver un ticket. Veuillez réessayer.'
+                ], 400);
+            }
+            
+            Log::info('Ticket réservé en pending', [
+                'ticket_id' => $ticket->id,
+                'username' => $ticket->username,
+                'password' => $ticket->password
+            ]);
             
             // Créer un paiement local en attente
             Log::info('Création paiement local...');
@@ -89,22 +108,15 @@ class FedapayController extends Controller
             $paiement = Paiement::create([
                 'client_id' => $client->id,
                 'forfait_id' => $forfait->id,
+                'ticket_id' => $ticket->id,  // Associer le ticket réservé
                 'montant' => $forfait->prix,
-                'telephone' => $defaultPhone,  // Champ obligatoire dans la BDD
+                'telephone' => $defaultPhone,
                 'statut' => 'en_attente',
-                'reference' => $transactionRef,  // Correction: reference (pas transaction_reference)
-                'methode_paiement' => 'fedapay',
+                'reference' => $transactionRef,
+                'methode' => 'fedapay',
                 'devise' => 'XOF'
             ]);
             Log::info('Paiement local créé', ['paiement_id' => $paiement->id]);
-            
-            // Réserver un ticket pour ce paiement (éviter que plusieurs clients prennent le même ticket)
-            $reservedTicket = $this->reserveTicket($forfait->id, $client->id, $paiement->id);
-            if (!$reservedTicket) {
-                Log::warning('Aucun ticket disponible pour la réservation', ['forfait_id' => $forfait->id]);
-            } else {
-                Log::info('Ticket réservé', ['ticket_id' => $reservedTicket->id, 'paiement_id' => $paiement->id]);
-            }
             
             // Créer ou récupérer le client FedaPay avec les données par défaut
             Log::info('Création client FedaPay SDK...');
@@ -140,96 +152,49 @@ class FedapayController extends Controller
             Log::info('Réponse transaction FedaPay SDK', [
                 'transaction_id' => $transactionData['id'],
                 'transaction_token' => $transactionData['token'],
-                'transaction_status' => $transactionData['status'],
-                'payment_url_available' => !empty($transactionData['payment_url']),
-                'url_available' => !empty($transactionData['url'])
+                'transaction_status' => $transactionData['status']
             ]);
             
             if (!$transactionData || !isset($transactionData['id'])) {
-                Log::error('Échec création transaction FedaPay SDK', [
-                    'transaction_data' => $transactionData,
-                    'forfait_id' => $forfaitId,
-                    'customer_id' => $customerId,
-                    'missing_keys' => !isset($transactionData['id']) ? 'id' : 'none'
-                ]);
+                Log::error('Échec création transaction FedaPay SDK');
+                // Libérer le ticket car le paiement a échoué
+                $this->releaseTicket($ticket->id);
                 throw new \Exception('Échec de création de la transaction Fedapay');
             }
             
             // Mettre à jour le paiement avec l'ID de transaction FedaPay
-            Log::info('Mise à jour paiement local...', [
-                'paiement_id' => $paiement->id,
-                'fedapay_transaction_id' => $transactionData['id'],
-                'current_statut' => $paiement->statut
+            $paiement->update([
+                'fedapay_transaction_id' => $transactionData['id']
             ]);
             
-            $updateResult = $paiement->update([
-                'fedapay_transaction_id' => $transactionData['id'],
-                'fedapay_payment_url' => $transactionData['payment_url'] ?? null,
-                'fedapay_status' => $transactionData['status'] ?? 'pending'
-            ]);
-            
-            Log::info('Paiement local mis à jour', [
-                'update_success' => $updateResult,
-                'fedapay_transaction_id' => $paiement->fedapay_transaction_id,
-                'fedapay_status' => $paiement->fedapay_status
-            ]);
-            
-            Log::info("Transaction Fedapay créée avec succès", [
+            Log::info('Transaction Fedapay créée avec succès', [
                 'transaction_id' => $transactionData['id'],
-                'transaction_token' => $transactionData['token'],
                 'paiement_id' => $paiement->id,
-                'client_id' => $client->id,
-                'forfait_id' => $forfait->id
+                'ticket_id' => $ticket->id
             ]);
             
-            // Générer l'URL de paiement (utilise l'ID de la transaction pour générer le token)
-            Log::info('Génération URL de paiement...', [
-                'transaction_id' => $transactionData['id'],
-                'transaction_token' => $transactionData['token'] ?? null
-            ]);
-            
+            // Générer l'URL de paiement
             $paymentUrl = $this->getPaymentUrl($transactionData['id']);
-            Log::info('URL de paiement générée avec succès', [
-                'payment_url' => $paymentUrl,
-                'url_length' => strlen($paymentUrl),
-                'url_starts_with_http' => strpos($paymentUrl, 'http') === 0
-            ]);
             
-            Log::info('=== PAIEMENT DIRECT FEDAPAY SDK TERMINÉ AVEC SUCCÈS ===', [
-                'client_id' => $client->id,
-                'forfait_id' => $forfait->id,
-                'paiement_id' => $paiement->id,
-                'transaction_id' => $transactionData['id'],
-                'payment_url_generated' => !empty($paymentUrl)
-            ]);
+            Log::info('=== PAIEMENT DIRECT FEDAPAY SDK TERMINÉ AVEC SUCCÈS ===');
             
             // Retourner l'URL pour afficher dans un iframe/modal
             return response()->json([
                 'success' => true,
-                'redirect' => false,  // Pas de redirection automatique
+                'redirect' => false,
                 'payment_url' => $paymentUrl,
                 'transaction_id' => $transactionData['id'],
                 'transaction_token' => $transactionData['token'],
                 'paiement_id' => $paiement->id,
+                'ticket_id' => $ticket->id,
                 'message' => 'Prêt pour le paiement FedaPay'
             ]);
             
         } catch (\Exception $e) {
             Log::error("Erreur paiement direct Fedapay : " . $e->getMessage());
-            
-            // Mettre à jour le statut du paiement à 'echoue' en cas d'erreur
-            if (isset($paiement) && $paiement) {
-                $paiement->update(['statut' => 'echoue']);
-                // Libérer le ticket réservé
-                $this->releaseTicket($paiement->id);
-            }
-            
-            // Retourner une erreur pour que le frontend puisse afficher l'interface d'échec
             return response()->json([
                 'success' => false,
-                'error_type' => 'payment_failed',
-                'message' => 'Le paiement a échoué. Veuillez réessayer.',
-                'paiement_id' => isset($paiement) ? $paiement->id : null
+                'message' => 'Erreur de paiement : ' . $e->getMessage()
             ], 400);
         }
     }
@@ -292,10 +257,9 @@ class FedapayController extends Controller
                 'forfait_id' => $forfait->id,
                 'montant' => $forfait->prix,
                 'telephone' => '',
-                'email' => $defaultEmail,
                 'reference' => $transactionRef,
                 'statut' => 'en_attente',
-                'methode_paiement' => 'fedapay',
+                'methode' => 'fedapay',
                 'devise' => 'XOF'
             ]);
             
@@ -318,9 +282,7 @@ class FedapayController extends Controller
             
             // Mettre à jour le paiement
             $paiement->update([
-                'fedapay_transaction_id' => $transactionData['id'],
-                'fedapay_payment_url' => $transactionData['payment_url'] ?? null,
-                'fedapay_status' => $transactionData['status'] ?? 'pending'
+                'fedapay_transaction_id' => $transactionData['id']
             ]);
             
             // Générer l'URL de paiement
@@ -339,6 +301,29 @@ class FedapayController extends Controller
             Log::error('Erreur création checkout sans téléphone: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Erreur lors de la préparation du paiement.');
         }
+    }
+    
+    /**
+     * Page de succès de paiement
+     * Affiche une icône de succès et redirige vers wifi789.net
+     */
+    public function paymentSuccess(Request $request)
+    {
+        $username = $request->get('username');
+        $password = $request->get('password');
+        $message = $request->get('message');
+        
+        Log::info('Page payment-success affichée', [
+            'username' => $username ? substr($username, 0, 4) . '***' : null,
+            'password' => $password ? '***' : null,
+            'message' => $message
+        ]);
+        
+        return view('PortaleClient.payment-success', [
+            'username' => $username,
+            'password' => $password,
+            'message' => $message
+        ]);
     }
     
     /**
@@ -389,7 +374,7 @@ class FedapayController extends Controller
         try {
             Log::info('=== DÉBUT PAIEMENT FEDAPAY SDK ===');
             Log::info('Configuration FedaPay SDK', [
-                'environment' => config('services.fedapay.env', 'sandbox'),
+                'environment' => config('services.fedapay.env', 'live'),
                 'app_env' => config('app.env'),
                 'ssl_verify_disabled' => config('app.env') === 'local'
             ]);
@@ -410,12 +395,10 @@ class FedapayController extends Controller
                 'forfait_id' => $forfait->id,  // Correction: forfait_id (pas forfaits_id)
                 'montant' => $forfait->prix,
                 'telephone' => $request->telephone,
-                'email' => $request->email,
                 'reference' => $transactionRef,  // Correction: reference (pas transaction_reference)
                 'statut' => 'en_attente',
                 'methode' => 'fedapay',
-                'devise' => 'XOF',
-                'fedapay_customer_id' => $customerId
+                'devise' => 'XOF'
             ]);
             Log::info('Paiement local créé', ['paiement_id' => $paiement->id]);
             
@@ -441,7 +424,7 @@ class FedapayController extends Controller
             }
             
             // Vérifier si nous devons utiliser l'environnement sandbox
-            $fedapayEnv = config('services.fedapay.env', 'sandbox');
+            $fedapayEnv = config('services.fedapay.env', 'live');
             if (config('app.env') === 'local' && $fedapayEnv === 'live') {
                 Log::warning('Attention: Utilisation de l\'environnement FedaPay LIVE en développement', [
                     'fedapay_env' => $fedapayEnv,
@@ -489,15 +472,13 @@ class FedapayController extends Controller
             ]);
             
             $updateResult = $paiement->update([
-                'fedapay_transaction_id' => $transactionData['id'],
-                'fedapay_payment_url' => $transactionData['payment_url'] ?? null,
-                'fedapay_status' => $transactionData['status'] ?? 'pending'
+                'fedapay_transaction_id' => $transactionData['id']
             ]);
             
             Log::info('Paiement local mis à jour', [
                 'update_success' => $updateResult,
                 'fedapay_transaction_id' => $paiement->fedapay_transaction_id,
-                'fedapay_status' => $paiement->fedapay_status
+                'fedapay_status' => $transactionData['status'] ?? 'pending'
             ]);
             
             Log::info("Transaction Fedapay créée avec succès", [
@@ -573,9 +554,15 @@ class FedapayController extends Controller
             
             if (count($existingCustomers->customers) > 0) {
                 $customer = $existingCustomers->customers[0];
+                
+                // Vérifier si le nom est vide et le remplacer
+                $displayName = !empty($customer->firstname) || !empty($customer->lastname) 
+                    ? trim($customer->firstname . ' ' . $customer->lastname) 
+                    : 'Client Fedapay';
+                
                 Log::info("Client existant trouvé sur FedaPay", [
                     'id' => $customer->id,
-                    'name' => $customer->firstname . ' ' . $customer->lastname,
+                    'name' => $displayName,
                     'email' => $customer->email,
                     'phone_number' => $customer->phone_number->number ?? 'non défini',
                     'country' => $customer->phone_number->country ?? 'non défini',
@@ -898,13 +885,32 @@ class FedapayController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
             
-            // Fallback: construire l'URL manuellement selon la documentation
-            $environment = config('services.fedapay.env', 'sandbox');
+            // Fallback: construire l'URL manuellement selon la documentation Fedapay
+            // L'URL de checkout Fedapay est: baseUrl + /v1/checkout/{token}
+            // Pour le fallback sans token, on utilise l'URL de la transaction directement
+            $environment = config('services.fedapay.env', 'live');
             $baseUrl = $environment === 'sandbox' ? 
-                'https://sandbox-api.fedapay.com' : 
-                'https://api.fedapay.com';
+                'https://sandbox.fedapay.com' : 
+                'https://pay.fedapay.com';
                 
-            $fallbackUrl = $baseUrl . '/v1/checkout/' . $transactionId;
+            // Essayer d'obtenir le token via API directement
+            $tokenResponse = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->apiKey,
+                'Content-Type' => 'application/json',
+            ])->withoutVerifying()
+              ->post($this->baseUrl . '/v1/transactions/' . $transactionId . '/token');
+            
+            if ($tokenResponse->successful()) {
+                $tokenData = $tokenResponse->json();
+                $token = $tokenData['token'] ?? $tokenData['v1/token'] ?? null;
+                if ($token) {
+                    $fallbackUrl = $baseUrl . '/v1/checkout/' . $token;
+                } else {
+                    $fallbackUrl = $baseUrl . '/transactions/' . $transactionId;
+                }
+            } else {
+                $fallbackUrl = $baseUrl . '/transactions/' . $transactionId;
+            }
             
             Log::warning('Utilisation URL fallback', [
                 'fallback_url' => $fallbackUrl,
@@ -920,34 +926,233 @@ class FedapayController extends Controller
      */
     public function paymentCallback(Request $request)
     {
-        Log::info('Fedapay Callback', $request->all());
+        Log::info('=== FEDAPAY CALLBACK REÇU ===', [
+            'all_params' => $request->all(),
+            'full_url' => $request->fullUrl(),
+            'method' => $request->method(),
+            'ip' => $request->ip(),
+            'timestamp' => now()->toIso8601String()
+        ]);
         
-        $transactionId = $request->get('transaction_id');
-        $status = $request->get('status');
+        // Le callback Fedapay retourne 'id' et 'status' selon la documentation
+        $transactionId = $request->get('id');
+        $fedapayStatus = $request->get('status');
+        
+        Log::info('Fedapay Callback - Paramètres extraits', [
+            'transaction_id' => $transactionId,
+            'fedapay_status' => $fedapayStatus
+        ]);
         
         if (!$transactionId) {
+            Log::warning('Fedapay Callback - Pas de transaction ID');
             return redirect()->route('client.shop')->with('error', 'Paiement non trouvé.');
         }
         
         $paiement = Paiement::where('fedapay_transaction_id', $transactionId)->first();
         
         if (!$paiement) {
+            Log::warning('Fedapay Callback - Paiement non trouvé', [
+                'fedapay_transaction_id' => $transactionId
+            ]);
             return redirect()->route('client.shop')->with('error', 'Transaction non trouvée.');
         }
         
-        // Vérifier le statut final avec l'API Fedapay
-        $this->verifyPaymentStatus($paiement);
+        Log::info('Fedapay Callback - Paiement trouvé', [
+            'paiement_id' => $paiement->id,
+            'paiement_statut' => $paiement->statut,
+            'ticket_id' => $paiement->ticket_id
+        ]);
         
-        if ($paiement->statut === 'reussi') {
-            // Créer et assigner le ticket
-            $this->createAndAssignTicket($paiement);
-            
-            return redirect()->route('client.ticket', ['ticket' => $paiement->ticket_id])
-                ->with('success', 'Paiement réussi ! Votre ticket est disponible.');
-        } else {
-            // Libérer le ticket réservé si le paiement a échoué
-            $this->releaseTicket($paiement->id);
-            return redirect()->route('client.shop')->with('error', 'Le paiement a échoué. Veuillez réessayer.');
+        // Stocker le statut original envoyé par JavaScript (avant vérification API)
+        $originalStatus = $request->get('status', '');
+        $userCanceled = in_array($originalStatus, ['canceled', 'closed', 'cancelled', 'exit']);
+        
+        Log::info('Fedapay Callback - Statut original JS et détection annulation', [
+            'original_status' => $originalStatus,
+            'user_canceled' => $userCanceled
+        ]);
+        
+        // Vérifier le statut final avec l'API Fedapay
+        $fedapayStatus = $this->verifyPaymentStatus($paiement);
+        
+        Log::info('Fedapay Callback - Statut après vérification API', [
+            'paiement_id' => $paiement->id,
+            'fedapay_status' => $fedapayStatus,
+            'user_canceled' => $userCanceled,
+            'statut' => $paiement->statut
+        ]);
+        
+        // Si l'API retourne 'pending' et l'utilisateur a annulé, traiter comme annulé
+        if ($fedapayStatus === 'pending' && $userCanceled) {
+            $fedapayStatus = 'canceled';
+            Log::info('Fedapay Callback - Statut ajusté de pending à canceled (utilisateur a annulé)');
+        }
+        
+        // Gérer selon le statut du paiement
+        switch ($fedapayStatus) {
+            case 'approved':
+                // Paiement réussi
+                $paiement->update(['statut' => 'reussi']);
+                
+                Log::info('Fedapay Callback - Paiement réussi', [
+                    'paiement_id' => $paiement->id,
+                    'ticket_id' => $paiement->ticket_id
+                ]);
+                
+                // Marquer le ticket comme vendu
+                if ($paiement->ticket_id) {
+                    Ticket::where('id', $paiement->ticket_id)->update([
+                        'statut' => 'vendu',
+                        'client_id' => $paiement->client_id,
+                        'date_vente' => now(),
+                        'prix_achat' => $paiement->montant,
+                    ]);
+                    
+                    // Mettre à jour les dépenses du client
+                    $client = Client::find($paiement->client_id);
+                    $client->increment('total_depense', $paiement->montant);
+                    
+                    // Récupérer les infos du ticket pour la redirection
+                    $ticket = Ticket::with('forfait')->find($paiement->ticket_id);
+                    
+                    Log::info('Fedapay Callback - Ticket vendu', [
+                        'username' => $ticket->username,
+                        'password' => $ticket->password,
+                        'forfait_id' => $ticket->forfait->id ?? $paiement->forfait_id
+                    ]);
+                    
+                    // Obtenir le forfait_id depuis le ticket
+                    $forfaitId = $ticket->forfait->id ?? $paiement->forfait_id;
+                    
+                    // Si pas de forfait_id, rediriger vers la page de succès
+                    if (!$forfaitId) {
+                        Log::warning('Fedapay Callback - Pas de forfait_id trouvé, redirection vers page de succès', [
+                            'paiement_id' => $paiement->id,
+                            'ticket_id' => $paiement->ticket_id
+                        ]);
+                        $successUrl = route('client.fedapay.payment.success')
+                            . '?status=success'
+                            . '&username=' . urlencode($ticket->username)
+                            . '&password=' . urlencode($ticket->password)
+                            . '&message=' . urlencode('Paiement réussi !');
+                        return redirect($successUrl);
+                    }
+                    
+                    // Rediriger vers la page de succès de paiement
+                    $successUrl = route('client.fedapay.payment.success')
+                        . '?status=success'
+                        . '&username=' . urlencode($ticket->username)
+                        . '&password=' . urlencode($ticket->password)
+                        . '&message=' . urlencode('Paiement réussi ! Vos identifiants WiFi:');
+                    
+                    return redirect($successUrl);
+                }
+                
+                return redirect()->route('client.ticket', ['ticket' => $paiement->ticket_id])
+                    ->with('success', 'Paiement réussi ! Votre ticket est disponible.');
+                
+            case 'declined':
+                // Paiement décliné
+                $paiement->update(['statut' => 'echoue']);
+                
+                Log::warning('Fedapay Callback - Paiement décliné', [
+                    'paiement_id' => $paiement->id
+                ]);
+                
+                // Libérer le ticket (retour à libre)
+                $this->releaseTicket($paiement->ticket_id);
+                
+                // Obtenir le forfait_id pour la redirection
+                $forfaitId = null;
+                if ($paiement->ticket_id) {
+                    $ticket = Ticket::with('forfait')->find($paiement->ticket_id);
+                    $forfaitId = $ticket->forfait->id ?? $paiement->forfait_id;
+                } else {
+                    $forfaitId = $paiement->forfait_id;
+                }
+                
+                // Si pas de forfait_id, rediriger vers la page de succès
+                if (!$forfaitId) {
+                    Log::warning('Fedapay Callback - Pas de forfait_id trouvé (declined), redirection vers page de succès', [
+                        'paiement_id' => $paiement->id
+                    ]);
+                    $errorUrl = route('client.fedapay.payment.success')
+                        . '?status=failed'
+                        . '&message=' . urlencode('Le paiement a été décliné. Veuillez réessayer.');
+                    return redirect($errorUrl);
+                }
+                
+                // Rediriger vers la page de succès avec message d'erreur
+                $errorUrl = route('client.fedapay.payment.success')
+                    . '?status=failed'
+                    . '&message=' . urlencode('Le paiement a été décliné. Veuillez réessayer.');
+                
+                return redirect($errorUrl);
+                
+            case 'canceled':
+                // Paiement annulé par l'utilisateur
+                $paiement->update(['statut' => 'annule']);
+                
+                Log::info('Fedapay Callback - Paiement annulé', [
+                    'paiement_id' => $paiement->id
+                ]);
+                
+                // Libérer le ticket (retour à libre)
+                $this->releaseTicket($paiement->ticket_id);
+                
+                // Obtenir le forfait_id pour la redirection
+                $forfaitId = null;
+                if ($paiement->ticket_id) {
+                    $ticket = Ticket::with('forfait')->find($paiement->ticket_id);
+                    $forfaitId = $ticket->forfait->id ?? $paiement->forfait_id;
+                } else {
+                    $forfaitId = $paiement->forfait_id;
+                }
+                
+                // Si pas de forfait_id, rediriger vers la page de succès
+                if (!$forfaitId) {
+                    Log::warning('Fedapay Callback - Pas de forfait_id trouvé (canceled), redirection vers page de succès', [
+                        'paiement_id' => $paiement->id
+                    ]);
+                    $cancelUrl = route('client.fedapay.payment.success')
+                        . '?status=canceled'
+                        . '&message=' . urlencode('Le paiement a été annulé. Vous pouvez réessayer.');
+                    return redirect($cancelUrl);
+                }
+                
+                // Rediriger vers la page de succès avec message d'annulation
+                $cancelUrl = route('client.fedapay.payment.success')
+                    . '?status=canceled'
+                    . '&message=' . urlencode('Le paiement a été annulé. Vous pouvez réessayer.');
+                
+                return redirect($cancelUrl);
+                
+            default:
+                // Statut inconnu ou non géré
+                Log::warning('Fedapay Callback - Statut inconnu', [
+                    'paiement_id' => $paiement->id,
+                    'fedapay_status' => $fedapayStatus ?? 'non fourni',
+                    'user_canceled' => $userCanceled
+                ]);
+                
+                // Si l'utilisateur a annulé, traiter comme annulé même si le statut API est inconnu
+                if ($userCanceled) {
+                    $paiement->update(['statut' => 'annule']);
+                    $this->releaseTicket($paiement->ticket_id);
+                    
+                    $forfaitId = $paiement->forfait_id;
+                    $cancelUrl = route('client.fedapay.payment.success')
+                        . '?status=canceled'
+                        . '&forfait_id=' . $forfaitId
+                        . '&message=' . urlencode('Le paiement a été annulé. Vous pouvez réessayer.');
+                    
+                    Log::info('Fedapay Callback - Statut inconnu traité comme annulé (utilisateur a fermé la fenêtre)');
+                    
+                    return redirect($cancelUrl);
+                }
+                
+                return redirect()->route('client.shop')->with('error', 
+                    'Le statut du paiement est inconnu. Veuillez contacter le support.');
         }
     }
     
@@ -964,8 +1169,9 @@ class FedapayController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Signature invalide'], 401);
         }
         
-        $transactionId = $request->get('transaction_id');
-        $status = $request->get('status');
+        // Le webhook Fedapay peut retourner 'transaction_id' ou 'id'
+        $transactionId = $request->get('transaction_id') ?? $request->get('id');
+        $fedapayStatus = $request->get('status');
         
         if (!$transactionId) {
             return response()->json(['status' => 'error'], 400);
@@ -978,13 +1184,42 @@ class FedapayController extends Controller
         }
         
         // Mettre à jour le statut du paiement
-        $this->verifyPaymentStatus($paiement);
+        $fedapayStatus = $this->verifyPaymentStatus($paiement);
         
-        if ($paiement->statut === 'reussi') {
-            $this->createAndAssignTicket($paiement);
-        } else {
-            // Libérer le ticket réservé si le paiement a échoué
-            $this->releaseTicket($paiement->id);
+        Log::info('Fedapay Webhook - Statut mis à jour', [
+            'paiement_id' => $paiement->id,
+            'fedapay_status' => $fedapayStatus
+        ]);
+        
+        // Gérer selon le statut
+        switch ($fedapayStatus) {
+            case 'approved':
+                $paiement->update(['statut' => 'reussi']);
+                
+                // Marquer le ticket comme vendu
+                if ($paiement->ticket_id) {
+                    Ticket::where('id', $paiement->ticket_id)->update([
+                        'statut' => 'vendu',
+                        'client_id' => $paiement->client_id,
+                        'date_vente' => now(),
+                        'prix_achat' => $paiement->montant,
+                    ]);
+                    
+                    // Mettre à jour les dépenses du client
+                    $client = Client::find($paiement->client_id);
+                    $client->increment('total_depense', $paiement->montant);
+                }
+                break;
+                
+            case 'declined':
+                $paiement->update(['statut' => 'echoue']);
+                $this->releaseTicket($paiement->ticket_id);
+                break;
+                
+            case 'canceled':
+                $paiement->update(['statut' => 'annule']);
+                $this->releaseTicket($paiement->ticket_id);
+                break;
         }
         
         return response()->json(['status' => 'success']);
@@ -1041,24 +1276,115 @@ class FedapayController extends Controller
         
         if ($response->successful()) {
             $statusData = $response->json();
-            $status = $statusData['status'] ?? 'unknown';
             
-            $statutMap = [
-                'success' => 'reussi',
-                'failed' => 'echoue',
-                'pending' => 'en_attente',
-                'cancelled' => 'annule'
-            ];
-            
-            $paiement->update([
-                'statut' => $statutMap[$status] ?? 'echoue',
-                'fedapay_status' => $status,
-                'date_mise_a_jour' => now()
+            Log::info('Fedapay API Response - Vérification statut', [
+                'transaction_id' => $paiement->fedapay_transaction_id,
+                'raw_response_keys' => array_keys($statusData)
             ]);
             
-            Log::info("Statut paiement mis à jour", [
+            // Fedapay retourne la réponse dans 'v1/transaction'
+            // Structure: {"v1/transaction": {"status": "approved", ...}}
+            $transactionData = $statusData['v1/transaction'] ?? $statusData;
+            $status = $transactionData['status'] ?? 'unknown';
+            
+            Log::info('Statut extrait de la réponse Fedapay', [
+                'status' => $status,
+                'transaction_id' => $paiement->fedapay_transaction_id
+            ]);
+            
+            // Fedapay utilise: approved, declined, canceled, pending, transferred, refunded
+            $statutMap = [
+                'approved' => 'reussi',
+                'declined' => 'echoue',
+                'canceled' => 'annule',
+                'pending' => 'en_attente',
+                'transferred' => 'reussi',
+                'refunded' => 'annule'
+            ];
+            
+            $mappedStatus = $statutMap[$status] ?? 'echoue';
+            
+            $paiement->update([
+                'statut' => $mappedStatus
+            ]);
+            
+            Log::info('Statut paiement mis à jour', [
                 'transaction_id' => $paiement->fedapay_transaction_id,
-                'new_status' => $paiement->statut
+                'fedapay_status' => $status,
+                'local_status' => $mappedStatus
+            ]);
+            
+            return $status;
+        } else {
+            Log::error('Erreur lors de la vérification du statut Fedapay', [
+                'transaction_id' => $paiement->fedapay_transaction_id,
+                'response' => $response->body()
+            ]);
+            return null;
+        }
+    }
+    
+    /**
+     * Réserver un ticket pour un paiement en cours
+     * Le ticket passe de 'libre' à 'pending' pour éviter les conflits
+     */
+    private function reserveTicketForPayment($forfaitId, $clientId)
+    {
+        Log::info('Réservation ticket pour paiement', [
+            'forfait_id' => $forfaitId,
+            'client_id' => $clientId
+        ]);
+        
+        // Chercher un ticket libre
+        $ticket = Ticket::where('forfaits_id', $forfaitId)
+            ->where('statut', 'libre')
+            ->lockForUpdate()
+            ->first();
+        
+        if (!$ticket) {
+            Log::warning('Aucun ticket libre trouvé', ['forfait_id' => $forfaitId]);
+            return null;
+        }
+        
+        // Réserver le ticket en le passant en pending
+        $ticket->update([
+            'statut' => 'pending',
+            'client_id' => $clientId
+        ]);
+        
+        Log::info('Ticket réservé avec succès', [
+            'ticket_id' => $ticket->id,
+            'username' => $ticket->username,
+            'statut' => 'pending'
+        ]);
+        
+        return $ticket;
+    }
+    
+    /**
+     * Libérer un ticket (retour à 'libre') suite à un paiement échoué/annulé
+     */
+    private function releaseTicket($ticketId)
+    {
+        if (!$ticketId) {
+            return;
+        }
+        
+        Log::info('Libération du ticket', ['ticket_id' => $ticketId]);
+        
+        $ticket = Ticket::find($ticketId);
+        
+        if ($ticket && $ticket->statut === 'pending') {
+            $ticket->update([
+                'statut' => 'libre',
+                'client_id' => null,
+                'date_vente' => null,
+                'paiement_id' => null
+            ]);
+            
+            Log::info('Ticket libéré avec succès', [
+                'ticket_id' => $ticket->id,
+                'nouveau_statut' => 'libre'
             ]);
         }
     }
@@ -1068,18 +1394,10 @@ class FedapayController extends Controller
      */
     private function createAndAssignTicket($paiement)
     {
-        // Chercher d'abord un ticket réservé pour ce paiement
+        // Chercher un ticket libre existant
         $ticket = Ticket::where('forfaits_id', $paiement->forfait_id)
-            ->where('statut', 'pending')
-            ->where('paiement_id', $paiement->id)
+            ->where('statut', 'libre')
             ->first();
-        
-        // Si pas de ticket réservé, chercher un ticket libre (pour compatibilité)
-        if (!$ticket) {
-            $ticket = Ticket::where('forfaits_id', $paiement->forfait_id)
-                ->where('statut', 'libre')
-                ->first();
-        }
         
         // Si pas de ticket, en créer un nouveau
         if (!$ticket) {
@@ -1088,20 +1406,20 @@ class FedapayController extends Controller
                 'forfaits_id' => $forfait->id,
                 'username' => 'TXN_' . strtoupper(substr(md5(time()), 0, 6)),
                 'password' => rand(1000, 9999),
-                'statut' => 'vendu',  // Directly mark as sold since it's new
-                'client_id' => $paiement->client_id,
-                'paiement_id' => $paiement->id,
-                'date_vente' => now(),
-            ]);
-        } else {
-            // Marquer le ticket comme vendu et l'assigner
-            $ticket->update([
-                'statut' => 'vendu',
-                'client_id' => $paiement->client_id,
-                'date_vente' => now(),
-                'paiement_id' => $paiement->id
+                'statut' => 'libre',
+                'date_vente' => null,
             ]);
         }
+        
+        // Marquer le ticket comme vendu et l'assigner
+        // Utiliser le montant du paiement comme prix d'achat
+        $ticket->update([
+            'statut' => 'vendu',
+            'client_id' => $paiement->client_id,
+            'date_vente' => now(),
+            'paiement_id' => $paiement->id,
+            'prix_achat' => $paiement->montant,
+        ]);
         
         // Mettre à jour le paiement avec l'ID du ticket
         $paiement->update(['ticket_id' => $ticket->id]);
@@ -1109,51 +1427,5 @@ class FedapayController extends Controller
         // Mettre à jour les dépenses du client
         $client = Client::find($paiement->client_id);
         $client->increment('total_depense', $paiement->montant);
-    }
-    
-    /**
-     * Réserver un ticket pour un paiement en attente
-     */
-    private function reserveTicket($forfaitId, $clientId, $paiementId)
-    {
-        // Chercher un ticket libre
-        $ticket = Ticket::where('forfaits_id', $forfaitId)
-            ->where('statut', 'libre')
-            ->first();
-        
-        if (!$ticket) {
-            return null;
-        }
-        
-        // Réserver le ticket en changeant son statut à 'pending'
-        $ticket->update([
-            'statut' => 'pending',
-            'client_id' => $clientId,
-            'paiement_id' => $paiementId,
-            'date_vente' => null,
-        ]);
-        
-        return $ticket;
-    }
-    
-    /**
-     * Libérer un ticket réservé (en cas d'échec de paiement)
-     */
-    private function releaseTicket($paiementId)
-    {
-        // Chercher le ticket réservé pour ce paiement
-        $ticket = Ticket::where('paiement_id', $paiementId)
-            ->where('statut', 'pending')
-            ->first();
-        
-        if ($ticket) {
-            $ticket->update([
-                'statut' => 'libre',
-                'client_id' => null,
-                'paiement_id' => null,
-                'date_vente' => null,
-            ]);
-            Log::info('Ticket libéré', ['ticket_id' => $ticket->id, 'paiement_id' => $paiementId]);
-        }
     }
 }

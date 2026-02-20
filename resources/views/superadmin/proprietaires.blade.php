@@ -113,8 +113,9 @@
                                     $zonesCount = $proprio->wifizones->count();
                                     $zonesOnline = $proprio->wifizones->where('is_online', true)->count();
                                     $zoneData = json_encode($proprio->wifizones);
+                                    $balance = method_exists($proprio, 'getBalance') ? $proprio->getBalance() : rand(45000, 320000);
                                 @endphp
-                                <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-800 transition cursor-pointer" onclick="showDetail({{ $proprio->id }}, '{{ addslashes($proprio->prenom . ' ' . $proprio->nom) }}', '{{ $proprio->email }}', '{{ $proprio->numero }}', '{{ $zonesCount }}', '{{ $zoneData }}', {{ $proprio->is_active ? 'true' : 'false' }})">
+                                <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-800 transition cursor-pointer" onclick="showDetail({{ $proprio->id }}, '{{ addslashes($proprio->prenom . ' ' . $proprio->nom) }}', '{{ $proprio->email }}', '{{ $proprio->numero }}', '{{ $zonesCount }}', '{{ $zoneData }}', {{ $proprio->is_active ? 'true' : 'false' }}, {{ $balance }})">
                                     <td class="p-5">
                                         <div class="flex items-center gap-3">
                                             <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs">
@@ -135,7 +136,7 @@
                                             @endif
                                         </span>
                                     </td>
-                                    <td class="p-5 font-bold text-brand-blue">{{ number_format(rand(45000, 320000), 0, ',', ' ') }} F</td>
+                                    <td class="p-5 font-bold text-brand-blue">{{ number_format($balance, 0, ',', ' ') }} F</td>
                                     <td class="p-5 text-gray-500 dark:text-gray-400 text-xs">{{ $proprio->created_at->format('d M Y') }}</td>
                                     <td class="p-5">
                                         @if($proprio->is_active)
@@ -145,7 +146,14 @@
                                         @endif
                                     </td>
                                     <td class="p-5 text-right">
-                                        <span class="text-xs font-bold text-gray-400 dark:text-gray-500 hover:text-brand-dark">Voir ›</span>
+                                        <div class="flex items-center justify-end gap-2">
+                                            <button onclick="event.stopPropagation(); openResetPasswordModal({{ $proprio->id }}, '{{ addslashes($proprio->prenom . ' ' . $proprio->nom) }}', '{{ $proprio->numero }}')" 
+                                                    class="p-2 text-yellow-500 hover:text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-lg transition" 
+                                                    title="Réinitialiser le mot de passe">
+                                                <i class="fas fa-key w-4 h-4"></i>
+                                            </button>
+                                            <span class="text-xs font-bold text-gray-400 dark:text-gray-500 hover:text-brand-dark">Voir ›</span>
+                                        </div>
                                     </td>
                                 </tr>
                                 @empty
@@ -158,20 +166,35 @@
                     </div>
                     <!-- Pagination Footer -->
                     <div class="p-6 border-t border-gray-100 dark:border-slate-700">
-                        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                            <div class="flex items-center gap-2 order-2 md:order-1">
+                        <div class="flex flex-wrap justify-between items-center gap-4">
+                            <!-- GAUCHE : Indicateur de position -->
+                            <div class="flex items-center gap-2 order-1">
                                 <span class="text-xs text-gray-400">Affichage de</span>
-                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">1</span>
+                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">{{ $proprios->firstItem() ?? 0 }}</span>
                                 <span class="text-xs text-gray-400">à</span>
-                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">{{ $proprios->count() }}</span>
+                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">{{ $proprios->lastItem() ?? 0 }}</span>
                                 <span class="text-xs text-gray-400">sur</span>
-                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">{{ $proprios->count() }}</span>
+                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">{{ $proprios->total() }}</span>
                                 <span class="text-xs text-gray-400">propriétaires</span>
                             </div>
-                            <div class="flex items-center gap-2 order-1 md:order-3">
-                                <button class="px-3 py-1 bg-gray-50 dark:bg-slate-800 rounded-lg text-xs font-bold text-gray-400">Précédent</button>
-                                <button class="px-3 py-1 bg-brand-blue text-white rounded-lg text-xs font-bold">1</button>
-                                <button class="px-3 py-1 bg-gray-50 dark:bg-slate-800 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">Suivant</button>
+                            
+                            <!-- CENTRE : Sélecteur lignes -->
+                            <div class="flex items-center gap-2 order-2">
+                                <span class="text-xs text-gray-400">Afficher</span>
+                                <form method="GET" action="{{ route('superadmin.proprietaires') }}" class="inline-block">
+                                    @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
+                                    <select name="per_page" onchange="this.form.submit()" class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 p-1 px-2 focus:ring-2 focus:ring-brand-blue outline-none cursor-pointer">
+                                        <option value="5" {{ request('per_page') == 5 ? 'selected' : '' }}>5 lignes</option>
+                                        <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10 lignes</option>
+                                        <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25 lignes</option>
+                                        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 lignes</option>
+                                    </select>
+                                </form>
+                            </div>
+                            
+                            <!-- DROITE : Pagination links -->
+                            <div class="flex items-center gap-2 order-3">
+                                {{ $proprios->appends(request()->except('page'))->links('pagination::tailwind') }}
                             </div>
                         </div>
                     </div>
@@ -218,18 +241,10 @@
                     </div>
                     
                     <!-- Stats Grid -->
-                    <div class="grid grid-cols-3 gap-4 border-t border-gray-100 dark:border-slate-700 pt-6">
+                    <div class="grid grid-cols-1 gap-4 border-t border-gray-100 dark:border-slate-700 pt-6">
                         <div class="text-center p-4 bg-gray-50 dark:bg-slate-800 rounded-xl">
-                            <p class="text-2xl font-bold text-brand-blue" id="detail-zones-count">5</p>
+                            <p class="text-2xl font-bold text-brand-blue" id="detail-zones-count">{{ $proprio->wifizones->count() }}</p>
                             <p class="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Zones WiFi</p>
-                        </div>
-                        <div class="text-center p-4 bg-gray-50 dark:bg-slate-800 rounded-xl">
-                            <p class="text-2xl font-bold text-green-500">1 250 000 F</p>
-                            <p class="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Revenus Totaux</p>
-                        </div>
-                        <div class="text-center p-4 bg-gray-50 dark:bg-slate-800 rounded-xl">
-                            <p class="text-2xl font-bold text-yellow-500">125</p>
-                            <p class="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Transactions</p>
                         </div>
                     </div>
                 </div>
@@ -249,13 +264,13 @@
 
     <!-- Script pour la navigation et l'affichage des zones -->
     <script>
-        function showDetail(id, name, email, phone, zonesCount, zonesData, isActive) {
+        function showDetail(id, name, email, phone, zonesCount, zonesData, isActive, balance) {
             const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
             document.getElementById('detail-avatar').textContent = initials;
             document.getElementById('detail-name').textContent = name;
             document.getElementById('detail-email').textContent = email;
             document.getElementById('detail-phone').textContent = phone;
-            document.getElementById('detail-balance').textContent = parseInt('{{ rand(45000, 320000) }}').toLocaleString('fr-FR') + ' F';
+            document.getElementById('detail-balance').textContent = balance.toLocaleString('fr-FR') + ' F';
             document.getElementById('detail-zones-count').textContent = zonesCount;
             
             const statusBtn = document.getElementById('status-btn');
@@ -381,6 +396,143 @@
                 console.error('Erreur lors du parsing des zones:', e);
                 grid.innerHTML = '<div class="col-span-3 text-center text-gray-400 py-8">Erreur lors du chargement des zones.</div>';
             }
+        }
+    </script>
+
+    <!-- Modal Réinitialiser Mot de Passe -->
+    <div id="reset-password-modal" class="fixed inset-0 bg-black/50 z-[9999] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-key text-3xl text-yellow-500"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Générer un lien de réinitialisation</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    Propriétaire: <span id="reset-proprio-name" class="font-bold text-gray-700 dark:text-gray-200"></span>
+                </p>
+            </div>
+            
+            <div id="reset-link-form">
+                @csrf
+                <input type="hidden" id="reset-proprio-id" name="proprio_id">
+                
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Cliquez sur le bouton ci-dessous pour générer un lien de réinitialisation du mot de passe. Le lien sera envoyé au propriétaire via WhatsApp.
+                </p>
+                
+                <div id="reset-password-error" class="hidden mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-xl">
+                    <p class="text-sm text-red-600 dark:text-red-400" id="reset-password-error-message"></p>
+                </div>
+                
+                <!-- Zone de结果显示 du lien -->
+                <div id="reset-link-result" class="hidden mb-4">
+                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Lien de réinitialisation généré:</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="reset-link-url" readonly 
+                               class="flex-1 px-3 py-2 bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl text-xs font-mono">
+                        <button type="button" onclick="copyResetLink()" 
+                                class="px-3 py-2 bg-blue-500 text-white rounded-xl text-xs font-bold hover:bg-blue-600 transition">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Bouton WhatsApp -->
+                    <a id="whatsapp-link" href="#" target="_blank" 
+                       class="mt-3 inline-flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl font-bold transition">
+                        <i class="fab fa-whatsapp text-xl"></i>
+                        Envoyer par WhatsApp
+                    </a>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeResetPasswordModal()" 
+                            class="flex-1 px-4 py-3 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-slate-600 transition">
+                        Fermer
+                    </button>
+                    <button type="button" onclick="generateResetLink()" 
+                            class="flex-1 px-4 py-3 bg-yellow-500 text-white rounded-xl font-bold hover:bg-yellow-600 transition">
+                        <i class="fas fa-link mr-2"></i>Générer le lien
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openResetPasswordModal(id, name, phone) {
+            document.getElementById('reset-proprio-id').value = id;
+            document.getElementById('reset-proprio-name').textContent = name;
+            document.getElementById('reset-password-error').classList.add('hidden');
+            document.getElementById('reset-link-result').classList.add('hidden');
+            document.getElementById('reset-password-modal').classList.remove('hidden');
+        }
+        
+        function closeResetPasswordModal() {
+            document.getElementById('reset-password-modal').classList.add('hidden');
+        }
+        
+        // Fermer le modal en cliquant à l'extérieur
+        document.getElementById('reset-password-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeResetPasswordModal();
+            }
+        });
+        
+        function generateResetLink() {
+            const proprioId = document.getElementById('reset-proprio-id').value;
+            
+            if (!proprioId) {
+                showResetPasswordError('ID du propriétaire manquant.');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('proprio_id', proprioId);
+            formData.append('_token', '{{ csrf_token() }}');
+            
+            fetch('{{ route("superadmin.proprio.reset-password-link") }}', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('reset-link-url').value = data.reset_url;
+                    document.getElementById('reset-link-result').classList.remove('hidden');
+                    
+                    // Générer le lien WhatsApp
+                    const message = encodeURIComponent('Bonjour, Voici le lien pour réinitialiser votre mot de passe: ' + data.reset_url);
+                    document.getElementById('whatsapp-link').href = 'https://wa.me/?text=' + message;
+                } else {
+                    showResetPasswordError(data.message || 'Erreur lors de la génération du lien.');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                showResetPasswordError('Une erreur est survenue. Veuillez réessayer.');
+            });
+        }
+        
+        function copyResetLink() {
+            const linkInput = document.getElementById('reset-link-url');
+            linkInput.select();
+            linkInput.setSelectionRange(0, 99999);
+            
+            navigator.clipboard.writeText(linkInput.value).then(function() {
+                alert('Lien copié dans le presse-papiers!');
+            }, function(err) {
+                console.error('Erreur lors de la copie: ', err);
+            });
+        }
+        
+        function showResetPasswordError(message) {
+            const errorDiv = document.getElementById('reset-password-error');
+            const errorMessage = document.getElementById('reset-password-error-message');
+            errorMessage.textContent = message;
+            errorDiv.classList.remove('hidden');
         }
     </script>
 @endsection

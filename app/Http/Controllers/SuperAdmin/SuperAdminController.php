@@ -9,6 +9,7 @@ use App\Models\Proprio;
 use App\Models\WifiZone;
 use App\Models\Forfait;
 use App\Models\Ticket;
+use App\Models\Client;
 
 class SuperAdminController extends Controller
 {
@@ -17,6 +18,9 @@ class SuperAdminController extends Controller
      */
     public function proprietaires(Request $request)
     {
+        // Récupérer le nombre d'éléments par page (par défaut 10)
+        $perPage = $request->input('per_page', 10);
+        
         // Récupérer les propriétaires avec leurs zones, forfaits et tickets
         $proprios = Proprio::with(['wifizones.forfaits' => function($query) {
             $query->withCount(['tickets as tickets_count' => function($q) {
@@ -26,7 +30,7 @@ class SuperAdminController extends Controller
                 $q->where('statut', 'vendu')
                   ->whereDate('date_vente', now());
             }]);
-        }])->get();
+        }])->paginate($perPage);
         
         // Si pas de données en base, on utilise des données statiques pour la démo
         if ($proprios->isEmpty()) {
@@ -104,7 +108,103 @@ class SuperAdminController extends Controller
      */
     public function clients(Request $request)
     {
-        return view('superadmin.clients');
+        // Récupérer le nombre d'éléments par page (par défaut 10)
+        $perPage = $request->input('per_page', 10);
+        $search = $request->input('search');
+        $filterType = $request->input('filter_type');
+        
+        // Récupérer les clients avec pagination
+        $clientsQuery = Client::query()
+            ->with(['tickets.forfait'])
+            ->when($search, function($q) use ($search) {
+                $q->where('nom_complet', 'like', "%{$search}%")
+                  ->orWhere('telephone', 'like', "%{$search}%");
+            });
+        
+        // Appliquer le tri et calculer le total dépensé dynamiquement
+        $clients = $clientsQuery->get()
+            ->map(function($client) {
+                $total = 0;
+                foreach ($client->tickets as $ticket) {
+                    // Ne compter que les tickets vendus (statut = 'vendu')
+                    // Utiliser uniquement prix_achat pour éviter les erreurs si forfait supprimé
+                    if ($ticket->statut === 'vendu') {
+                        $total += $ticket->prix_achat ?? 0;
+                    }
+                }
+                $client->total_depense_calculated = $total;
+                return $client;
+            });
+        
+        // Appliquer les filtres
+        if ($filterType === 'vip') {
+            $clients = $clients->filter(fn($c) => $c->total_depense_calculated > 10000);
+        } elseif ($filterType === 'new') {
+            $clients = $clients->filter(fn($c) => $c->created_at >= now()->subDays(30));
+        } elseif ($filterType === 'blocked') {
+            $clients = $clients->filter(fn($c) => $c->is_blocked);
+        }
+        
+        // Trier par date décroissante
+        $clients = $clients->sortByDesc('created_at');
+        
+        // Paginer manuellement
+        $total = $clients->count();
+        $page = $request->input('page', 1);
+        $clients = new \Illuminate\Pagination\LengthAwarePaginator(
+            $clients->forPage($page, $perPage),
+            $total,
+            $perPage,
+            $page,
+            ['path' => $request->url()]
+        );
+        
+        // Statistiques
+        $stats = [
+            'total' => Client::count(),
+            'nouveaux_30j' => Client::where('created_at', '>=', now()->subDays(30))->count(),
+            'vip' => Client::where('total_depense', '>', 10000)->count(),
+        ];
+        
+        return view('superadmin.clients', compact('clients', 'stats'));
+    }
+
+    /**
+     * Retourne les tickets d'un client (pour affichage via AJAX)
+     */
+    public function clientTickets($clientId)
+    {
+        $client = Client::findOrFail($clientId);
+        
+        // Charger les tickets avec les relations Forfait et WifiZone
+        $ticketsQuery = $client->tickets()
+            ->with(['forfait.wifizone'])
+            ->where('statut', 'vendu')
+            ->orderBy('date_vente', 'desc')
+            ->limit(50);
+        
+        $tickets = $ticketsQuery->get()
+            ->map(function ($ticket) {
+                return [
+                    'id' => $ticket->id,
+                    'date' => $ticket->date_vente ? $ticket->date_vente->format('d M Y H:i') : '-',
+                    'forfait_nom' => $ticket->forfait ? $ticket->forfait->nom : 'Inconnu',
+                    'zone_nom' => ($ticket->forfait && $ticket->forfait->wifizone) ? $ticket->forfait->wifizone->nom_zone : '-',
+                    // Utiliser uniquement prix_achat pour éviter les erreurs si forfait supprimé
+                    'prix' => $ticket->prix_achat ?? 0,
+                    'username' => $ticket->username,
+                    'password' => $ticket->password,
+                ];
+            });
+        
+        // Calculer le total dépensé
+        $totalSpent = $tickets->sum('prix');
+        
+        return response()->json([
+            'client' => $client->nom_complet,
+            'total_spent' => $totalSpent,
+            'tickets' => $tickets
+        ]);
     }
 
     /**
@@ -112,74 +212,12 @@ class SuperAdminController extends Controller
      */
     public function retraits(Request $request)
     {
-        // Récupérer les retraits avec la relation proprio (pour avoir nom et prenom)
-        $retraits = Retrait::with('proprio')->get();
+        // Récupérer le nombre d'éléments par page (par défaut 10)
+        $perPage = $request->input('per_page', 10);
         
-        // Si pas de données en base, on utilise des données statiques pour la démo
-        if ($retraits->isEmpty()) {
-            $retraits = collect([
-                (object)[
-                    'id' => 1,
-                    'reference' => 'RET-001',
-                    'user_id' => 1,
-                    'amount' => 25000,
-                    'phone_number' => '2250102030405',
-                    'status' => 'pending',
-                    'requested_at' => now()->subDays(2)->setTime(14, 30),
-                    'proprio' => (object)['nom' => 'Koffi', 'prenom' => 'Amani'],
-                ],
-                (object)[
-                    'id' => 2,
-                    'reference' => 'RET-002',
-                    'user_id' => 2,
-                    'amount' => 15000,
-                    'phone_number' => '2250102030406',
-                    'status' => 'pending',
-                    'requested_at' => now()->subDays(3)->setTime(10, 15),
-                    'proprio' => (object)['nom' => 'Diallo', 'prenom' => 'Mamadou'],
-                ],
-                (object)[
-                    'id' => 3,
-                    'reference' => 'RET-003',
-                    'user_id' => 3,
-                    'amount' => 50000,
-                    'phone_number' => '2250102030407',
-                    'status' => 'completed',
-                    'requested_at' => now()->subDays(4)->setTime(16, 45),
-                    'proprio' => (object)['nom' => "N'guessan", 'prenom' => 'Konan'],
-                ],
-                (object)[
-                    'id' => 4,
-                    'reference' => 'RET-004',
-                    'user_id' => 4,
-                    'amount' => 10000,
-                    'phone_number' => '2250102030408',
-                    'status' => 'cancelled',
-                    'requested_at' => now()->subDays(5)->setTime(9, 0),
-                    'proprio' => (object)['nom' => 'Sow', 'prenom' => 'Fatou'],
-                ],
-                (object)[
-                    'id' => 5,
-                    'reference' => 'RET-005',
-                    'user_id' => 5,
-                    'amount' => 30000,
-                    'phone_number' => '2250102030409',
-                    'status' => 'completed',
-                    'requested_at' => now()->subDays(6)->setTime(11, 20),
-                    'proprio' => (object)['nom' => 'Acket', 'prenom' => 'Jean'],
-                ],
-                (object)[
-                    'id' => 6,
-                    'reference' => 'RET-006',
-                    'user_id' => 6,
-                    'amount' => 8500,
-                    'phone_number' => '2250506070809',
-                    'status' => 'cancelled',
-                    'requested_at' => now()->subDays(7)->setTime(8, 30),
-                    'proprio' => (object)['nom' => 'Traore', 'prenom' => 'Bakary'],
-                ],
-            ]);
-        }
+        // Récupérer les retraits avec la relation proprio (pour avoir nom et prenom)
+        // Triés par date décroissante (plus récents en premier)
+        $retraits = Retrait::with('proprio')->orderBy('created_at', 'desc')->paginate($perPage);
         
         return view('superadmin.retraits', compact('retraits'));
     }

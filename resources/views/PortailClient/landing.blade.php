@@ -117,14 +117,7 @@
             {{ $wifizone->welcome_message ?? 'Bienvenue !' }}
         </p>
         
-        <div class="mt-3 flex items-center space-x-2">
-            <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
-                <i class="fas fa-check-circle mr-1"></i>Zone Active
-            </span>
-            <span class="bg-gray-100 text-gray-600 text-xs font-mono px-2 py-1 rounded-full">
-                Token: {{ substr($token, 0, 8) }}...
-            </span>
-        </div>
+     
     </div>
 
     <!-- Formulaire -->
@@ -195,7 +188,7 @@
                 <input type="text" name="pseudo" id="pseudo_input"
                     class="input-floating font-bold"
                     placeholder=" ">
-                <label class="floating-label">Votre Pseudo</label>
+                <label class="floating-label">Votre Nom</label>
             </div>
 
             <!-- Password -->
@@ -205,9 +198,6 @@
                     class="input-floating font-bold tracking-widest"
                     placeholder=" ">
                 <label class="floating-label">Mot de passe</label>
-                 <button type="button" onclick="togglePasswordVisibility('password_input')" class="absolute right-3 top-4 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors">
-                    <i class="far fa-eye" id="icon-password_input"></i>
-                </button>
             </div>
 
             <!-- Password Confirmation (Register Only) -->
@@ -226,12 +216,44 @@
                 <button type="submit" id="submit-btn" class="w-full bg-custom-blue text-white py-3.5 rounded-xl text-sm font-bold hover:bg-[#062b42] transition shadow-lg shadow-blue-900/10 uppercase tracking-wider btn-hover-lift">
                     Se connecter
                 </button>
+                
+                <!-- Mot de passe oublié -->
+                <div class="mt-4 text-center">
+                    <button type="button" onclick="showForgotPasswordModal()" class="text-xs text-gray-400 hover:text-custom-blue transition font-medium">
+                        Mot de passe oublié ?
+                    </button>
+                </div>
+                
                 <p class="text-xs text-center text-gray-400 mt-4 cursor-pointer hover:text-custom-blue transition" id="helper-text" onclick="if(currentMode==='login') toggleMode('register'); else toggleMode('login');">
                     Pas encore de compte ? Créer un compte
                 </p>
             </div>
         </form>
 
+    </div>
+
+    <!-- Modal Mot de passe oublié -->
+    <div id="forgot-password-modal" class="fixed inset-0 bg-black/50 z-[9999] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 transform transition-all">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fab fa-whatsapp text-3xl text-green-500"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Mot de passe oublié</h3>
+                <p class="text-sm text-gray-500 mb-6">
+                    Veuillez contacter le gérant pour réinitialiser votre mot de passe.
+                </p>
+                <a href="https://wa.me/22967864795?text=Bonjour, je souhaite réinitialiser mon mot de passe WiFi" 
+                   target="_blank"
+                   class="inline-flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl font-bold transition shadow-lg shadow-green-500/20">
+                    <i class="fab fa-whatsapp text-xl"></i>
+                    Contacter sur WhatsApp
+                </a>
+                <button onclick="closeForgotPasswordModal()" class="mt-4 text-sm text-gray-400 hover:text-gray-600 transition">
+                    Fermer
+                </button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -433,6 +455,22 @@
                 helperText.innerText = "Pas encore de compte ? Créer un compte";
             }
         }
+
+        // Fonctions Modal Mot de passe oublié
+        function showForgotPasswordModal() {
+            document.getElementById('forgot-password-modal').classList.remove('hidden');
+        }
+
+        function closeForgotPasswordModal() {
+            document.getElementById('forgot-password-modal').classList.add('hidden');
+        }
+
+        // Fermer le modal en cliquant à l'extérieur
+        document.getElementById('forgot-password-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeForgotPasswordModal();
+            }
+        });
 
         function togglePasswordVisibility(id) {
             const input = document.getElementById(id);

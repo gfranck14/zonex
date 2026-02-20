@@ -144,6 +144,10 @@ class ForfaitController extends Controller
             // Filtre par statut de ticket
             ->when(request('filter_statut'), function($q) {
                 $q->where('statut', request('filter_statut'));
+            })
+            // Filtre par date
+            ->when(request('filter_date'), function($q) {
+                $q->whereDate('date_vente', request('filter_date'));
             });
         
         // Calcul des KPIs pour la liste des tickets
@@ -489,15 +493,25 @@ class ForfaitController extends Controller
 
     /**
      * Remove the specified forfait
+     * 
+     * Supprime le forfait et les tickets non vendus (statut = 'libre')
+     * Garde les tickets vendus/utilisés mais retire leur référence au forfait
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        // Nouveau : On vérifie que le forfait appartient à une zone qui appartient au proprio
+        // Vérifie que le forfait appartient à une zone qui appartient au proprio
         $forfait = Forfait::where('id', $id)
             ->whereHas('wifizone', function($query) {
                 $query->where('proprio_id', Auth::guard('proprio')->id());
             })->firstOrFail();
 
+        // Supprimer les tickets non vendus (statut = 'libre')
+        $forfait->tickets()->where('statut', 'libre')->delete();
+        
+        // Mettre à NULL les tickets vendus/utilisés (garder pour historique)
+        $forfait->tickets()->whereIn('statut', ['vendu', 'utilisé'])->update(['forfaits_id' => null]);
+
+        // Supprimer le forfait
         $forfait->delete();
 
         return redirect()->route('forfait_ticket')->with('success', 'Forfait supprimé avec succès !');

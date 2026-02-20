@@ -182,6 +182,29 @@
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
     /**
+     * Calcule les frais de transaction selon la grille
+     * 0 – 10 000 XOF: 150 XOF
+     * 10 001 – 50 000 XOF: 300 XOF
+     * 50 001 – 150 000 XOF: 800 XOF
+     * 150 001 – 500 000 XOF: 2 000 XOF
+     * 500 001 XOF+: 2 500 XOF
+     */
+    function calculateTransactionFees(amount) {
+        if (amount <= 10000) return 150;
+        if (amount <= 50000) return 300;
+        if (amount <= 150000) return 800;
+        if (amount <= 500000) return 2000;
+        return 2500;
+    }
+
+    /**
+     * Calcule la commission (10% du montant)
+     */
+    function calculateCommission(amount) {
+        return Math.round(amount * 0.10);
+    }
+
+    /**
      * Soumission du formulaire de retrait
      */
     document.getElementById('withdrawal-form').addEventListener('submit', async function(e) {
@@ -197,6 +220,8 @@
             operator: document.getElementById('withdraw-operator').value,
             phone_number: document.getElementById('withdraw-phone').value,
             beneficiary_name: document.getElementById('withdraw-name').value,
+            fedapay_fee: calculateTransactionFees(parseInt(document.getElementById('withdraw-amount').value)),
+            ccorp_fee: calculateCommission(parseInt(document.getElementById('withdraw-amount').value)),
             description: document.getElementById('withdraw-description').value,
         };
 

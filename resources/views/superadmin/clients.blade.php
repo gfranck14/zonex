@@ -51,9 +51,12 @@
         <!-- VUE 1 : LISTE CLIENTS -->
         <div id="client-list" class="animate-fade-in">
                 <!-- KPIs Clients -->
+                @php
+                    $stats = $stats ?? ['total' => 0, 'nouveaux_30j' => 0, 'vip' => 0];
+                @endphp
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="bg-white dark:bg-brand-cardDark p-5 rounded-3xl shadow-sm flex items-center gap-4"><div class="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-400 font-bold text-xl">128</div><div><p class="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Total Clients</p><p class="text-sm font-medium text-gray-600 dark:text-gray-300">Base active</p></div></div>
-                    <div class="bg-white dark:bg-brand-cardDark p-5 rounded-3xl shadow-sm flex items-center gap-4"><div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-xl">+25</div><div><p class="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Nouveaux (30j)</p><p class="text-sm font-medium text-gray-600 dark:text-gray-300">Croissance</p></div></div>
+                    <div class="bg-white dark:bg-brand-cardDark p-5 rounded-3xl shadow-sm flex items-center gap-4"><div class="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-400 font-bold text-xl">{{ $stats['total'] }}</div><div><p class="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Total Clients</p><p class="text-sm font-medium text-gray-600 dark:text-gray-300">Base active</p></div></div>
+                    <div class="bg-white dark:bg-brand-cardDark p-5 rounded-3xl shadow-sm flex items-center gap-4"><div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-xl">+{{ $stats['nouveaux_30j'] }}</div><div><p class="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Nouveaux (30j)</p><p class="text-sm font-medium text-gray-600 dark:text-gray-300">Croissance</p></div></div>
                     <div class="bg-white dark:bg-brand-cardDark p-5 rounded-3xl shadow-sm flex items-center gap-4"><div class="w-12 h-12 rounded-xl bg-yellow-100 dark:bg-yellow-900/50 flex items-center justify-center text-yellow-600 dark:text-yellow-400 font-bold text-xl"><i class="fas fa-gem"></i></div><div><p class="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Clients VIP</p><p class="text-sm font-medium text-gray-600 dark:text-gray-300">Dépensent > 10k</p></div></div>
                 </div>
                 <!-- Tableau Clients -->
@@ -103,138 +106,78 @@
                                 </tr>
                             </thead>
                             <tbody class="text-sm divide-y divide-gray-50 dark:divide-slate-700">
-                                <!-- Données statiques -->
-                                <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-800 transition cursor-pointer" onclick="showClientDetail('1', 'Jean Dupont', '22501020304', 'Café Internet Centre', 15500, false)">
+                                @forelse($clients as $client)
+                                @php
+                                    $initials = explode(' ', $client->nom_complet ?? 'CC');
+                                    $initials = array_map(function($n) { return strtoupper(substr($n, 0, 1)); }, $initials);
+                                    $initials = implode('', array_slice($initials, 0, 2));
+                                    $isVip = ($client->total_depense_calculated ?? $client->total_depense) > 10000;
+                                @endphp
+                                <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-800 transition cursor-pointer" onclick="showClientDetail('{{ $client->id }}', '{{ addslashes($client->nom_complet) }}', '{{ $client->telephone }}', '{{ $client->derniere_zone ?? 'N/A' }}', {{ $client->total_depense_calculated ?? 0 }}, {{ $client->is_blocked ? 'true' : 'false' }})">
                                     <td class="p-5">
                                         <div class="flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs">JD</div>
+                                            <div class="w-8 h-8 rounded-full {{ $isVip ? 'bg-yellow-100 text-yellow-600' : 'bg-blue-100 text-blue-600' }} flex items-center justify-center font-bold text-xs">{{ $initials }}</div>
                                             <div>
-                                                <p class="font-bold text-gray-800 dark:text-white">Jean Dupont</p>
+                                                <p class="font-bold text-gray-800 dark:text-white">{{ $client->nom_complet }}</p>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="p-5 font-mono text-gray-600 dark:text-gray-300">225 01 02 03 04</td>
+                                    <td class="p-5 font-mono text-gray-600 dark:text-gray-300">{{ $client->telephone }}</td>
                                     <td class="p-5">
-                                        <span class="bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-white px-2 py-1 rounded-lg text-[10px] font-bold">Café Internet Centre</span>
+                                        <span class="bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-white px-2 py-1 rounded-lg text-[10px] font-bold">{{ $client->derniere_zone ?? 'N/A' }}</span>
                                     </td>
-                                    <td class="p-5 font-bold text-brand-blue">15 500 F</td>
-                                    <td class="p-5 text-gray-500 dark:text-gray-400 text-xs">05 Jan 2026 14:30</td>
+                                    <td class="p-5 font-bold text-brand-blue">{{ number_format($client->total_depense_calculated ?? $client->total_depense, 0, ',', ' ') }} F</td>
+                                    <td class="p-5 text-gray-500 dark:text-gray-400 text-xs">{{ $client->created_at->format('d M Y') }}</td>
                                     <td class="p-5">
-                                        <span class="bg-green-100 text-green-700 px-2 py-1 rounded-lg text-[10px] font-bold">ACTIF</span>
+                                        @if($client->is_blocked)
+                                            <span class="bg-red-100 text-red-700 px-2 py-1 rounded-lg text-[10px] font-bold">BLOQUÉ</span>
+                                        @else
+                                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-lg text-[10px] font-bold">ACTIF</span>
+                                        @endif
                                     </td>
                                     <td class="p-5 text-right">
                                         <span class="text-xs font-bold text-gray-400 dark:text-gray-500 hover:text-brand-dark">Voir ›</span>
                                     </td>
                                 </tr>
-                                <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-800 transition cursor-pointer" onclick="showClientDetail('2', 'Marie Kouassi', '22501020305', 'Cyber Bac', 8500, false)">
-                                    <td class="p-5">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center font-bold text-xs">MK</div>
-                                            <div>
-                                                <p class="font-bold text-gray-800 dark:text-white">Marie Kouassi</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="p-5 font-mono text-gray-600 dark:text-gray-300">225 01 02 03 05</td>
-                                    <td class="p-5">
-                                        <span class="bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-white px-2 py-1 rounded-lg text-[10px] font-bold">Cyber Bac</span>
-                                    </td>
-                                    <td class="p-5 font-bold text-brand-blue">8 500 F</td>
-                                    <td class="p-5 text-gray-500 dark:text-gray-400 text-xs">10 Jan 2026 09:15</td>
-                                    <td class="p-5">
-                                        <span class="bg-green-100 text-green-700 px-2 py-1 rounded-lg text-[10px] font-bold">ACTIF</span>
-                                    </td>
-                                    <td class="p-5 text-right">
-                                        <span class="text-xs font-bold text-gray-400 dark:text-gray-500 hover:text-brand-dark">Voir ›</span>
-                                    </td>
+                                @empty
+                                <tr>
+                                    <td colspan="7" class="p-8 text-center text-gray-400">Aucun client trouvé.</td>
                                 </tr>
-                                <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-800 transition cursor-pointer" onclick="showClientDetail('3', 'Pierre Mensah', '22501020306', 'Restaurant Le Wifi', 12500, false)">
-                                    <td class="p-5">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-xs">PM</div>
-                                            <div>
-                                                <p class="font-bold text-gray-800 dark:text-white">Pierre Mensah</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="p-5 font-mono text-gray-600 dark:text-gray-300">225 01 02 03 06</td>
-                                    <td class="p-5">
-                                        <span class="bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-white px-2 py-1 rounded-lg text-[10px] font-bold">Restaurant Le Wifi</span>
-                                    </td>
-                                    <td class="p-5 font-bold text-brand-blue">12 500 F</td>
-                                    <td class="p-5 text-gray-500 dark:text-gray-400 text-xs">12 Jan 2026 16:45</td>
-                                    <td class="p-5">
-                                        <span class="bg-green-100 text-green-700 px-2 py-1 rounded-lg text-[10px] font-bold">ACTIF</span>
-                                    </td>
-                                    <td class="p-5 text-right">
-                                        <span class="text-xs font-bold text-gray-400 dark:text-gray-500 hover:text-brand-dark">Voir ›</span>
-                                    </td>
-                                </tr>
-                                <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-800 transition cursor-pointer" onclick="showClientDetail('4', 'Sophie Adeyemi', '22501020307', 'Hotel Connect', 25000, true)">
-                                    <td class="p-5">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center font-bold text-xs">SA</div>
-                                            <div>
-                                                <p class="font-bold text-gray-800 dark:text-white">Sophie Adeyemi</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="p-5 font-mono text-gray-600 dark:text-gray-300">225 01 02 03 07</td>
-                                    <td class="p-5">
-                                        <span class="bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-white px-2 py-1 rounded-lg text-[10px] font-bold">Hotel Connect</span>
-                                    </td>
-                                    <td class="p-5 font-bold text-brand-blue">25 000 F</td>
-                                    <td class="p-5 text-gray-500 dark:text-gray-400 text-xs">15 Jan 2026 11:20</td>
-                                    <td class="p-5">
-                                        <span class="bg-red-100 text-red-700 px-2 py-1 rounded-lg text-[10px] font-bold">BLOQUÉ</span>
-                                    </td>
-                                    <td class="p-5 text-right">
-                                        <span class="text-xs font-bold text-gray-400 dark:text-gray-500 hover:text-brand-dark">Voir ›</span>
-                                    </td>
-                                </tr>
-                                <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-800 transition cursor-pointer" onclick="showClientDetail('5', 'Thomas Bamba', '22501020308', 'Espace Numérique', 5200, false)">
-                                    <td class="p-5">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-xs">TB</div>
-                                            <div>
-                                                <p class="font-bold text-gray-800 dark:text-white">Thomas Bamba</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="p-5 font-mono text-gray-600 dark:text-gray-300">225 01 02 03 08</td>
-                                    <td class="p-5">
-                                        <span class="bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-white px-2 py-1 rounded-lg text-[10px] font-bold">Espace Numérique</span>
-                                    </td>
-                                    <td class="p-5 font-bold text-brand-blue">5 200 F</td>
-                                    <td class="p-5 text-gray-500 dark:text-gray-400 text-xs">18 Jan 2026 08:10</td>
-                                    <td class="p-5">
-                                        <span class="bg-green-100 text-green-700 px-2 py-1 rounded-lg text-[10px] font-bold">ACTIF</span>
-                                    </td>
-                                    <td class="p-5 text-right">
-                                        <span class="text-xs font-bold text-gray-400 dark:text-gray-500 hover:text-brand-dark">Voir ›</span>
-                                    </td>
-                                </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
                     <!-- Pagination Footer -->
                     <div class="p-6 border-t border-gray-100 dark:border-slate-700">
-                        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                            <div class="flex items-center gap-2 order-2 md:order-1">
+                        <div class="flex flex-wrap justify-between items-center gap-4">
+                            <!-- GAUCHE : Indicateur de position -->
+                            <div class="flex items-center gap-2 order-1">
                                 <span class="text-xs text-gray-400">Affichage de</span>
-                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">1</span>
+                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">{{ $clients->firstItem() ?? 0 }}</span>
                                 <span class="text-xs text-gray-400">à</span>
-                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">5</span>
+                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">{{ $clients->lastItem() ?? 0 }}</span>
                                 <span class="text-xs text-gray-400">sur</span>
-                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">128</span>
+                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">{{ $clients->total() }}</span>
                                 <span class="text-xs text-gray-400">clients</span>
                             </div>
-                            <div class="flex items-center gap-2 order-1 md:order-3">
-                                <button class="px-3 py-1 bg-gray-50 dark:bg-slate-800 rounded-lg text-xs font-bold text-gray-400">Précédent</button>
-                                <button class="px-3 py-1 bg-brand-blue text-white rounded-lg text-xs font-bold">1</button>
-                                <button class="px-3 py-1 bg-gray-50 dark:bg-slate-800 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">2</button>
-                                <button class="px-3 py-1 bg-gray-50 dark:bg-slate-800 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">3</button>
-                                <button class="px-3 py-1 bg-gray-50 dark:bg-slate-800 rounded-lg text-xs font-bold text-gray-400">Suivant</button>
+                            
+                            <!-- CENTRE : Sélecteur lignes -->
+                            <div class="flex items-center gap-2 order-2">
+                                <span class="text-xs text-gray-400">Afficher</span>
+                                <form method="GET" action="{{ route('superadmin.clients') }}" class="inline-block">
+                                    @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
+                                    <select name="per_page" onchange="this.form.submit()" class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 p-1 px-2 focus:ring-2 focus:ring-brand-blue outline-none cursor-pointer">
+                                        <option value="5" {{ request('per_page') == 5 ? 'selected' : '' }}>5 lignes</option>
+                                        <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10 lignes</option>
+                                        <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25 lignes</option>
+                                        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 lignes</option>
+                                    </select>
+                                </form>
+                            </div>
+                            
+                            <!-- DROITE : Pagination links -->
+                            <div class="flex items-center gap-2 order-3">
+                                {{ $clients->appends(request()->except('page'))->links('pagination::tailwind') }}
                             </div>
                         </div>
                     </div>
@@ -264,7 +207,7 @@
                         <div class="text-right">
                             <div class="mb-4">
                                 <p class="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">Total Dépensé</p>
-                                <p class="text-4xl font-bold text-brand-blue" id="detail-spent">15 500 F</p>
+                                <p class="text-4xl font-bold text-brand-blue" id="detail-spent">-</p>
                             </div>
                             <button id="block-btn" onclick="toggleBlock()" class="px-4 py-2 bg-red-500 text-white rounded-xl text-xs font-bold transition">
                                 BLOQUER CE CLIENT
@@ -332,10 +275,7 @@
                 <div class="bg-white rounded-3xl shadow-sm overflow-hidden">
                     <div class="p-6 border-b border-gray-100"><h3 class="font-bold text-lg text-gray-800 dark:text-white">Historique d'achat <i class="fas fa-receipt text-gray-400"></i></h3></div>
                     <table class="w-full text-left"><thead class="bg-gray-50 text-[10px] uppercase text-gray-400 font-bold"><tr><th class="p-5">Date</th><th class="p-5">Forfait / Ticket</th><th class="p-5">Zone</th><th class="p-5">Adresse MAC</th><th class="h-max p-5">Prix</th><th class="p-5">Ticket</th></tr></thead><tbody id="history-table-body" class="text-sm divide-y divide-gray-50 dark:divide-slate-700">
-                        <tr><td class="p-5 text-gray-500 dark:text-gray-400">05 Jan 2026 14:30</td><td class="p-5">Ticket 4H</td><td class="p-5"><span class="bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-white px-2 py-1 rounded-lg text-[10px] font-bold">Café Internet Centre</span></td><td class="p-5 font-mono text-gray-600 dark:text-gray-300">AA:BB:CC:DD:EE:01</td><td class="p-5 font-bold text-brand-blue">500 F</td><td class="p-5"><button onclick="showTicket('USER1', 'PASS1')" class="text-brand-blue hover:underline text-xs font-bold">Voir</button></td></tr>
-                        <tr><td class="p-5 text-gray-500 dark:text-gray-400">06 Jan 2026 10:15</td><td class="p-5">Ticket 24H</td><td class="p-5"><span class="bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-white px-2 py-1 rounded-lg text-[10px] font-bold">Café Internet Centre</span></td><td class="p-5 font-mono text-gray-600 dark:text-gray-300">AA:BB:CC:DD:EE:01</td><td class="p-5 font-bold text-brand-blue">1 000 F</td><td class="p-5"><button onclick="showTicket('USER2', 'PASS2')" class="text-brand-blue hover:underline text-xs font-bold">Voir</button></td></tr>
-                        <tr><td class="p-5 text-gray-500 dark:text-gray-400">08 Jan 2026 16:45</td><td class="p-5">Forfait 7J</td><td class="p-5"><span class="bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-white px-2 py-1 rounded-lg text-[10px] font-bold">Cyber Bac</span></td><td class="p-5 font-mono text-gray-600 dark:text-gray-300">AA:BB:CC:DD:EE:01</td><td class="p-5 font-bold text-brand-blue">5 000 F</td><td class="p-5"><button onclick="showTicket('USER3', 'PASS3')" class="text-brand-blue hover:underline text-xs font-bold">Voir</button></td></tr>
-                        <tr><td class="p-5 text-gray-500 dark:text-gray-400">12 Jan 2026 09:00</td><td class="p-5">Forfait 30J</td><td class="p-5"><span class="bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-white px-2 py-1 rounded-lg text-[10px] font-bold">Restaurant Le Wifi</span></td><td class="p-5 font-mono text-gray-600 dark:text-gray-300">AA:BB:CC:DD:EE:01</td><td class="p-5 font-bold text-brand-blue">9 000 F</td><td class="p-5"><button onclick="showTicket('USER4', 'PASS4')" class="text-brand-blue hover:underline text-xs font-bold">Voir</button></td></tr>
+                        <tr><td colspan="6" class="p-5 text-center text-gray-500">Cliquez sur un client pour voir l'historique</td></tr>
                     </tbody></table>
                 </div>
             </div>
@@ -453,6 +393,45 @@
             document.getElementById('client-list').classList.add('hidden');
             document.getElementById('client-detail').classList.remove('hidden');
             document.getElementById('edit-form').classList.add('hidden');
+            
+            // Charger l'historique d'achat depuis le serveur
+            loadClientTickets(id);
+        }
+
+        // Fonction pour charger les tickets du client via AJAX
+        function loadClientTickets(clientId) {
+            const tbody = document.getElementById('history-table-body');
+            tbody.innerHTML = '<tr><td colspan="6" class="p-5 text-center text-gray-500">Chargement...</td></tr>';
+            
+            fetch(`/god-admin/clients/${clientId}/tickets`)
+                .then(response => response.json())
+                .then(data => {
+                    // Mettre à jour le total dépensé
+                    if (data.total_spent !== undefined) {
+                        document.getElementById('detail-spent').textContent = data.total_spent.toLocaleString('fr-FR') + ' F';
+                    }
+                    
+                    if (data.tickets && data.tickets.length > 0) {
+                        let html = '';
+                        data.tickets.forEach(ticket => {
+                            html += `<tr>
+                                <td class="p-5 text-gray-500 dark:text-gray-400">${ticket.date}</td>
+                                <td class="p-5">${ticket.forfait_nom}</td>
+                                <td class="p-5"><span class="bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-white px-2 py-1 rounded-lg text-[10px] font-bold">${ticket.zone_nom}</span></td>
+                                <td class="p-5 font-mono text-gray-600 dark:text-gray-300">---</td>
+                                <td class="p-5 font-bold text-brand-blue">${ticket.prix.toLocaleString('fr-FR')} F</td>
+                                <td class="p-5"><button onclick="showTicket('${ticket.username}', '${ticket.password}')" class="text-brand-blue hover:underline text-xs font-bold">Voir</button></td>
+                            </tr>`;
+                        });
+                        tbody.innerHTML = html;
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="6" class="p-5 text-center text-gray-500">Aucun achat trouvé</td></tr>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur chargement tickets:', error);
+                    tbody.innerHTML = '<tr><td colspan="6" class="p-5 text-center text-red-500">Erreur de chargement</td></tr>';
+                });
         }
 
         function showClientList() {

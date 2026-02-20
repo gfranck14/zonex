@@ -69,6 +69,8 @@ class PayoutController extends Controller
             'amount' => 'required|numeric|min:100|max:10000000',
             'momo_number' => 'required|string|max:20',
             'momo_name' => 'required|string|max:255',
+            'fedapay_fee' => 'nullable|numeric|min:0',
+            'ccorp_fee' => 'nullable|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -103,6 +105,8 @@ class PayoutController extends Controller
                 'amount' => $request->amount,
                 'momo_number' => $request->momo_number,
                 'momo_name' => $request->momo_name,
+                'fedapay_fee' => $request->fedapay_fee ?? 0,
+                'ccorp_fee' => $request->ccorp_fee ?? 0,
                 'status' => 'pending',
             ]);
 
@@ -179,10 +183,11 @@ class PayoutController extends Controller
             ->where('statut', 'approuve')
             ->sum('montant');
 
-        // Calculer le total des retraits effectués
+        // Calculer le total des retraits effectués (incluant les frais)
         $totalWithdrawals = Retrait::where('proprio_id', $proprioId)
             ->whereIn('status', ['pending', 'processing', 'completed'])
-            ->sum('amount');
+            ->selectRaw('COALESCE(SUM(amount), 0) as total_amount')
+            ->value('total_amount');
 
         return $totalPayments - $totalWithdrawals;
     }

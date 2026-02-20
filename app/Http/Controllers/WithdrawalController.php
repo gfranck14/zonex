@@ -29,8 +29,8 @@ class WithdrawalController extends Controller
         $proprio = Auth::guard('proprio')->user();
         $perPage = $request->input('per_page', 10);
 
-        // Utiliser le modèle Retrait avec la colonne user_id
-        $withdrawals = Retrait::where('user_id', $proprio->id)
+        // Utiliser le modèle Retrait avec la colonne proprio_id
+        $withdrawals = Retrait::where('proprio_id', $proprio->id)
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
 
@@ -57,6 +57,8 @@ class WithdrawalController extends Controller
             'operator' => 'required|in:mtn,moov,celtiis',
             'phone_number' => 'required|string|max:20',
             'beneficiary_name' => 'required|string|max:255',
+            'fedapay_fee' => 'nullable|numeric|min:0',
+            'ccorp_fee' => 'nullable|numeric|min:0',
             'description' => 'nullable|string|max:500',
         ]);
 
@@ -68,19 +70,16 @@ class WithdrawalController extends Controller
             ], 422);
         }
 
-        // Créer le retrait avec le modèle Retrait
+        // Créer le retrait avec le modèle Retrait (nouveaux noms de champs)
         $retrait = Retrait::create([
             'reference' => Retrait::generateReference(),
-            'user_id' => $proprio->id,
+            'proprio_id' => $proprio->id,
             'amount' => $request->amount,
-            'operator' => $request->operator,
-            'mode' => Retrait::getModeFromOperator($request->operator),
-            'phone_number' => $request->phone_number,
-            'beneficiary_name' => $request->beneficiary_name,
+            'momo_number' => $request->phone_number,
+            'momo_name' => $request->beneficiary_name,
+            'fedapay_fee' => $request->fedapay_fee ?? 0,
+            'ccorp_fee' => $request->ccorp_fee ?? 0,
             'status' => 'pending',
-            'description' => $request->description ?? 'Retrait ZONEX',
-            'merchant_reference' => Retrait::generateMerchantReference(),
-            'requested_at' => now(),
         ]);
 
         return response()->json([
@@ -100,9 +99,9 @@ class WithdrawalController extends Controller
     {
         $proprio = Auth::guard('proprio')->user();
 
-        // Utiliser le modèle Retrait
+        // Utiliser le modèle Retrait avec proprio_id
         $retrait = Retrait::where('id', $id)
-            ->where('user_id', $proprio->id)
+            ->where('proprio_id', $proprio->id)
             ->first();
 
         if (!$retrait) {

@@ -19,10 +19,9 @@ class Client extends Authenticatable
         'nom_complet',
         'telephone',
         'mac_address',
-        'password', // Added
+        'password',
         'total_depense',
         'derniere_zone',
-        'is_blocked'
     ];
 
     protected $hidden = [
@@ -33,6 +32,15 @@ class Client extends Authenticatable
     protected $casts = [
         'date_naissance' => 'date',
     ];
+
+    /**
+     * Vérifie si le client est bloqué par un propriétaire spécifique
+     * Utiliser cette méthode explicitement dans les contrôleurs
+     */
+    public function isBlockedBy($proprioId)
+    {
+        return BlockedClient::isBlocked($this->id, $proprioId);
+    }
 
     public function tickets()
     {

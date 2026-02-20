@@ -152,16 +152,8 @@
                             Modifier
                         </button>
                         
-                        <!-- Bouton Supprimer Tickets -->
-                        @if(($forfait->tickets_count ?? 0) > 0)
-                        <button onclick="previewBulkDelete('forfait', {{ $forfait->id }}, '{{ addslashes($forfait->nom) }}')" 
-                                class="w-12 h-11 flex items-center justify-center bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm" title="Supprimer tous les tickets de ce forfait">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                        @endif
-                        
-                        <!-- Bouton Poubelle (Supprimer le forfait) -->
-                        <button onclick="prepDeletePackage('{{ $forfait->id }}', '{{ addslashes($forfait->nom) }}', {{ $forfait->tickets_count ?? 0 }})" 
+                        <!-- Bouton Supprimer -->
+                        <button onclick="showDeleteOptionsModal({{ $forfait->id }}, '{{ addslashes($forfait->nom) }}', {{ $forfait->tickets_count ?? 0 }})" 
                                 class="w-11 h-11 flex items-center justify-center bg-gray-100 dark:bg-slate-700 text-gray-400 rounded-xl hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all shadow-sm">
                             <i class="fas fa-trash-alt"></i>
                         </button>
@@ -638,8 +630,11 @@
                                 <option value="vendu" {{ request('filter_statut') == 'vendu' ? 'selected' : '' }}>Vendu</option>
                             </select>
 
+                            <!-- Filtre Date -->
+                            <input type="date" name="filter_date" value="{{ request('filter_date') }}" onchange="this.form.submit()" class="px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border-none rounded-xl text-gray-600 dark:text-gray-300 font-bold cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 transition" title="Filtrer par date">
+
                             <!-- Bouton Reset (si filtres actifs) -->
-                            @if(request('search') || request('filter_forfait') || request('filter_statut') || request('filter_zone'))
+                            @if(request('search') || request('filter_forfait') || request('filter_statut') || request('filter_zone') || request('filter_date'))
                                 <a href="{{ route('forfait_ticket', ['tab' => 'list']) }}" class="p-2 text-red-400 hover:text-red-600 transition" title="Réinitialiser">
                                     <i class="fas fa-times"></i>
                                 </a>
@@ -762,6 +757,7 @@
                                 @if(request('filter_forfait')) <input type="hidden" name="filter_forfait" value="{{ request('filter_forfait') }}"> @endif
                                 @if(request('filter_statut')) <input type="hidden" name="filter_statut" value="{{ request('filter_statut') }}"> @endif
                                 @if(request('filter_zone')) <input type="hidden" name="filter_zone" value="{{ request('filter_zone') }}"> @endif
+                                @if(request('filter_date')) <input type="hidden" name="filter_date" value="{{ request('filter_date') }}"> @endif
 
                                 <select name="per_page" onchange="this.form.submit()" class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg text-xs font-bold p-1 px-2 focus:ring-2 focus:ring-brand-blue outline-none cursor-pointer">
                                     <option value="5" {{ request('per_page') == 5 ? 'selected' : '' }}>5 lignes</option>
@@ -986,24 +982,48 @@
         </div>
     </div>
 
-    <!-- MODALE SUPPRESSION FORFAIT -->
+    <!-- MODALE SUPPRESSION FORFAIT - DEUX OPTIONS -->
     <div id="delete-package-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeDeletePackageModal()"></div>
-        <div class="bg-white dark:bg-brand-cardDark w-full max-w-sm rounded-[2.5rem] p-8 relative z-10 text-center shadow-2xl border border-gray-100 dark:border-slate-700">
-            <!-- Icône dynamique (Danger ou Poubelle) -->
-            <div id="delete-icon-box" class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <i id="delete-icon" class="fas fa-trash text-2xl"></i>
+        <div class="bg-white dark:bg-brand-cardDark w-full max-w-md rounded-[2.5rem] p-8 relative z-10 text-center shadow-2xl border border-gray-100 dark:border-slate-700">
+            <!-- Icône -->
+            <div class="w-20 h-20 rounded-full bg-red-50 dark:bg-red-900/20 text-red-500 flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-trash text-2xl"></i>
             </div>
 
-            <h3 id="delete-title" class="text-xl font-bold text-gray-800 dark:text-white mb-2">Supprimer Forfait</h3>
-            <p id="delete-message" class="text-sm text-gray-500 dark:text-gray-400 mb-8 leading-relaxed"></p>
-
-            <form id="delete-package-form" method="POST">
-                @csrf @method('DELETE')
-                <div class="flex gap-3">
-                    <button type="button" onclick="closeDeletePackageModal()" class="flex-1 py-3 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-xl transition">Annuler</button>
-                    <button type="submit" id="delete-confirm-btn" class="flex-1 py-3 text-white rounded-xl text-sm font-bold shadow-lg transition">Confirmer</button>
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Supprimer le forfait</h3>
+            <p id="delete-message" class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">Choisissez une option:</p>
+            
+            <!-- Option 1: Supprimer le forfait + tickets non vendus -->
+            <button id="btn-delete-forfait" onclick="confirmDeleteForfait()" class="w-full mb-3 p-4 rounded-xl border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition text-left">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-500">
+                        <i class="fas fa-trash"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold text-gray-900 dark:text-white">Supprimer le forfait</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Cela supprimera le forfait et tous les tickets non vendus</p>
+                    </div>
                 </div>
+            </button>
+            
+            <!-- Option 2: Supprimer uniquement les tickets non vendus -->
+            <button id="btn-delete-tickets" onclick="confirmDeleteTickets()" class="w-full mb-4 p-4 rounded-xl border border-orange-200 dark:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition text-left">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-500">
+                        <i class="fas fa-ticket-alt"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold text-gray-900 dark:text-white">Supprimer les tickets non vendus</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Seuls les tickets non vendus seront supprimés</p>
+                    </div>
+                </div>
+            </button>
+
+            <button type="button" onclick="closeDeletePackageModal()" class="w-full py-3 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-xl transition">Annuler</button>
+            
+            <form id="delete-package-form" method="POST" class="hidden">
+                @csrf @method('DELETE')
             </form>
         </div>
     </div>
@@ -1025,7 +1045,7 @@
                 <p id="bulk-delete-warning-text" class="text-xs text-red-600 dark:text-red-400"></p>
             </div>
 
-            <form id="bulk-delete-form" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir continuer?');">
+            <form id="bulk-delete-form" method="POST" onsubmit="event.preventDefault(); submitBulkDelete(this);">
                 @csrf @method('DELETE')
                 <input type="hidden" id="bulk-delete-date" name="date">
                 <div class="flex gap-3">
@@ -1447,34 +1467,69 @@
     }
 
     // --- GESTION SUPPRESSION FORFAIT ---
-    function prepDeletePackage(id, name, count) {
-        const modal = document.getElementById('delete-package-modal');
-        const title = document.getElementById('delete-title');
-        const msg = document.getElementById('delete-message');
-        const iconBox = document.getElementById('delete-icon-box');
-        const icon = document.getElementById('delete-icon');
-        const confirmBtn = document.getElementById('delete-confirm-btn');
-        const form = document.getElementById('delete-package-form');
-
-        form.action = `/forfaits/${id}`; // Route Laravel
-
-        if (count > 0) {
-            // ÉTAT 2 : IL Y A DES TICKETS
-            title.innerText = "Suppression Critique !";
-            msg.innerHTML = `Attention, il y a <strong>${count} tickets</strong> liés au forfait <strong>${name}</strong>. Ils seront TOUS supprimés définitivement.`;
-            iconBox.className = "w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-500 mx-auto mb-6 animate-bounce";
-            icon.className = "fas fa-exclamation-triangle text-2xl";
-            confirmBtn.className = "flex-1 bg-orange-600 text-white py-3 rounded-xl text-sm font-bold hover:bg-orange-700 shadow-orange-500/20 shadow-lg";
+    function toggleDeleteMenu(menuId) {
+        const menu = document.getElementById(menuId);
+        if (menu.classList.contains('hidden')) {
+            // Fermer tous les autres menus
+            document.querySelectorAll('[id^="delete-menu-"]').forEach(m => {
+                if (m.id !== menuId) m.classList.add('hidden');
+            });
+            menu.classList.remove('hidden');
         } else {
-            // ÉTAT 1 : VIDE
-            title.innerText = "Supprimer le forfait ?";
-            msg.innerText = `Voulez-vous supprimer "${name}" du catalogue ?`;
-            iconBox.className = "w-20 h-20 rounded-full bg-red-50 dark:bg-red-900/20 text-red-500 mx-auto mb-6";
-            icon.className = "fas fa-trash text-2xl";
-            confirmBtn.className = "flex-1 bg-red-500 text-white py-3 rounded-xl text-sm font-bold hover:bg-red-600 shadow-red-500/20 shadow-lg";
+            menu.classList.add('hidden');
         }
-
+    }
+    
+    // Fermer le menu quand on clique ailleurs
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.relative')) {
+            document.querySelectorAll('[id^="delete-menu-"]').forEach(m => m.classList.add('hidden'));
+        }
+    });
+    
+    // Variables pour stocker les infos de suppression
+    let deleteForfaitId = null;
+    let deleteForfaitName = '';
+    let deleteTicketsCount = 0;
+    
+    // Fonction pour afficher le modal avec deux options
+    function showDeleteOptionsModal(id, name, count) {
+        const modal = document.getElementById('delete-package-modal');
+        const btnDeleteForfait = document.getElementById('btn-delete-forfait');
+        const btnDeleteTickets = document.getElementById('btn-delete-tickets');
+        
+        // Stocker les infos
+        deleteForfaitId = id;
+        deleteForfaitName = name;
+        deleteTicketsCount = count;
+        
+        // Afficher/masquer le bouton de suppression des tickets selon s'il y a des tickets
+        if (count > 0) {
+            btnDeleteTickets.classList.remove('hidden');
+        } else {
+            btnDeleteTickets.classList.add('hidden');
+        }
+        
         modal.classList.remove('hidden');
+    }
+    
+    // Confirmer la suppression du forfait
+    function confirmDeleteForfait() {
+        const form = document.getElementById('delete-package-form');
+        form.action = `/forfaits/${deleteForfaitId}`;
+        form.submit();
+    }
+    
+    // Confirmer la suppression des tickets non vendus
+    function confirmDeleteTickets() {
+        // Utiliser le modal de suppression en masse
+        closeDeletePackageModal();
+        previewBulkDelete('forfait', deleteForfaitId, deleteForfaitName);
+    }
+    
+    function prepDeletePackage(id, name, count, deleteType = 'forfait') {
+        // Ancien code - maintenant on utilise showDeleteOptionsModal à la place
+        showDeleteOptionsModal(id, name, count);
     }
 
     function closeDeletePackageModal() {
@@ -1535,7 +1590,7 @@
 
         if (hasSoldTickets) {
             warningDiv.classList.remove('hidden');
-            warningText.innerText = "Attention : Cette opération inclut des tickets déjà vendus !";
+            warningText.innerText = "Attention : Suppression des tickets non vendus !";
             iconBox.className = "w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-red-50 dark:bg-red-900/20 text-red-500";
             icon.className = "fas fa-exclamation-triangle text-2xl";
         } else {
@@ -1547,6 +1602,83 @@
         title.innerText = modalTitle;
         msg.innerHTML = modalMessage;
         modal.classList.remove('hidden');
+    }
+
+    // --- SOUMISSION SUPPRESSION EN MASSE AVEC TOAST ---
+    async function submitBulkDelete(form) {
+        const formData = new FormData(form);
+        const url = form.action;
+        
+        console.log('Submitting bulk delete to:', url);
+        
+        // Add CSRF token and method to FormData for Laravel
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+        formData.append('_method', 'DELETE');
+        
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            
+            console.log('Response status:', response.status, 'OK:', response.ok);
+            
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            console.log('Content-Type:', contentType);
+            
+            if (!contentType || !contentType.includes('application/json')) {
+                // Not JSON response - might be redirect or error page
+                closeBulkDeleteModal();
+                if (response.ok) {
+                    // Success but not JSON - reload page
+                    if (typeof showToast === 'function') {
+                        showToast('Opération réussie !', 'success');
+                    }
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    if (typeof showToast === 'function') {
+                        showToast('Erreur lors de la suppression', 'error');
+                    }
+                }
+                return;
+            }
+            
+            const data = await response.json();
+            console.log('Response data:', data);
+            
+            // Fermer le modal
+            closeBulkDeleteModal();
+            
+            if (data.success) {
+                // Afficher le toast de succès
+                if (typeof showToast === 'function') {
+                    showToast(data.message || 'Suppression réussie !', 'success');
+                } else {
+                    alert(data.message || 'Suppression réussie !');
+                }
+                // Recharger la page pour mettre à jour l'affichage
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                // Afficher le toast d'erreur
+                if (typeof showToast === 'function') {
+                    showToast(data.message || 'Erreur lors de la suppression', 'error');
+                } else {
+                    alert(data.message || 'Erreur lors de la suppression');
+                }
+            }
+        } catch (error) {
+            console.error('Erreur:', error);
+            closeBulkDeleteModal();
+            if (typeof showToast === 'function') {
+                showToast('Erreur lors de la connexion au serveur', 'error');
+            } else {
+                alert('Erreur lors de la connexion au serveur');
+            }
+        }
     }
 
     async function checkForSoldTickets(id, type) {
@@ -2276,6 +2408,97 @@
         if (statutFilter) statutFilter.addEventListener('change', filterTable);
         if (dateFilter) dateFilter.addEventListener('change', filterTable);
     });
+</script>
+
+<!-- MODALE OPTIONS DE SUPPRESSION -->
+<div id="delete-options-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeDeleteOptionsModal()"></div>
+    <div class="bg-white dark:bg-brand-cardDark w-full max-w-md rounded-3xl p-6 relative z-10 shadow-2xl border border-gray-100 dark:border-slate-700">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white">Options de Suppression</h3>
+            <button onclick="closeDeleteOptionsModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <i class="fas fa-times w-6 h-6"></i>
+            </button>
+        </div>
+        
+        <div class="space-y-4">
+            <!-- Option 1: Supprimer le forfait -->
+            <button onclick="prepDeletePackage(deleteOptions.forfaitId, deleteOptions.forfaitName, deleteOptions.ticketsCount, 'forfait')" 
+                    class="w-full text-left p-4 rounded-xl border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center text-red-600 dark:text-red-400">
+                        <i class="fas fa-trash"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold text-gray-900 dark:text-white">Supprimer le forfait</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Cela supprimera le forfait et tous les tickets non vendus</p>
+                    </div>
+                </div>
+            </button>
+            
+            <!-- Option 2: Supprimer les tickets non vendus -->
+            <button id="delete-unsold-tickets-btn" onclick="previewBulkDelete('forfait', deleteOptions.forfaitId, deleteOptions.forfaitName)" 
+                    class="hidden w-full text-left p-4 rounded-xl border border-orange-200 dark:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center text-orange-600 dark:text-orange-400">
+                        <i class="fas fa-ticket-alt"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold text-gray-900 dark:text-white">Supprimer les tickets non vendus</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Seuls les tickets non vendus seront supprimés</p>
+                    </div>
+                </div>
+            </button>
+        </div>
+        
+        <div class="flex gap-3 mt-6">
+            <button onclick="closeDeleteOptionsModal()" class="flex-1 py-3 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-slate-700 transition">
+                Annuler
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables globales pour le modal de suppression
+let deleteOptions = {
+    forfaitId: null,
+    forfaitName: '',
+    ticketsCount: 0
+};
+
+/**
+ * Ouvre le modal des options de suppression
+ */
+function openDeleteOptionsModal(forfaitId, forfaitName, ticketsCount) {
+    deleteOptions = {
+        forfaitId: forfaitId,
+        forfaitName: forfaitName,
+        ticketsCount: ticketsCount
+    };
+    
+    // Afficher/masquer le bouton de suppression des tickets non vendus
+    const deleteUnsoldBtn = document.getElementById('delete-unsold-tickets-btn');
+    if (ticketsCount > 0) {
+        deleteUnsoldBtn.classList.remove('hidden');
+    } else {
+        deleteUnsoldBtn.classList.add('hidden');
+    }
+    
+    document.getElementById('delete-options-modal').classList.remove('hidden');
+}
+
+/**
+ * Ferme le modal des options de suppression
+ */
+function closeDeleteOptionsModal() {
+    document.getElementById('delete-options-modal').classList.add('hidden');
+    deleteOptions = {
+        forfaitId: null,
+        forfaitName: '',
+        ticketsCount: 0
+    };
+}
 
 </script>
 @endsection

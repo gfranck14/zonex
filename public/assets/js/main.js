@@ -1,11 +1,11 @@
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
     generateSidebar();
-    
+
     // Détecter la page actuelle et générer le header approprié
     const path = window.location.pathname;
     const page = path.split("/").pop() || "index.html";
-    
-    switch(page) {
+
+    switch (page) {
         case "index.html":
             generateHeader("Bonjour, Caleb 👋", "Voici ce qui se passe sur vos zones aujourd'hui.");
             break;
@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", function() {
         default:
             generateHeader("Dashboard", "Overview");
     }
-    
+
     // Vérifier et afficher les empty states
     setTimeout(checkEmptyStates, 100); // Petit délai pour s'assurer que le DOM est chargé
 });
@@ -75,7 +75,7 @@ function generateHeader(title, subtitle) {
             </button>
         </header>
     `;
-    
+
     // Ajouter l'overlay mobile s'il n'existe pas déjà
     if (!document.querySelector('.mobile-overlay')) {
         const overlay = document.createElement('div');
@@ -175,7 +175,7 @@ function generateSidebar() {
 function toggleMobileMenu() {
     const sidebar = document.querySelector('aside');
     const overlay = document.querySelector('.mobile-overlay');
-    
+
     if (sidebar && overlay) {
         sidebar.classList.toggle('open');
         overlay.classList.toggle('active');
@@ -186,7 +186,7 @@ function toggleMobileMenu() {
 function closeMobileMenu() {
     const sidebar = document.querySelector('aside');
     const overlay = document.querySelector('.mobile-overlay');
-    
+
     if (sidebar && overlay) {
         sidebar.classList.remove('open');
         overlay.classList.remove('active');
@@ -279,7 +279,7 @@ function switchTab(tabName) {
         activeBtn.classList.add('active');
         activeContent.classList.remove('hidden');
     }
-    
+
     // 4. Vérifier les empty states après le changement d'onglet
     setTimeout(checkEmptyStates, 100);
 }
@@ -292,12 +292,12 @@ const displayID = document.getElementById('display-zone-id');
 const codeZoneID = document.getElementById('code-zone-id');
 
 function showDetail(name, id) {
-    if(listDiv && detailDiv) {
+    if (listDiv && detailDiv) {
         listDiv.classList.add('hidden');
         detailDiv.classList.remove('hidden');
-        if(zoneTitle) zoneTitle.innerText = name;
-        if(displayID) displayID.innerText = id ? id : 'WZ-XXXX';
-        if(codeZoneID) codeZoneID.innerText = id ? id : 'WZ-XXXX';
+        if (zoneTitle) zoneTitle.innerText = name;
+        if (displayID) displayID.innerText = id ? id : 'WZ-XXXX';
+        if (codeZoneID) codeZoneID.innerText = id ? id : 'WZ-XXXX';
 
         // LOGIQUE ICONE DYNAMIQUE
         // On remet le bleu par défaut
@@ -307,7 +307,7 @@ function showDetail(name, id) {
         let borderClass = 'border-transparent';
 
         // Si c'est Campus Nord (Cas Alerte)
-        if(name === 'Campus Nord') {
+        if (name === 'Campus Nord') {
             // Icône Warning
             iconHtml = '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>';
             bgClass = 'bg-orange-100';
@@ -317,18 +317,18 @@ function showDetail(name, id) {
 
         // Appliquer les classes
         const zoneIconContainer = document.querySelector('#zone-detail .w-16');
-        if(zoneIconContainer) {
+        if (zoneIconContainer) {
             zoneIconContainer.className = `w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg ${bgClass} ${textClass} border ${borderClass}`;
             zoneIconContainer.innerHTML = iconHtml;
         }
-        
+
         // Reset tab to general par défaut
         switchTab('general');
     }
 }
 
 function showList() {
-    if(listDiv && detailDiv) {
+    if (listDiv && detailDiv) {
         detailDiv.classList.add('hidden');
         listDiv.classList.remove('hidden');
     }
@@ -343,16 +343,16 @@ const detailSpent = document.getElementById('detail-spent');
 const detailAvatar = document.getElementById('detail-avatar');
 
 function showClientDetail(name, phone, spent) {
-    if(clientListDiv && clientDetailDiv) {
+    if (clientListDiv && clientDetailDiv) {
         clientListDiv.classList.add('hidden');
         clientDetailDiv.classList.remove('hidden');
-        
+
         // Remplir les données
-        if(detailName) detailName.innerText = name;
-        if(detailPhone) detailPhone.innerText = phone;
-        if(detailSpent) detailSpent.innerText = spent;
+        if (detailName) detailName.innerText = name;
+        if (detailPhone) detailPhone.innerText = phone;
+        if (detailSpent) detailSpent.innerText = spent;
         // Initiales - deux lettres
-        if(detailAvatar) {
+        if (detailAvatar) {
             const initials = name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2);
             detailAvatar.innerText = initials;
         }
@@ -360,7 +360,7 @@ function showClientDetail(name, phone, spent) {
 }
 
 function showClientList() {
-    if(clientListDiv && clientDetailDiv) {
+    if (clientListDiv && clientDetailDiv) {
         clientDetailDiv.classList.add('hidden');
         clientListDiv.classList.remove('hidden');
     }
@@ -399,8 +399,8 @@ function showToast(message, type = 'success') {
 
     // 2. Définir les couleurs
     const colors = type === 'success' ? 'bg-[#083e5f] text-white' : 'bg-red-500 text-white';
-    const icon = type === 'success' 
-        ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' 
+    const icon = type === 'success'
+        ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>'
         : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
 
     // 3. Créer l'élément Toast
@@ -413,7 +413,7 @@ function showToast(message, type = 'success') {
 
     // 4. Ajouter au DOM et Animer
     container.appendChild(toast);
-    
+
     // Animation Entrée
     requestAnimationFrame(() => {
         toast.classList.remove('translate-y-10', 'opacity-0');
@@ -470,7 +470,7 @@ function initImportsTable() {
         }));
 
     filteredData = [...allData];
-    
+
     // Appliquer les filtres et la pagination
     applyFilters();
     updatePagination();
@@ -486,7 +486,7 @@ function applyFilters() {
         const forfaitMatch = !forfaitFilter || item.forfaitValue === forfaitFilter;
         const statutMatch = !statutFilter || item.statutValue === statutFilter;
         const zoneMatch = !zoneFilter || item.zoneValue === zoneFilter;
-        
+
         return forfaitMatch && statutMatch && zoneMatch;
     });
 
@@ -591,11 +591,10 @@ function addPageButton(pageNum) {
 
     const button = document.createElement('button');
     button.textContent = pageNum;
-    button.className = `px-3 py-1 text-sm rounded-lg transition ${
-        pageNum === currentPage 
-            ? 'bg-brand-sidebarLight dark:bg-brand-blue text-white' 
+    button.className = `px-3 py-1 text-sm rounded-lg transition ${pageNum === currentPage
+            ? 'bg-brand-sidebarLight dark:bg-brand-blue text-white'
             : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700'
-    }`;
+        }`;
     button.onclick = () => goToPage(pageNum);
     pageNumbers.appendChild(button);
 }
@@ -644,7 +643,7 @@ function setupImportsFilters() {
 }
 
 // Initialiser le tableau des imports au chargement
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Initialiser après un petit délai pour s'assurer que le DOM est chargé
     setTimeout(() => {
         initImportsTable();
@@ -754,7 +753,7 @@ function closeTicketModal() {
 /* --- GESTION ÉDITION CLIENT --- */
 function toggleEditMode() {
     const editForm = document.getElementById('edit-form');
-    if(editForm) {
+    if (editForm) {
         editForm.classList.toggle('hidden');
     }
 }
@@ -762,25 +761,25 @@ function toggleEditMode() {
 function saveClientChanges() {
     const newName = document.getElementById('edit-name').value;
     const newPhone = document.getElementById('edit-phone').value;
-    
+
     // Mettre à jour l'affichage
     const detailName = document.getElementById('detail-name');
     const detailPhone = document.getElementById('detail-phone');
     const detailAvatar = document.getElementById('detail-avatar');
-    
-    if(detailName) detailName.textContent = newName;
-    if(detailPhone) detailPhone.textContent = newPhone;
-    
+
+    if (detailName) detailName.textContent = newName;
+    if (detailPhone) detailPhone.textContent = newPhone;
+
     // Mettre à jour l'avatar (premières lettres)
-    if(detailAvatar) {
+    if (detailAvatar) {
         const initials = newName.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2);
         detailAvatar.textContent = initials;
     }
-    
+
     // Cacher le formulaire
     const editForm = document.getElementById('edit-form');
-    if(editForm) editForm.classList.add('hidden');
-    
+    if (editForm) editForm.classList.add('hidden');
+
     // Afficher un message de succès
     showToast('Informations client mises à jour avec succès !', 'success');
 }
@@ -791,13 +790,13 @@ function cancelEdit() {
     const editPhone = document.getElementById('edit-phone');
     const detailName = document.getElementById('detail-name');
     const detailPhone = document.getElementById('detail-phone');
-    
-    if(editName && detailName) editName.value = detailName.textContent;
-    if(editPhone && detailPhone) editPhone.value = detailPhone.textContent;
-    
+
+    if (editName && detailName) editName.value = detailName.textContent;
+    if (editPhone && detailPhone) editPhone.value = detailPhone.textContent;
+
     // Cacher le formulaire
     const editForm = document.getElementById('edit-form');
-    if(editForm) editForm.classList.add('hidden');
+    if (editForm) editForm.classList.add('hidden');
 }
 
 /* --- GESTION SÉLECTEUR DE PAYS GÉNÉRIQUE --- */
@@ -805,7 +804,7 @@ function toggleCountryMenu(prefix) {
     const menu = document.getElementById(prefix + '-country-menu');
     if (menu) {
         menu.classList.toggle('hidden');
-        
+
         // Fermer les autres menus s'ils sont ouverts
         document.querySelectorAll('[id$="-country-menu"]').forEach(otherMenu => {
             if (otherMenu.id !== prefix + '-country-menu') {
@@ -822,19 +821,19 @@ function selectCountry(countryCode, phoneCode, prefix) {
         flag.src = `https://flagcdn.com/w40/${countryCode}.png`;
         flag.alt = countryCode.toUpperCase();
     }
-    
+
     // Mettre à jour le code visible
     const codeText = document.getElementById(prefix + '-code');
     if (codeText) {
         codeText.textContent = phoneCode;
     }
-    
+
     // Mettre à jour le champ hidden s'il existe
     const hiddenField = document.getElementById(prefix + '-phone-code');
     if (hiddenField) {
         hiddenField.value = phoneCode;
     }
-    
+
     // Fermer le menu
     const menu = document.getElementById(prefix + '-country-menu');
     if (menu) {
@@ -849,7 +848,7 @@ function selectCountry(countryCode, phoneCode, prefix) {
 }
 
 // Fermeture au clic dehors pour tous les menus pays
-document.addEventListener('click', function(event) {
+document.addEventListener('click', function (event) {
     if (!event.target.closest('[id$="-country-menu"]') && !event.target.closest('button[onclick^="toggleCountryMenu"]')) {
         document.querySelectorAll('[id$="-country-menu"]').forEach(menu => {
             menu.classList.add('hidden');
@@ -861,27 +860,44 @@ document.addEventListener('click', function(event) {
 function openWithdrawalModal() {
     const withdrawSelect = document.getElementById('withdraw-select');
     const modal = document.getElementById('withdrawal-modal');
-    
+    const balanceDisplay = document.getElementById('solde-display');
+
     if (modal && withdrawSelect) {
+        // Récupérer le montant sélectionné
+        const amount = parseInt(withdrawSelect.value);
+
+        // Récupérer le solde disponible (parse the formatted number)
+        let balance = 0;
+        if (balanceDisplay) {
+            // Extraire uniquement les chiffres du texte affiché (enlève les espaces et le "F")
+            const balanceText = balanceDisplay.textContent.replace(/\s/g, '').replace('F', '').trim();
+            balance = parseInt(balanceText) || 0;
+        }
+
+        // Vérifier si le solde est suffisant
+        if (amount > balance) {
+            showToast('Solde insuffisant! Votre solde disponible est de ' + balance.toLocaleString('fr-FR') + ' F', 'error');
+            return;
+        }
+
         // Récupérer et formater le montant sélectionné
-        const amount = withdrawSelect.value;
-        const formattedAmount = parseInt(amount).toLocaleString('fr-FR');
-        
+        const formattedAmount = amount.toLocaleString('fr-FR');
+
         // Mettre à jour le texte dans le modal
         const modalAmountDisplay = document.getElementById('modal-amount-display');
         if (modalAmountDisplay) {
             modalAmountDisplay.innerText = formattedAmount + ' F';
         }
-        
+
         // Afficher la modale et réinitialiser à l'étape 1
         modal.classList.remove('hidden');
         document.getElementById('withdrawal-step-1').classList.remove('hidden');
         document.getElementById('withdrawal-step-2').classList.add('hidden');
-        
+
         // Réinitialiser les champs
         document.getElementById('withdrawal-phone').value = '';
         document.getElementById('withdrawal-name').value = '';
-        
+
         // Réinitialiser les radio buttons
         const radios = document.querySelectorAll('input[name="network"]');
         radios.forEach(radio => radio.checked = false);
@@ -905,33 +921,33 @@ function proceedToWithdrawalStep2() {
     const withdrawSelect = document.getElementById('withdraw-select');
     const networkSelect = document.getElementById('withdrawal-network');
     const countryCode = document.getElementById('withdrawal-code');
-    
+
     // Validation simple
     if (!phone.value.trim() || !name.value.trim()) {
         showToast('Veuillez remplir tous les champs', 'error');
         return;
     }
-    
+
     // Récupérer les valeurs
     const selectedOption = withdrawSelect.options[withdrawSelect.selectedIndex];
     const amount = selectedOption.text;
-    
+
     // Récupérer le réseau sélectionné (dropdown)
     const networkValue = networkSelect.value;
     const networkText = networkSelect.options[networkSelect.selectedIndex].text;
-    
+
     // Utiliser le code pays sélectionné
     const phoneWithCode = countryCode.textContent + ' ' + phone.value.trim();
-    
+
     // Remplir le récapitulatif
     document.getElementById('withdrawal-amount-display').textContent = amount;
     document.getElementById('withdrawal-name-display').textContent = name.value.trim();
     document.getElementById('withdrawal-phone-display').textContent = phoneWithCode;
     document.getElementById('withdrawal-network-display').textContent = networkText;
-    
+
     document.getElementById('withdrawal-amount-highlight').textContent = amount;
     document.getElementById('withdrawal-name-highlight').textContent = name.value.trim();
-    
+
     // Passer à l'étape 2
     document.getElementById('withdrawal-step-1').classList.add('hidden');
     document.getElementById('withdrawal-step-2').classList.remove('hidden');
@@ -951,30 +967,30 @@ function confirmWithdrawal() {
     const selectedOption = withdrawSelect.options[withdrawSelect.selectedIndex];
     const amount = parseInt(withdrawSelect.value);
     const amountText = selectedOption.text;
-    
+
     // Récupérer le réseau sélectionné (dropdown)
     const networkValue = networkSelect.value;
     const networkText = networkSelect.options[networkSelect.selectedIndex].text;
-    
+
     // Utiliser le code pays sélectionné
     const phoneWithCode = countryCode.textContent + ' ' + phone;
-    
+
     // Calcul du nouveau solde
     const soldeDisplay = document.getElementById('solde-display');
     const currentSoldeText = soldeDisplay.innerText;
     const currentSolde = parseInt(currentSoldeText.replace(/[^\d]/g, ''));
     const nouveauSolde = currentSolde - amount;
-    
+
     // Mettre à jour le solde affiché
     soldeDisplay.innerHTML = `${nouveauSolde.toLocaleString()} <span class="text-2xl text-brand-blue font-normal">F</span>`;
-    
+
     // Ajouter la transaction à l'historique
     const transactionTable = document.querySelector('#withdrawal-history-modal tbody');
     if (transactionTable) {
         const now = new Date();
         const dateStr = now.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
         const ref = 'WDR-' + now.getFullYear() + '-' + String(Math.floor(Math.random() * 1000)).padStart(3, '0');
-        
+
         const newRow = document.createElement('tr');
         newRow.className = 'hover:bg-gray-50/50 dark:hover:bg-slate-700 transition group';
         newRow.innerHTML = `
@@ -990,14 +1006,14 @@ function confirmWithdrawal() {
                 <button onclick="cancelWithdrawal('${ref}', this)" class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition" title="Annuler"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
             </td>
         `;
-        
+
         // Insérer au début du tableau
         transactionTable.insertBefore(newRow, transactionTable.firstChild);
     }
-    
+
     // Fermer la modale
     closeWithdrawalModal();
-    
+
     // Afficher le toast de succès
     showToast('Demande de retrait transmise', 'success');
     // Afficher l'historique des retraits
@@ -1054,9 +1070,9 @@ function viewWithdrawalDetails(refId) {
             statusClass: 'bg-yellow-100 text-yellow-700'
         }
     };
-    
+
     const data = withdrawalData[refId] || withdrawalData['WDR-001'];
-    
+
     // Remplir le modal avec les données
     document.getElementById('detail-ref').innerText = refId;
     document.getElementById('detail-date').innerText = data.date;
@@ -1064,11 +1080,11 @@ function viewWithdrawalDetails(refId) {
     document.getElementById('detail-operator').innerText = data.operator;
     document.getElementById('detail-beneficiary').innerText = data.beneficiary;
     document.getElementById('detail-phone').innerText = data.phone;
-    
+
     const statusElement = document.getElementById('detail-status');
     statusElement.innerText = data.status;
     statusElement.className = data.statusClass + ' px-2 py-1 rounded text-[10px] font-bold';
-    
+
     // Ouvrir le modal
     document.getElementById('withdrawal-details-modal').classList.remove('hidden');
 }
@@ -1078,10 +1094,10 @@ function closeDetailsModal() {
 }
 
 // Recherche dans le tableau (Simple filtre JS)
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.getElementById('history-search');
     if (searchInput) {
-        searchInput.addEventListener('keyup', function() {
+        searchInput.addEventListener('keyup', function () {
             let filter = this.value.toLowerCase();
             let rows = document.querySelectorAll('#withdrawal-table-body tr');
 
@@ -1099,26 +1115,26 @@ function cancelWithdrawal(reference, buttonElement) {
     const statusCell = row.querySelector('td:nth-child(7)');
     const actionCell = row.querySelector('td:nth-child(8)');
     const amountCell = row.querySelector('td:nth-child(2)');
-    
+
     // Mettre à jour le statut
     statusCell.innerHTML = '<span class="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-[10px] font-bold">❌ Annulé</span>';
-    
+
     // Remplacer le bouton par un tiret
     actionCell.innerHTML = '<span class="text-gray-400 dark:text-gray-500 text-[10px]">-</span>';
-    
+
     // Récupérer le montant pour le rembourser
     const amountText = amountCell.textContent;
     const amount = parseInt(amountText.replace(/[^0-9]/g, ''));
-    
+
     // Rembourser le solde
     const soldeDisplay = document.getElementById('solde-display');
     const currentSoldeText = soldeDisplay.innerText;
     const currentSolde = parseInt(currentSoldeText.replace(/[^\d]/g, ''));
     const nouveauSolde = currentSolde + amount;
-    
+
     // Mettre à jour le solde affiché
     soldeDisplay.innerHTML = `${nouveauSolde.toLocaleString()} <span class="text-2xl text-brand-blue font-normal">F</span>`;
-    
+
     // Afficher le toast de confirmation
     showToast(`Demande ${reference} annulée. Montant remboursé : ${amountText}`, 'success');
 }
@@ -1129,7 +1145,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Logique pour l'affichage du warning montant élevé
     const withdrawSelect = document.getElementById('withdraw-select');
     const highAmountNote = document.getElementById('high-amount-note');
-    
+
     if (withdrawSelect && highAmountNote) {
         withdrawSelect.addEventListener('change', () => {
             const amount = parseInt(withdrawSelect.value);

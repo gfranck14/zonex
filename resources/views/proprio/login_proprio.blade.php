@@ -18,6 +18,22 @@
         .bg-logo-gradient {
             background: linear-gradient(135deg, #083e5f 0%, #0EA5E9 50%, #84CC16 100%);
         }
+        
+        /* Animation for fade in */
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 
@@ -104,6 +120,31 @@
                     <span class="text-2xl font-bold">WiFiProfit</span>
                 </div>
 
+                <!-- Success Message after password reset -->
+                @if(session('status') == 'password_reset_success')
+                    <div id="password-reset-success" class="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl animate-fade-in">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center">
+                                <i class="fas fa-check text-green-600 dark:text-green-400"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-green-700 dark:text-green-400 text-sm">Mot de passe modifié !</p>
+                                <p class="text-xs text-green-600 dark:text-green-500">Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <script>
+                        setTimeout(() => {
+                            const successMsg = document.getElementById('password-reset-success');
+                            if(successMsg) {
+                                successMsg.style.transition = 'opacity 0.5s';
+                                successMsg.style.opacity = '0';
+                                setTimeout(() => successMsg.remove(), 500);
+                            }
+                        }, 5000);
+                    </script>
+                @endif
+
                 <!-- VUE 1 : LOGIN -->
                 <div id="view-login" class="{{ $errors->has('signup') || old('form_type') == 'signup' ? 'hidden' : '' }} animate-fade-in">
                     <div class="mb-8">
@@ -182,7 +223,7 @@
                                 <p class="text-red-500 text-[10px] font-bold mt-1 uppercase tracking-tight"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
                             @enderror
                             <div class="flex justify-end mt-2">
-                                <a href="#" class="text-xs font-bold text-custom-blue hover:underline">Mot de passe oublié ?</a>
+                                <a href="{{ route('proprio.forgot_password') }}" class="text-xs font-bold text-custom-blue hover:underline">Mot de passe oublié ?</a>
                             </div>
                         </div>
 
@@ -200,6 +241,85 @@
                     <p class="text-center text-sm text-gray-500 dark:text-gray-400 mt-8">
                         Nouveau vendeur ? <button onclick="switchView('signup')" class="font-bold text-custom-blue hover:underline">Créer un compte</button>
                     </p>
+                </div>
+
+                <!-- VUE 1b : FORGOT PASSWORD - Enter Phone -->
+                <div id="view-forgot-phone" class="{{ isset($forgot_password_step) && $forgot_password_step == 'enter_phone' ? '' : 'hidden' }} animate-fade-in">
+                    <div class="mb-8">
+                        <button onclick="window.location.href='{{ route('login') }}'" class="mb-4 text-xs font-bold text-gray-400 hover:text-custom-blue flex items-center gap-1">
+                            <i class="fas fa-arrow-left"></i> Retour
+                        </button>
+                        <div class="w-16 h-16 bg-blue-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-custom-blue mx-auto mb-4">
+                            <i class="fas fa-phone w-8 h-8"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Mot de passe oublié</h2>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">Entrez votre numéro de téléphone pour commencer.</p>
+                    </div>
+
+                    <form method="POST" action="{{ route('proprio.forgot_password.verify_phone') }}" class="space-y-5">
+                        @csrf
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Téléphone</label>
+                            <div class="relative" id="forgot-phone-container">
+                                
+                                <!-- Bouton Sélecteur -->
+                                <button type="button" onclick="toggleCountryMenu('forgot')" class="absolute left-1 top-1 bottom-1 flex items-center gap-2 px-3 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 transition border border-transparent focus:border-brand-blue z-20">
+                                    <img id="forgot-flag" src="https://flagcdn.com/w40/bj.png" class="w-5 h-auto rounded-sm shadow-sm" alt="Flag">
+                                    <span id="forgot-code" class="text-sm font-bold text-gray-700 dark:text-gray-200">+229</span>
+                                    <i class="fas fa-chevron-down w-3 h-3 text-gray-400"></i>
+                                </button>
+                                
+                                <!-- Menu Déroulant -->
+                                <div id="forgot-country-menu" class="hidden absolute top-full left-0 mt-2 w-64 bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-slate-600 rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in">
+                                    <ul class="max-h-48 overflow-y-auto no-scrollbar">
+                                        <li onclick="selectCountry('bj', '+229', 'forgot')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition border-b border-gray-50 dark:border-slate-700/50 last:border-0">
+                                            <img src="https://flagcdn.com/w40/bj.png" class="w-6 rounded-sm" alt="BJ">
+                                            <span class="text-sm font-bold text-gray-700 dark:text-gray-200">+229</span>
+                                            <span class="text-xs text-gray-500">Bénin</span>
+                                        </li>
+                                        <li onclick="selectCountry('tg', '+228', 'forgot')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition border-b border-gray-50 dark:border-slate-700/50 last:border-0">
+                                            <img src="https://flagcdn.com/w40/tg.png" class="w-6 rounded-sm" alt="TG">
+                                            <span class="text-sm font-bold text-gray-700 dark:text-gray-200">+228</span>
+                                            <span class="text-xs text-gray-500">Togo</span>
+                                        </li>
+                                        <li onclick="selectCountry('ci', '+225', 'forgot')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition border-b border-gray-50 dark:border-slate-700/50 last:border-0">
+                                            <img src="https://flagcdn.com/w40/ci.png" class="w-6 rounded-sm" alt="CI">
+                                            <span class="text-sm font-bold text-gray-700 dark:text-gray-200">+225</span>
+                                            <span class="text-xs text-gray-500">Côte d'Ivoire</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                
+                                <input 
+                                    type="tel" 
+                                    name="numero" 
+                                    id="forgot-phone"
+                                    placeholder="Numéro" 
+                                    required 
+                                    class="input-standard pl-32 font-bold"
+                                >
+                                <input type="hidden" name="phone_code" id="forgot-phone-code" value="+229">
+                            </div>
+                            @error('numero')
+                                <p class="text-red-500 text-[10px] font-bold mt-1 uppercase tracking-tight"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <button type="submit" id="btn-verify-phone" onclick="showLoading(this)" class="w-full bg-custom-blue text-white py-3.5 rounded-xl text-sm font-bold hover:bg-[#062b42] transition shadow-lg uppercase tracking-wider flex items-center justify-center gap-2">
+                            <span>Vérifier le numéro</span>
+                            <svg class="animate-spin hidden w-4 h-4" id="spinner-verify-phone" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </button>
+
+                        <p class="text-center text-xs text-gray-400 mt-4">
+                            Vous avez besoin d'aide ? 
+                            <a href="https://wa.me/22967864795?text=Bonjour, j'ai besoin d'aide pour réinitialiser mon mot de passe WiFiProfit" target="_blank" class="font-bold text-green-500 hover:underline flex items-center gap-1 justify-center mt-2">
+                                <i class="fab fa-whatsapp"></i> Contacter le support
+                            </a>
+                        </p>
+                    </form>
                 </div>
 
                 <!-- VUE 2 : SIGNUP -->
@@ -385,16 +505,431 @@
                     </p>
                 </div>
 
+                <!-- VUE 4b : FORGOT PASSWORD - Enter Email -->
+                <div id="view-forgot-email" class="{{ isset($forgot_password_step) && $forgot_password_step == 'enter_email' ? '' : 'hidden' }} animate-fade-in">
+                    <div class="mb-8">
+                        <button onclick="window.location.href='{{ route('login') }}'" class="mb-4 text-xs font-bold text-gray-400 hover:text-custom-blue flex items-center gap-1">
+                            <i class="fas fa-arrow-left"></i> Retour
+                        </button>
+                        <div class="w-16 h-16 bg-blue-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-custom-blue mx-auto mb-4">
+                            <i class="fas fa-key w-8 h-8"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Mot de passe oublié</h2>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">Entrez votre numéro de téléphone pour commencer.</p>
+                    </div>
+
+                    <form method="POST" action="{{ route('proprio.forgot_password.verify_email') }}" class="space-y-5">
+                        @csrf
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Téléphone</label>
+                            <div class="relative" id="forgot-phone-container">
+                                
+                                <!-- Bouton Sélecteur -->
+                                <button type="button" onclick="toggleCountryMenu('forgot')" class="absolute left-1 top-1 bottom-1 flex items-center gap-2 px-3 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 transition border border-transparent focus:border-brand-blue z-20">
+                                    <img id="forgot-flag" src="https://flagcdn.com/w40/bj.png" class="w-5 h-auto rounded-sm shadow-sm" alt="Flag">
+                                    <span id="forgot-code" class="text-sm font-bold text-gray-700 dark:text-gray-200">+229</span>
+                                    <i class="fas fa-chevron-down w-3 h-3 text-gray-400"></i>
+                                </button>
+                                
+                                <!-- Menu Déroulant -->
+                                <div id="forgot-country-menu" class="hidden absolute top-full left-0 mt-2 w-64 bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-slate-600 rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in">
+                                    <ul class="max-h-48 overflow-y-auto no-scrollbar">
+                                        <li onclick="selectCountry('bj', '+229', 'forgot')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition border-b border-gray-50 dark:border-slate-700/50 last:border-0">
+                                            <img src="https://flagcdn.com/w40/bj.png" class="w-6 rounded-sm" alt="BJ">
+                                            <span class="text-sm font-bold text-gray-700 dark:text-gray-200">+229</span>
+                                            <span class="text-xs text-gray-500">Bénin</span>
+                                        </li>
+                                        <li onclick="selectCountry('tg', '+228', 'forgot')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition border-b border-gray-50 dark:border-slate-700/50 last:border-0">
+                                            <img src="https://flagcdn.com/w40/tg.png" class="w-6 rounded-sm" alt="TG">
+                                            <span class="text-sm font-bold text-gray-700 dark:text-gray-200">+228</span>
+                                            <span class="text-xs text-gray-500">Togo</span>
+                                        </li>
+                                        <li onclick="selectCountry('ci', '+225', 'forgot')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition border-b border-gray-50 dark:border-slate-700/50 last:border-0">
+                                            <img src="https://flagcdn.com/w40/ci.png" class="w-6 rounded-sm" alt="CI">
+                                            <span class="text-sm font-bold text-gray-700 dark:text-gray-200">+225</span>
+                                            <span class="text-xs text-gray-500">Côte d'Ivoire</span>
+                                        </li>
+                                        <li onclick="selectCountry('sn', '+221', 'forgot')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition border-b border-gray-50 dark:border-slate-700/50 last:border-0">
+                                            <img src="https://flagcdn.com/w40/sn.png" class="w-6 rounded-sm" alt="SN">
+                                            <span class="text-sm font-bold text-gray-700 dark:text-gray-200">+221</span>
+                                            <span class="text-xs text-gray-500">Sénégal</span>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <input 
+                                    type="tel" 
+                                    name="numero"
+                                    id="forgot-phone"
+                                    placeholder="01000000"
+                                    required
+                                    class="input-standard pl-32 font-bold"
+                                >
+                                <input type="hidden" name="phone_code" id="forgot-phone-code" value="+229">
+                            </div>
+                            @error('numero')
+                                <p class="text-red-500 text-[10px] font-bold mt-1 uppercase tracking-tight"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <button type="submit" class="w-full bg-custom-blue text-white py-3.5 rounded-xl text-sm font-bold hover:bg-[#062b42] transition shadow-lg uppercase tracking-wider">
+                            Vérifier le numéro
+                        </button>
+                    </form>
+                </div>
+
+                <!-- VUE 4b : FORGOT PASSWORD - Enter Email -->
+                <div id="view-forgot-email" class="{{ isset($forgot_password_step) && $forgot_password_step == 'enter_email' ? '' : 'hidden' }} animate-fade-in">
+                    <div class="mb-8">
+                        <button onclick="window.location.href='{{ route('proprio.forgot_password') }}'" class="mb-4 text-xs font-bold text-gray-400 hover:text-custom-blue flex items-center gap-1">
+                            <i class="fas fa-arrow-left"></i> Retour
+                        </button>
+                        <div class="w-16 h-16 bg-blue-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-custom-blue mx-auto mb-4">
+                            <i class="fas fa-envelope w-8 h-8"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Entrez votre email</h2>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">
+                            Veuillez entrer l'adresse email associée à votre compte.
+                        </p>
+                    </div>
+
+                    <form method="POST" action="{{ route('proprio.forgot_password.verify_email') }}" class="space-y-5">
+                        @csrf
+                        <div class="input-floating-group">
+                            <input 
+                                type="email" 
+                                name="email"
+                                id="forgot-email"
+                                placeholder=" " 
+                                required 
+                                class="input-floating"
+                                value="{{ old('email') }}"
+                            >
+                            <label class="floating-label">Adresse email</label>
+                        </div>
+                        @error('email')
+                            <p class="text-red-500 text-[10px] font-bold mt-1 uppercase tracking-tight"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
+                        @enderror
+
+                        <button type="submit" id="btn-continue-email" onclick="showLoading(this)" class="w-full bg-custom-blue text-white py-3.5 rounded-xl text-sm font-bold hover:bg-[#062b42] transition shadow-lg uppercase tracking-wider flex items-center justify-center gap-2">
+                            <span>Continuer</span>
+                            <svg class="animate-spin hidden w-4 h-4" id="spinner-continue-email" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </button>
+
+                        <p class="text-center text-xs text-gray-400 mt-4">
+                            Vous avez besoin d'aide ? 
+                            <a href="https://wa.me/22967864795?text=Bonjour, j'ai besoin d'aide pour réinitialiser mon mot de passe WiFiProfit" target="_blank" class="font-bold text-green-500 hover:underline flex items-center gap-1 justify-center mt-2">
+                                <i class="fab fa-whatsapp"></i> Contacter le support
+                            </a>
+                        </p>
+                    </form>
+                </div>
+
+                <!-- VUE 5 : FORGOT PASSWORD - Link Sent via Email -->
+                <div id="view-forgot-link-sent" class="{{ isset($forgot_password_step) && $forgot_password_step == 'link_sent' ? '' : 'hidden' }} animate-fade-in">
+                    <div class="mb-8">
+                        <button onclick="window.location.href='{{ route('proprio.forgot_password') }}'" class="mb-4 text-xs font-bold text-gray-400 hover:text-custom-blue flex items-center gap-1">
+                            <i class="fas fa-arrow-left"></i> Retour
+                        </button>
+                        <div class="w-16 h-16 bg-green-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-green-600 mx-auto mb-4">
+                            <i class="fas fa-envelope w-8 h-8"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Email envoyé!</h2>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">
+                            Nous avons envoyé un lien de réinitialisation à votre adresse email:
+                            <span class="font-bold text-custom-blue block mt-1">{{ $masked_email ?? '' }}</span>
+                        </p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="p-4 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded-xl">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-check text-green-600 dark:text-green-400"></i>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-green-700 dark:text-green-400 text-sm">Email envoyé avec succès!</p>
+                                    <p class="text-xs text-green-600 dark:text-green-500">Vérifiez votre boîte de réception pour le lien de réinitialisation.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800 rounded-xl">
+                            <p class="text-xs text-yellow-700 dark:text-yellow-400">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Si vous ne recevez pas l'email dans quelques minutes, vérifiez votre dossier spam.
+                            </p>
+                        </div>
+
+                        <p class="text-center text-xs text-gray-400 mt-4">
+                            Ce n'est pas la bonne adresse ? 
+                            <button onclick="window.location.href='{{ route('proprio.forgot_password') }}'" class="font-bold text-custom-blue hover:underline">Changer l'email</button>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- VUE 5b : FORGOT PASSWORD - WhatsApp Support with User Info -->
+                <div id="view-forgot-whatsapp-support" class="{{ isset($forgot_password_step) && $forgot_password_step == 'whatsapp_support' ? '' : 'hidden' }} animate-fade-in">
+                    <div class="mb-8">
+                        <button onclick="window.location.href='{{ route('proprio.forgot_password') }}'" class="mb-4 text-xs font-bold text-gray-400 hover:text-custom-blue flex items-center gap-1">
+                            <i class="fas fa-arrow-left"></i> Retour
+                        </button>
+                        <div class="w-16 h-16 bg-green-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-green-500 mx-auto mb-4">
+                            <i class="fab fa-whatsapp w-8 h-8"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Contacter le support</h2>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">
+                            Cliquez sur le bouton ci-dessous pour contacter le support via WhatsApp et demander la réinitialisation de votre mot de passe.
+                        </p>
+                    </div>
+
+                    <!-- Account Info Display -->
+                    <div class="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 mb-6">
+                        <p class="text-xs font-bold text-gray-400 uppercase mb-3">Informations du compte</p>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-sm text-gray-500">Nom:</span>
+                                <span class="text-sm font-bold text-gray-900 dark:text-white">{{ $proprio_nom ?? '' }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-gray-500">Prénom:</span>
+                                <span class="text-sm font-bold text-gray-900 dark:text-white">{{ $proprio_prenom ?? '' }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-gray-500">Numéro:</span>
+                                <span class="text-sm font-bold text-gray-900 dark:text-white">{{ $proprio_numero ?? '' }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- WhatsApp Button -->
+                    <a href="{{ $whatsapp_url ?? '' }}" target="_blank" class="w-full bg-green-500 text-white py-3.5 rounded-xl text-sm font-bold hover:bg-green-600 transition shadow-lg flex items-center justify-center gap-2">
+                        <i class="fab fa-whatsapp text-lg"></i>
+                        <span>Contacter le support WhatsApp</span>
+                    </a>
+
+                    <p class="text-center text-xs text-gray-400 mt-4">
+                        Le support vous répondra rapidement pour réinitialiser votre mot de passe.
+                    </p>
+                </div>
+
+                <!-- VUE 6 : FORGOT PASSWORD - Reset Password (via link) -->
+                <div id="view-forgot-confirm-email" class="{{ isset($forgot_password_step) && $forgot_password_step == 'confirm_email' ? '' : 'hidden' }} animate-fade-in">
+                    <div class="mb-8">
+                        <button onclick="window.location.href='{{ route('proprio.forgot_password') }}'" class="mb-4 text-xs font-bold text-gray-400 hover:text-custom-blue flex items-center gap-1">
+                            <i class="fas fa-arrow-left"></i> Retour
+                        </button>
+                        <div class="w-16 h-16 bg-blue-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-custom-blue mx-auto mb-4">
+                            <i class="fas fa-envelope w-8 h-8"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Entrez votre email</h2>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">
+                            Pour le numéro <span class="font-bold text-custom-blue">{{ $phone ?? '' }}</span>, entrez l'email complet : <span class="font-bold text-gray-900 dark:text-white">{{ $masked_email ?? '' }}</span>
+                        </p>
+                    </div>
+
+                    <form method="POST" action="{{ route('proprio.forgot_password.send_link') }}" class="space-y-5">
+                        @csrf
+                        <div class="input-floating-group">
+                            <input 
+                                type="email" 
+                                name="email"
+                                id="confirm-email-input"
+                                placeholder=" " 
+                                required 
+                                class="input-floating"
+                                oninput="validateEmailMatch(this.value)"
+                            >
+                            <label class="floating-label">Entrez l'email complet</label>
+                        </div>
+                        @error('email')
+                            <p class="text-red-500 text-[10px] font-bold mt-1 uppercase tracking-tight"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
+                        @enderror
+
+                        <button type="submit" id="btn-confirm-email" class="w-full bg-custom-blue text-white py-3.5 rounded-xl text-sm font-bold hover:bg-[#062b42] transition shadow-lg flex items-center justify-center gap-2" onclick="return validateBeforeSubmit()">
+                            <span>Envoyer le lien</span>
+                            <svg class="animate-spin hidden w-4 h-4" id="spinner-confirm-email" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </button>
+
+                        <p class="text-center text-xs text-gray-400 mt-4">
+                            Vous avez besoin d'aide ? 
+                            <a href="https://wa.me/22967864795?text=Bonjour, j'ai besoin d'aide pour réinitialiser mon mot de passe WiFiProfit" target="_blank" class="font-bold text-green-500 hover:underline flex items-center gap-1 justify-center mt-2">
+                                <i class="fab fa-whatsapp"></i> Contacter le support
+                            </a>
+                        </p>
+                    </form>
+                </div>
+
+                <!-- VUE 6 : FORGOT PASSWORD - Reset Password (via link) -->
+                <div id="view-forgot-reset" class="{{ isset($forgot_password_step) && $forgot_password_step == 'reset_password' ? '' : 'hidden' }} animate-fade-in">
+                    <div class="mb-8">
+                        <button onclick="window.location.href='{{ route('login') }}'" class="mb-4 text-xs font-bold text-gray-400 hover:text-custom-blue flex items-center gap-1">
+                            <i class="fas fa-arrow-left"></i> Retour
+                        </button>
+                        <div class="w-16 h-16 bg-green-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-green-600 mx-auto mb-4">
+                            <i class="fas fa-key w-8 h-8"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Nouveau mot de passe</h2>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">
+                            Créez un nouveau mot de passe pour votre compte.
+                        </p>
+                    </div>
+
+                    <form method="POST" action="{{ route('proprio.forgot_password.reset') }}" class="space-y-5">
+                        @csrf
+                        <input type="hidden" name="token" value="{{ $reset_token ?? '' }}">
+                        
+                        <div class="input-floating-group">
+                            <input 
+                                type="password" 
+                                name="password"
+                                id="reset-password"
+                                placeholder=" " 
+                                required 
+                                class="input-floating pr-10"
+                            >
+                            <label class="floating-label">Nouveau mot de passe</label>
+                            <button type="button" onclick="togglePasswordVisibility('reset-password')" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors">
+                                <i class="far fa-eye" id="icon-reset-password"></i>
+                            </button>
+                        </div>
+                        <p class="text-[10px] text-gray-400 -mt-3">Minimum 6 caractères, avec majuscules, minuscules et chiffres</p>
+
+                        @error('password')
+                            <p class="text-red-500 text-[10px] font-bold mt-1 uppercase tracking-tight"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
+                        @enderror
+
+                        <div class="input-floating-group">
+                            <input 
+                                type="password" 
+                                name="password_confirmation"
+                                id="reset-password-confirm"
+                                placeholder=" " 
+                                required 
+                                class="input-floating pr-10"
+                            >
+                            <label class="floating-label">Confirmer le mot de passe</label>
+                            <button type="button" onclick="togglePasswordVisibility('reset-password-confirm')" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors">
+                                <i class="far fa-eye" id="icon-reset-password-confirm"></i>
+                            </button>
+                        </div>
+
+                        @error('password_confirmation')
+                            <p class="text-red-500 text-[10px] font-bold mt-1 uppercase tracking-tight"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
+                        @enderror
+
+                        @error('token')
+                            <div class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-xl">
+                                <p class="text-red-600 dark:text-red-400 text-xs font-bold text-center italic">{{ $message }}</p>
+                            </div>
+                        @enderror
+
+                        <button type="submit" class="w-full bg-green-600 text-white py-3.5 rounded-xl text-sm font-bold hover:bg-green-700 transition shadow-lg uppercase tracking-wider">
+                            Réinitialiser le mot de passe
+                        </button>
+                    </form>
+                </div>
+
             </div>
         </div>
     </div>
 
     <!-- Scripts -->
     <script>
+        // Auto-show forgot password view on page load based on step
+        document.addEventListener('DOMContentLoaded', function() {
+            @if(isset($forgot_password_step))
+                document.getElementById('view-login').classList.add('hidden');
+                document.getElementById('view-signup').classList.add('hidden');
+                document.getElementById('view-otp').classList.add('hidden');
+                
+                @if($forgot_password_step == 'enter_phone')
+                    document.getElementById('view-forgot-phone').classList.remove('hidden');
+                @elseif($forgot_password_step == 'enter_email')
+                    document.getElementById('view-forgot-email').classList.remove('hidden');
+                @elseif($forgot_password_step == 'confirm_email')
+                    document.getElementById('view-forgot-confirm-email').classList.remove('hidden');
+                @elseif($forgot_password_step == 'link_sent')
+                    document.getElementById('view-forgot-link-sent').classList.remove('hidden');
+                @elseif($forgot_password_step == 'whatsapp_support')
+                    document.getElementById('view-forgot-whatsapp-support').classList.remove('hidden');
+                @elseif($forgot_password_step == 'reset_password')
+                    document.getElementById('view-forgot-reset').classList.remove('hidden');
+                @endif
+            @endif
+        });
+
+        // Show loading spinner on button click
+        function showLoading(button) {
+            button.disabled = true;
+            button.classList.add('opacity-75', 'cursor-not-allowed');
+            
+            // Find the spinner inside the button
+            const spinner = button.querySelector('svg');
+            if (spinner) {
+                spinner.classList.remove('hidden');
+            }
+            
+            // Hide the text span
+            const text = button.querySelector('span');
+            if (text) {
+                text.classList.add('hidden');
+            }
+            
+            // Submit the form
+            button.closest('form').submit();
+        }
+
+        // Email validation for forgot password
+        const maskedEmail = '{{ $masked_email ?? '' }}';
+        const expectedEmail = '{{ session('forgot_password_email', '') }}';
+
+        function validateEmailMatch(inputEmail) {
+            const btn = document.getElementById('btn-confirm-email');
+            const input = inputEmail.toLowerCase().trim();
+            const expected = expectedEmail.toLowerCase();
+            
+            // Button is now always enabled but shows toast on wrong email
+        }
+
+        function validateBeforeSubmit() {
+            const input = document.getElementById('confirm-email-input');
+            const email = input.value.toLowerCase().trim();
+            const expected = expectedEmail.toLowerCase();
+            
+            if (email !== expected) {
+                // Show error toast
+                showToast('L\'email ne correspond pas au compte. Veuillez entrer l\'email exact.', 'error');
+                return false;
+            }
+            
+            // Show loading
+            const btn = document.getElementById('btn-confirm-email');
+            btn.disabled = true;
+            btn.classList.add('opacity-75');
+            const spinner = btn.querySelector('svg');
+            if (spinner) spinner.classList.remove('hidden');
+            const text = btn.querySelector('span');
+            if (text) text.textContent = 'Envoi en cours...';
+            
+            return true;
+        }
+
         function switchView(viewName) {
             document.getElementById('view-login').classList.add('hidden');
             document.getElementById('view-signup').classList.add('hidden');
             document.getElementById('view-otp').classList.add('hidden');
+            document.getElementById('view-forgot-phone').classList.add('hidden');
+            document.getElementById('view-forgot-email').classList.add('hidden');
+            document.getElementById('view-forgot-confirm-email').classList.add('hidden');
+            document.getElementById('view-forgot-link-sent').classList.add('hidden');
+            document.getElementById('view-forgot-reset').classList.add('hidden');
             document.getElementById('view-' + viewName).classList.remove('hidden');
 
             if(viewName === 'otp') {
@@ -506,6 +1041,40 @@
                 icon.classList.add('fa-eye');
             }
         }
+
+        // Toast notification function
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600';
+            
+            toast.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-fade-in flex items-center gap-3`;
+            toast.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                <span class="font-bold text-sm">${message}</span>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.transition = 'opacity 0.5s, transform 0.5s';
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100px)';
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        }
+
+        // Auto-focus on missing digits input
+        @if(isset($forgot_password_step) && $forgot_password_step == 'verify_digits')
+            document.addEventListener('DOMContentLoaded', function() {
+                const input = document.getElementById('missing_digits');
+                if(input) {
+                    input.focus();
+                    input.addEventListener('input', function(e) {
+                        this.value = this.value.replace(/[^0-9]/g, '');
+                    });
+                }
+            });
+        @endif
     </script>
 </body>
 </html>

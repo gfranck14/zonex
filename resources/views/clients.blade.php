@@ -105,7 +105,7 @@
                             <tbody class="text-sm divide-y divide-gray-50 dark:divide-slate-700">
                                 @forelse($clients as $client)
                                 <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-800 transition cursor-pointer" 
-                                    onclick="showClientDetail({{ $client->id }}, '{{ addslashes($client->nom_complet) }}', '{{ $client->telephone }}', '{{ number_format($client->total_depense, 0, ',', ' ') }} F', {{ $client->is_blocked ? 'true' : 'false' }})">
+                                    onclick="showClientDetail({{ $client->id }}, '{{ addslashes($client->nom_complet) }}', '{{ $client->telephone }}', '{{ number_format($client->total_depense_calculated ?? $client->total_depense, 0, ',', ' ') }} F', {{ $client->is_blocked ? 'true' : 'false' }})">
                                     
                                     <!-- Colonne Nom + Avatar -->
                                     <td class="p-5">
@@ -131,7 +131,7 @@
 
                                     <!-- Total Dépensé -->
                                     <td class="p-5 font-bold text-brand-blue">
-                                        {{ number_format($client->total_depense, 0, ',', ' ') }} F
+                                        {{ number_format($client->total_depense_calculated ?? $client->total_depense, 0, ',', ' ') }} F
                                     </td>
 
                                     <!-- Date Création -->
@@ -214,6 +214,10 @@
                                         <i class="fas fa-edit w-3 h-3"></i>
                                         Modifier
                                     </button>
+                                    <button onclick="showResetPasswordModal()" class="px-3 py-1 bg-blue-100 dark:bg-slate-700 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-200 dark:hover:bg-slate-600 transition flex items-center gap-1">
+                                        <i class="fas fa-key w-3 h-3"></i>
+                                        Réinitialiser MDP
+                                    </button>
                                 </div>
                                 <p class="text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
                                     <i class="fas fa-phone w-4 h-4"></i>
@@ -224,7 +228,7 @@
                         <div class="text-right">
                             <div class="mb-4">
                                 <p class="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">Total Dépensé</p>
-                                <p class="text-4xl font-bold text-brand-blue" id="detail-spent">15.500 F</p>
+                                <p class="text-4xl font-bold text-brand-blue" id="detail-spent">-</p>
                             </div>
                             <button id="block-btn" onclick="toggleBlock()" class="px-4 py-2 bg-red-500 text-white rounded-xl text-xs font-bold transition">
                                 BLOQUER CE CLIENT
@@ -314,6 +318,46 @@
             <div class="flex gap-3">
                 <button onclick="closeDeleteClientModal()" class="flex-1 py-3 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-slate-700 transition">Annuler</button>
                 <button onclick="deleteClient()" class="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition shadow-lg">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALE RÉINITIALISER MOT DE PASSE -->
+    <div id="reset-password-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeResetPasswordModal()"></div>
+        <div class="bg-white dark:bg-brand-cardDark w-full max-w-sm rounded-3xl p-6 relative z-10 text-center shadow-2xl border border-gray-100 dark:border-slate-700 animate-scale-in">
+            <div class="w-16 h-16 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                <i class="fas fa-key"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Générer un lien de réinitialisation</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Un lien sera généré pour permettre au client de réinitialiser son mot de passe.</p>
+            
+            <div class="flex gap-3">
+                <button onclick="closeResetPasswordModal()" class="flex-1 py-3 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-slate-700 transition">Annuler</button>
+                <button onclick="generateResetLink()" class="flex-1 py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition shadow-lg">Générer le lien</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALE LIEN DE RÉINITIALISATION -->
+    <div id="reset-link-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeResetLinkModal()"></div>
+        <div class="bg-white dark:bg-brand-cardDark w-full max-w-sm rounded-3xl p-6 relative z-10 text-center shadow-2xl border border-gray-100 dark:border-slate-700 animate-scale-in">
+            <div class="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                <i class="fas fa-link"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Lien généré !</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Copiez ce lien et envoyez-le au client:</p>
+            
+            <div class="mb-4">
+                <input type="text" id="reset-link-input" readonly class="w-full px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl text-xs font-mono text-gray-600 dark:text-gray-300">
+            </div>
+            
+            <div class="flex gap-3">
+                <button onclick="copyResetLink()" class="flex-1 py-3 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-slate-600 transition">
+                    <i class="fas fa-copy mr-1"></i> Copier
+                </button>
+                <button onclick="closeResetLinkModal()" class="flex-1 py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition shadow-lg">Fermer</button>
             </div>
         </div>
     </div>
@@ -496,23 +540,30 @@
                 const response = await fetch(`/clients/${clientId}/history`);
                 const data = await response.json();
 
-                if (data.success && data.tickets.length > 0) {
-                    tbody.innerHTML = data.tickets.map(t => `
-                        <tr>
-                            <td class="p-5 text-gray-500">${t.date}</td>
-                            <td class="p-5 font-bold text-gray-800">${t.forfait}</td>
-                            <td class="p-5 text-gray-500">${t.zone}</td>
-                            <td class="p-5 font-mono text-gray-400 text-xs">${t.mac || '-'}</td>
-                            <td class="p-5 font-bold text-brand-blue">${t.prix}</td>
-                            <td class="p-5">
-                                <button onclick="viewTicket('${t.login}', '${t.password}')" class="px-3 py-1 bg-brand-blue text-white rounded-lg text-[10px] font-bold hover:bg-blue-600 transition">
-                                    Voir Ticket
-                                </button>
-                            </td>
-                        </tr>
-                    `).join('');
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">Aucun historique d\'achat trouvé.</td></tr>';
+                if (data.success) {
+                    // Mettre à jour le total dépensé
+                    if (data.total_spent !== undefined) {
+                        document.getElementById('detail-spent').textContent = data.total_spent.toLocaleString('fr-FR') + ' F';
+                    }
+                    
+                    if (data.tickets && data.tickets.length > 0) {
+                        tbody.innerHTML = data.tickets.map(t => `
+                            <tr>
+                                <td class="p-5 text-gray-500">${t.date}</td>
+                                <td class="p-5 font-bold text-gray-800">${t.forfait}</td>
+                                <td class="p-5 text-gray-500">${t.zone}</td>
+                                <td class="p-5 font-mono text-gray-400 text-xs">${t.mac || '-'}</td>
+                                <td class="p-5 font-bold text-brand-blue">${t.prix}</td>
+                                <td class="p-5">
+                                    <button onclick="viewTicket('${t.login}', '${t.password}')" class="px-3 py-1 bg-brand-blue text-white rounded-lg text-[10px] font-bold hover:bg-blue-600 transition">
+                                        Voir Ticket
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">Aucun historique d\'achat trouvé.</td></tr>';
+                    }
                 }
             } catch (e) {
                 console.error(e);
@@ -623,6 +674,54 @@
 
         function closeDeleteClientModal() {
             document.getElementById('delete-client-modal').classList.add('hidden');
+        }
+
+        // Fonctions Réinitialiser Mot de Passe
+        function showResetPasswordModal() {
+            document.getElementById('reset-password-modal').classList.remove('hidden');
+        }
+
+        function closeResetPasswordModal() {
+            document.getElementById('reset-password-modal').classList.add('hidden');
+        }
+
+        function closeResetLinkModal() {
+            document.getElementById('reset-link-modal').classList.add('hidden');
+        }
+
+        async function generateResetLink() {
+            if (!currentClientId) return;
+            
+            try {
+                const response = await fetch(`/clients/${currentClientId}/reset-password-link`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('reset-link-input').value = data.reset_url;
+                    closeResetPasswordModal();
+                    document.getElementById('reset-link-modal').classList.remove('hidden');
+                    showToast(data.message, 'success');
+                } else {
+                    showToast(data.message || 'Erreur lors de la génération du lien', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('Erreur système', 'error');
+            }
+        }
+
+        function copyResetLink() {
+            const copyText = document.getElementById('reset-link-input');
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(copyText.value);
+            showToast('Lien copié !', 'success');
         }
 
         async function deleteClient() {

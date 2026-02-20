@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\Forfait;
 use App\Models\Ticket;
 use App\Models\Wifizone;
+use App\Models\BlockedClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -110,9 +111,32 @@ class ClientPortalController extends Controller
             return back()->withErrors($validator)->onlyInput('telephone');
         }
 
-        $credentials = $request->only('telephone', 'password');
+        $telephone = $request->telephone;
+        $password = $request->password;
 
-        if (Auth::guard('client')->attempt($credentials)) {
+        // Normaliser le numéro de téléphone - essayer plusieurs formats
+        // Le numéro en base peut être: +229 67864795 ou 67864795
+        $telephoneInput = preg_replace('/[^0-9]/', '', $telephone); // Enlever tous les caractères non numériques
+        
+        // Chercher le client avec différents formats de numéro
+        $client = Client::where(function($query) use ($telephone, $telephoneInput) {
+            // 1. Numéro exact tel que saisi
+            $query->where('telephone', $telephone);
+            // 2. Avec +229 et espace
+            $query->orWhere('telephone', '+229 ' . $telephoneInput);
+            // 3. Avec +229 sans espace
+            $query->orWhere('telephone', '+229' . $telephoneInput);
+            // 4. Juste le numéro sans code pays
+            $query->orWhere('telephone', $telephoneInput);
+            // 5. Avec 00229 au lieu de +229
+            $query->orWhere('telephone', '00229' . $telephoneInput);
+        })->first();
+
+        // Vérifier si le client existe et si le mot de passe est correct
+        if ($client && Hash::check($password, $client->password)) {
+            // Connexion manuelle
+            Auth::guard('client')->login($client);
+            $request->session()->regenerate();
             $request->session()->regenerate();
             
             // MAJ dernière zone
@@ -120,6 +144,29 @@ class ClientPortalController extends Controller
                 $client = Auth::guard('client')->user();
                 $client->derniere_zone = session('zone_id');
                 $client->save();
+            }
+
+            // Vérifier si le client est bloqué par ce propriétaire
+            $proprioId = null;
+            if (session('zone_id')) {
+                $zone = Wifizone::find(session('zone_id'));
+                $proprioId = $zone ? $zone->proprio_id : null;
+            }
+            
+            if ($proprioId && BlockedClient::isBlocked(Auth::guard('client')->id(), $proprioId)) {
+                Auth::guard('client')->logout();
+                
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Vous êtes bloqué sur cette zone.',
+                        'errors' => ['Vous êtes bloqué sur cette zone. Veuillez contacter le gérant du wifizone.']
+                    ], 403);
+                }
+                
+                return back()->withErrors([
+                    'telephone' => 'Vous êtes bloqué sur cette zone. Veuillez contacter le gérant du wifizone.',
+                ])->onlyInput('telephone');
             }
 
             if ($request->ajax() || $request->wantsJson()) {
@@ -202,6 +249,7 @@ class ClientPortalController extends Controller
             'statut' => 'vendu',
             'client_id' => $client->id,
             'date_vente' => now(),
+            'prix_achat' => $forfait->prix,
         ]);
 
         // MAJ Dépense Client
@@ -239,5 +287,113 @@ class ClientPortalController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect()->route('client.landing');
+    }
+
+    /**
+     * Affiche le formulaire de réinitialisation de mot de passe
+     */
+    public function showResetPasswordForm(Request $request, $token)
+    {
+        $telephone = $request->get('telephone');
+        
+        // Vérifier que le token est valide
+        $resetRecord = \Illuminate\Support\Facades\DB::table('client_password_resets')
+            ->where('telephone', $telephone)
+            ->where('token', hash('sha256', $token))
+            ->where('created_at', '>=', now()->subHours(24))
+            ->first();
+        
+        if (!$resetRecord) {
+            return view('PortailClient.reset-password', [
+                'error' => 'Ce lien de réinitialisation est invalide ou a expiré.',
+                'token' => null,
+                'telephone' => null
+            ]);
+        }
+        
+        return view('PortailClient.reset-password', [
+            'token' => $token,
+            'telephone' => $telephone,
+            'error' => null
+        ]);
+    }
+
+    /**
+     * Traite la réinitialisation du mot de passe
+     */
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'token' => 'required|string',
+            'telephone' => 'required|string',
+            'password' => 'required|string|min:4|confirmed',
+        ]);
+        
+        // Vérifier que le token est valide
+        $resetRecord = \Illuminate\Support\Facades\DB::table('client_password_resets')
+            ->where('telephone', $request->telephone)
+            ->where('token', hash('sha256', $request->token))
+            ->where('created_at', '>=', now()->subHours(24))
+            ->first();
+        
+        if (!$resetRecord) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ce lien de réinitialisation est invalide ou a expiré.',
+                    'errors' => ['Ce lien de réinitialisation est invalide ou a expiré.']
+                ], 422);
+            }
+            return back()->withErrors(['password' => 'Ce lien de réinitialisation est invalide ou a expiré.']);
+        }
+        
+        // Mettre à jour le mot de passe
+        $client = Client::where('telephone', $request->telephone)->first();
+        
+        if (!$client) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Client introuvable.',
+                    'errors' => ['Client introuvable.']
+                ], 404);
+            }
+            return back()->withErrors(['password' => 'Client introuvable.']);
+        }
+        
+        $client->update(['password' => Hash::make($request->password)]);
+        
+        // Supprimer le token utilisé
+        \Illuminate\Support\Facades\DB::table('client_password_resets')
+            ->where('telephone', $request->telephone)
+            ->delete();
+        
+        // Récupérer le token de la zone pour la redirection
+        $zoneToken = session('zone_token', $request->token);
+        
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Mot de passe réinitialisé avec succès !',
+                'redirect' => route('client.password.reset.success', ['token' => $zoneToken])
+            ]);
+        }
+        
+        // Afficher la page de confirmation au lieu de rediriger vers le portal
+        return view('PortailClient.password-reset-success', [
+            'redirectUrl' => url('/portal/landing/' . $zoneToken),
+            'token' => $zoneToken
+        ]);
+    }
+
+    /**
+     * Affiche la page de confirmation après réinitialisation du mot de passe
+     */
+    public function showPasswordResetSuccess(Request $request, $token)
+    {
+        return view('PortailClient.password-reset-success', [
+            'redirectUrl' => url('/portal/landing/' . $token),
+            'token' => $token
+        ]);
     }
 }

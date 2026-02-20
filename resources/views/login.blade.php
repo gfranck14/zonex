@@ -160,7 +160,7 @@
                             >
                             <label class="floating-label">Mot de passe</label>
                             <div class="flex justify-end mt-2">
-                                <a href="#" class="text-xs font-bold text-custom-blue hover:underline">Mot de passe oublié ?</a>
+                                <a href="#" onclick="openForgotPasswordModal(); return false;" class="text-xs font-bold text-custom-blue hover:underline">Mot de passe oublié ?</a>
                             </div>
                         </div>
 
@@ -423,6 +423,47 @@
                 localStorage.theme = 'dark';
             }
         }
+    </script>
+
+    <!-- Modal Mot de passe oublié -->
+    <div id="forgot-password-modal" class="fixed inset-0 bg-black/50 z-[9999] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-sm w-full p-6 transform transition-all">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fab fa-whatsapp text-3xl text-green-500"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Mot de passe oublié</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                    Veuillez contacter le gérant pour réinitialiser votre mot de passe.
+                </p>
+                <a href="https://wa.me/22967864795?text=Bonjour, je souhaite réinitialiser mon mot de passe WiFi" 
+                   target="_blank"
+                   class="inline-flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl font-bold transition shadow-lg shadow-green-500/20">
+                    <i class="fab fa-whatsapp text-xl"></i>
+                    Contacter sur WhatsApp
+                </a>
+                <button onclick="closeForgotPasswordModal()" class="mt-4 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition">
+                    Fermer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openForgotPasswordModal() {
+            document.getElementById('forgot-password-modal').classList.remove('hidden');
+        }
+        
+        function closeForgotPasswordModal() {
+            document.getElementById('forgot-password-modal').classList.add('hidden');
+        }
+        
+        // Fermer le modal en cliquant à l'extérieur
+        document.getElementById('forgot-password-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeForgotPasswordModal();
+            }
+        });
     </script>
 </body>
 </html>

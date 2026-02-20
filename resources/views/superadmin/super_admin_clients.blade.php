@@ -157,6 +157,22 @@
             @if(isset($clients) && $clients->count() > 0)
             <div class="p-4 border-t border-gray-700">
                 <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="flex flex-wrap items-center justify-between gap-4 mt-6">
+                    <!-- GAUCHE : Indicateur de position -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-400">Afficher</span>
+                        <form method="GET" action="{{ route('superadmin.clients') }}" class="inline-block">
+                            @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
+                            <select name="per_page" onchange="this.form.submit()" class="bg-gray-800 border border-gray-600 rounded-lg text-xs font-bold text-white p-1 px-2 focus:ring-2 focus:ring-brand-blue outline-none cursor-pointer">
+                                <option value="5" {{ request('per_page') == 5 ? 'selected' : '' }}>5 lignes</option>
+                                <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10 lignes</option>
+                                <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25 lignes</option>
+                                <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 lignes</option>
+                            </select>
+                        </form>
+                    </div>
+                    
+                    <!-- CENTRE : Indicateur de position -->
                     <div class="flex items-center gap-2">
                         <span class="text-xs text-gray-400">Affichage de</span>
                         <span class="text-xs font-bold text-white">{{ $clients->firstItem() ?? 0 }}</span>
@@ -166,6 +182,8 @@
                         <span class="text-xs font-bold text-white">{{ $clients->total() }}</span>
                         <span class="text-xs text-gray-400">clients</span>
                     </div>
+                    
+                    <!-- DROITE : Pagination links -->
                     {{ $clients->appends(request()->except('page'))->links() }}
                 </div>
             </div>

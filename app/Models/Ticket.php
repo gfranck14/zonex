@@ -37,7 +37,8 @@ class Ticket extends Model
         'statut',
         'client_id',
         'date_vente',
-        'import_batch_id'
+        'import_batch_id',
+        'prix_achat'
     ];
 
     /**

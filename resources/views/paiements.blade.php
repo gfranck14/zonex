@@ -45,7 +45,7 @@
                         <div>
                             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Montant à retirer</label>
                             <div class="relative">
-                                <select id="withdraw-select" class="w-full bg-gray-50 dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl p-3 pl-4 pr-8 text-sm font-bold appearance-none focus:ring-2 focus:ring-brand-blue/20 outline-none cursor-pointer transition-all">
+                                <select id="withdraw-select" onchange="updateWithdrawalFees()" class="w-full bg-gray-50 dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl p-3 pl-4 pr-8 text-sm font-bold appearance-none focus:ring-2 focus:ring-brand-blue/20 outline-none cursor-pointer transition-all">
                                     <option value="10000">10 000 F</option>
                                     <option value="30000">30 000 F</option>
                                     <option value="50000">50 000 F</option>
@@ -66,6 +66,24 @@
                             <i class="fas fa-exclamation-triangle w-4 h-4 text-orange-500 flex-shrink-0"></i>
                             <p class="text-[10px] text-orange-600 dark:text-orange-400 font-medium leading-tight">Délai de traitement : 24h pour ce montant.</p>
                         </div>
+
+                        <!-- Frais de transaction et Commission -->
+                        <div class="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Frais de transaction</span>
+                                <span id="transaction-fees" class="text-sm font-bold text-gray-700 dark:text-gray-200">150 F</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Commission (10%)</span>
+                                <span id="commission-amount" class="text-sm font-bold text-gray-700 dark:text-gray-200">1 000 F</span>
+                            </div>
+                            <div class="border-t border-gray-200 dark:border-slate-600 pt-2 mt-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-bold text-gray-600 dark:text-gray-300">Montant net</span>
+                                    <span id="net-amount" class="text-sm font-bold text-brand-blue">8 850 F</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Bouton Action -->
@@ -77,7 +95,7 @@
             </div>
             <div class="bg-white dark:bg-brand-cardDark rounded-3xl shadow-sm overflow-hidden animate-fade-in">
                 <div class="p-6 border-b border-gray-100 dark:border-slate-700 flex flex-wrap justify-between items-center gap-4">
-                    <h3 class="font-bold text-lg text-gray-800 dark:text-white">Historique d'achats</h3>
+                    <h3 class="font-bold text-lg text-gray-800 dark:text-white">Historique de paiements</h3>
                     <form method="GET" action="{{ route('paiements') }}" class="flex gap-3">
                         <select name="filter_zone" onchange="this.form.submit()" class="bg-gray-50 dark:bg-slate-700 dark:text-white border-none text-xs font-bold text-gray-600 dark:text-gray-300 rounded-xl py-2 px-4 outline-none cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600">
                             <option value="">Toutes les Zones</option>
@@ -381,10 +399,10 @@
                         <tr>
                             <th class="p-4 text-left">Date</th>
                             <th class="p-4 text-left">Montant</th>
+                            <th class="p-4 text-left">ID Transaction</th>
                             <th class="p-4 text-left">Référence de paiement</th>
                             <th class="p-4 text-left">Bénéficiaire</th>
                             <th class="p-4 text-left">Destination</th>
-                            <th class="p-4 text-left">Réf. Mobile Money</th>
                             <th class="p-4 text-left">Statut</th>
                             <th class="p-4 text-left">Actions</th>
                         </tr>
@@ -411,6 +429,60 @@
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     
     /**
+     * Calcule les frais de transaction selon la grille
+     * 0 – 10 000 XOF: 150 XOF
+     * 10 001 – 50 000 XOF: 300 XOF
+     * 50 001 – 150 000 XOF: 800 XOF
+     * 150 001 – 500 000 XOF: 2 000 XOF
+     * 500 001 XOF+: 2 500 XOF
+     */
+    function calculateTransactionFees(amount) {
+        if (amount <= 10000) return 150;
+        if (amount <= 50000) return 300;
+        if (amount <= 150000) return 800;
+        if (amount <= 500000) return 2000;
+        return 2500;
+    }
+
+    /**
+     * Calcule la commission (10% du montant)
+     */
+    function calculateCommission(amount) {
+        return Math.round(amount * 0.10);
+    }
+
+    /**
+     * Met à jour l'affichage des frais et commissions
+     */
+    function updateWithdrawalFees() {
+        const withdrawSelect = document.getElementById('withdraw-select');
+        const amount = parseInt(withdrawSelect.value);
+        
+        const fedapayFee = calculateTransactionFees(amount);
+        const commission = calculateCommission(amount);
+        const netAmount = amount - fedapayFee - commission;
+        
+        document.getElementById('transaction-fees').textContent = fedapayFee.toLocaleString('fr-FR') + ' F';
+        document.getElementById('commission-amount').textContent = commission.toLocaleString('fr-FR') + ' F';
+        document.getElementById('net-amount').textContent = netAmount.toLocaleString('fr-FR') + ' F';
+        
+        // Afficher/masquer le warning pour gros montants
+        const highAmountNote = document.getElementById('high-amount-note');
+        if (amount >= 100000) {
+            highAmountNote.classList.remove('hidden');
+        } else {
+            highAmountNote.classList.add('hidden');
+        }
+    }
+
+    /**
+     * Initialise les frais au chargement de la page
+     */
+    document.addEventListener('DOMContentLoaded', function() {
+        updateWithdrawalFees();
+    });
+    
+    /**
      * Surcharge de la fonction de confirmation de retrait (Phase 3)
      */
     async function confirmWithdrawal() {
@@ -423,6 +495,8 @@
         
         const amount = parseInt(withdrawSelect.value);
         const operator = networkSelect.value;
+        const fedapayFee = calculateTransactionFees(amount);
+        const ccorpFee = calculateCommission(amount);
 
         // Overlay de chargement ou désactivation bouton
         const confirmBtn = event.target;
@@ -442,7 +516,9 @@
                     amount: amount,
                     operator: operator,
                     phone_number: phone,
-                    beneficiary_name: name
+                    beneficiary_name: name,
+                    fedapay_fee: fedapayFee,
+                    ccorp_fee: ccorpFee
                 })
             });
 
@@ -529,7 +605,7 @@
         }
 
         withdrawals.forEach(w => {
-            const date = new Date(w.requested_at).toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const date = new Date(w.created_at || w.requested_at).toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
             const statusStyles = {
                 'pending': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30',
@@ -551,10 +627,10 @@
             tr.innerHTML = `
                 <td class="p-4 text-gray-600 dark:text-gray-300 text-xs">${date}</td>
                 <td class="p-4 font-bold text-red-600">-${parseFloat(w.amount).toLocaleString()} F</td>
+                <td class="p-4 font-mono text-gray-600 dark:text-gray-300 text-xs">${w.reference || '-'}</td>
                 <td class="p-4 font-mono text-gray-600 dark:text-gray-300 text-xs">${w.fedapay_payout_id || '-'}</td>
-                <td class="p-4 font-medium text-gray-800 dark:text-white">${w.beneficiary_name}</td>
-                <td class="p-4 font-mono text-gray-600 dark:text-gray-300 text-xs">${w.phone_number}</td>
-                <td class="p-4 font-mono text-gray-500 dark:text-gray-400 text-xs">${w.mobile_money_ref || w.reference}</td>
+                <td class="p-4 font-medium text-gray-800 dark:text-white">${w.momo_name || w.beneficiary_name || '-'}</td>
+                <td class="p-4 font-mono text-gray-600 dark:text-gray-300 text-xs">${w.momo_number || w.phone_number || '-'}</td>
                 <td class="p-4"><span class="${statusStyles[w.status] || ''} px-2 py-1 rounded-lg text-[10px] font-bold">${statusLabels[w.status] || w.status}</span></td>
                 <td class="p-4">
                     ${(w.status === 'pending' || w.status === 'processing') ? `

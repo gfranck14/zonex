@@ -42,6 +42,11 @@ Route::prefix('portal')->name('client.')->group(function () {
     Route::post('/register', [ClientPortalController::class, 'register'])->name('register');
     Route::post('/login', [ClientPortalController::class, 'login'])->name('login');
     
+    // Réinitialisation de mot de passe client
+    Route::get('/reset-password/{token}', [ClientPortalController::class, 'showResetPasswordForm'])->name('reset-password.form');
+    Route::post('/reset-password', [ClientPortalController::class, 'resetPassword'])->name('reset-password.submit');
+    Route::get('/password-reset-success/{token}', [ClientPortalController::class, 'showPasswordResetSuccess'])->name('password.reset.success');
+    
     // Route Fedapay publique pour paiement direct
     Route::post('/fedapay/pay-direct/{forfait}', [FedapayController::class, 'payDirect'])->name('fedapay.pay.direct');
     
@@ -87,7 +92,17 @@ Route::middleware('guest:proprio')->group(function () {
 
     Route::post('/login', [AuthProprioController::class, 'login'])->name('proprio.login');
     Route::post('/signup', [AuthProprioController::class, 'signup'])->name('proprio.signup');
+    
+    // Routes Mot de passe oublié
+    Route::get('/forgot-password', [AuthProprioController::class, 'showForgotPassword'])->name('proprio.forgot_password');
+    Route::post('/forgot-password/verify-phone', [AuthProprioController::class, 'verifyPhone'])->name('proprio.forgot_password.verify_phone');
+    Route::post('/forgot-password/verify-email', [AuthProprioController::class, 'verifyEmail'])->name('proprio.forgot_password.verify_email');
+    Route::post('/forgot-password/send-link', [AuthProprioController::class, 'sendResetLink'])->name('proprio.forgot_password.send_link');
 });
+
+// Routes publiques pour réinitialisation de mot de passe (accessible même si connecté)
+Route::get('/reset-password/{token}', [AuthProprioController::class, 'showResetForm'])->name('proprio.forgot_password.reset_form');
+Route::post('/reset-password', [AuthProprioController::class, 'resetPassword'])->name('proprio.forgot_password.reset');
 
 
 // =============================================================================
@@ -127,6 +142,7 @@ Route::middleware('auth:proprio')->group(function () {
     Route::put('/clients/{id}', [ClientController::class, 'update'])->name('clients.update');
     Route::delete('/clients/{id}', [ClientController::class, 'destroy'])->name('clients.destroy');
     Route::post('/clients/{id}/block', [ClientController::class, 'toggleBlock'])->name('clients.block');
+    Route::post('/clients/{id}/reset-password-link', [ClientController::class, 'generateResetPasswordLink'])->name('clients.reset-password-link');
     Route::get('/clients/{id}/history', [ClientController::class, 'history'])->name('clients.history');
     
     // Paiements et Retraits
@@ -181,7 +197,7 @@ Route::prefix('god-admin')->name('superadmin.')->group(function () {
     });
 
     // Routes protégées
-    Route::middleware(['auth:superadmin'])->group(function () {
+    Route::middleware(['superadmin.auth'])->group(function () {
         
         Route::get('/dashboard', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
         Route::get('/api/realtime-stats', [SuperAdminDashboardController::class, 'getRealtimeStats'])->name('api.realtime-stats');
@@ -190,8 +206,36 @@ Route::prefix('god-admin')->name('superadmin.')->group(function () {
         // Gestion propriétaires
         Route::get('/proprietaires', [SuperAdminController::class, 'proprietaires'])->name('proprietaires');
         
+        // Générer un lien de réinitialisation de mot de passe pour un propriétaire
+        Route::post('/proprio/reset-password-link', function (\Illuminate\Http\Request $request) {
+            $request->validate([
+                'proprio_id' => 'required|exists:proprio,id'
+            ]);
+            
+            $proprio = \App\Models\Proprio::findOrFail($request->proprio_id);
+            
+            // Générer un token unique
+            $token = \Illuminate\Support\Str::random(64);
+            
+            // Stocker le token dans la table proprio (comme le système existant)
+            $proprio->update([
+                'password_reset_token' => hash('sha256', $token),
+                'password_reset_expires_at' => now()->addHours(24)
+            ]);
+            
+            // Générer l'URL de réinitialisation avec le numéro de téléphone
+            $resetUrl = url('/reset-password/' . $token . '?phone=' . urlencode($proprio->numero));
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Lien de réinitialisation généré avec succès',
+                'reset_url' => $resetUrl
+            ]);
+        })->name('proprio.reset-password-link');
+        
         // Gestion clients
         Route::get('/clients', [SuperAdminController::class, 'clients'])->name('clients');
+        Route::get('/clients/{id}/tickets', [SuperAdminController::class, 'clientTickets'])->name('clients.tickets');
         
         // Gestion retraits
         Route::get('/retraits', [SuperAdminController::class, 'retraits'])->name('retraits');

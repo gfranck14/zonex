@@ -90,7 +90,7 @@ class TicketController extends Controller
     }
 
     /**
-     * Delete all tickets for a specific forfait.
+     * Delete only unsold tickets (statut = 'libre') for a specific forfait.
      */
     public function deleteByForfait(Request $request, $forfaitId)
     {
@@ -101,15 +101,14 @@ class TicketController extends Controller
             return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
         }
 
-        $count = Ticket::where('forfaits_id', $forfaitId)->count();
-        $venduCount = Ticket::where('forfaits_id', $forfaitId)->where('statut', 'vendu')->count();
-
-        Ticket::where('forfaits_id', $forfaitId)->delete();
+        // Only delete unsold tickets (statut = 'libre')
+        $count = Ticket::where('forfaits_id', $forfaitId)->where('statut', 'libre')->count();
+        
+        Ticket::where('forfaits_id', $forfaitId)->where('statut', 'libre')->delete();
 
         return response()->json([
             'success' => true,
-            'message' => "{$count} ticket(s) supprimé(s) pour le forfait '{$forfait->nom}'.",
-            'warning' => $venduCount > 0 ? "{$venduCount} ticket(s) vendu(s) ont été supprimés." : null
+            'message' => "{$count} ticket(s) non vendu(s) supprimé(s) pour le forfait '{$forfait->nom}'.",
         ]);
     }
 
