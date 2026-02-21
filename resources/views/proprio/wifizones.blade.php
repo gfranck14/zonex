@@ -86,10 +86,10 @@
                         </div>
                     </div>
 
-                    <!-- Lien Magique -->
-                    <button onclick="event.stopPropagation(); copyToClipboard('{{ url('/portal/login?z=' . $zone->token) }}')" class="w-full flex items-center justify-center gap-2 text-xs font-bold text-brand-blue hover:underline py-2">
+                    <!-- Lien du Portail captif -->
+                    <button onclick="event.stopPropagation(); copyToClipboard('{{ url('/portal/landing') }}/{{ $zone->token }}')" class="w-full flex items-center justify-center gap-2 text-xs font-bold text-brand-blue hover:underline py-2">
                         <i class="fas fa-copy w-4 h-4"></i>
-                        Copier lien d'intégration
+                        Copier lien du Portail captif
                     </button>
                 </div>
 
@@ -106,6 +106,9 @@
                         <i class="fas fa-trash-alt w-5 h-5"></i>
                     </button>
                     @endif
+                    <button onclick="event.stopPropagation(); deleteZoneFromList({{ $zone->id }}, '{{ addslashes($zone->nom_zone) }}')" class="px-3 bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 transition" title="Supprimer la zone">
+                        <i class="fas fa-trash w-5 h-5"></i>
+                    </button>
                     <button onclick="event.stopPropagation(); showDetail({{ json_encode($zone) }});" class="w-10 flex items-center justify-center bg-gray-100 dark:bg-slate-700 text-gray-500 rounded-xl hover:text-brand-blue transition">
                         <i class="fas fa-cog w-5 h-5"></i>
                     </button>
@@ -210,12 +213,12 @@
                                     <i class="fas fa-sync w-5 h-5"></i>
                                 </div>
                                 <div>
-                                    <h3 class="text-lg font-bold text-gray-800 dark:text-white">Lien d'authentification</h3>
-                                    <p class="text-xs text-gray-400 dark:text-gray-500">À configurer dans le Hotspot Mikrotik (Login URL).</p>
+                                    <h3 class="text-lg font-bold text-gray-800 dark:text-white">Lien du Portail captif</h3>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500">URL du portail de connexion pour vos clients.</p>
                                 </div>
                             </div>
                             <div class="bg-slate-900 dark:bg-black rounded-2xl p-5 relative group border border-slate-700 shadow-inner">
-                                <code id="auth-link-code" class="text-brand-blue font-mono text-xs break-all block pr-10 leading-relaxed">{{ url('/portal/login') }}?z=<span class="text-white font-bold" id="code-zone-id">WZ-8821-XJ</span>&mac=$(mac)&ip=$(ip)</code>
+                                <code id="auth-link-code" class="text-brand-blue font-mono text-xs break-all block pr-10 leading-relaxed">{{ url('/portal/landing') }}/<span class="text-white font-bold" id="code-zone-id">WZ-8821-XJ</span></code>
                                 <button onclick="copyToClipboard(document.getElementById('auth-link-code').innerText)" class="absolute top-4 right-4 text-gray-400 hover:text-white" title="Copier">
                                     <i class="fas fa-copy w-5 h-5"></i>
                                 </button>
@@ -386,7 +389,7 @@
                 <p class="text-sm text-gray-500 dark:text-gray-400">Vous êtes sur le point de supprimer une zone WiFi. Cette action entraînera la suppression de :</p>
             </div>
             
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-3 gap-4">
                 <div class="bg-gray-50 dark:bg-slate-700/50 p-4 rounded-2xl">
                     <span id="impact-forfaits" class="block text-2xl font-bold text-gray-800 dark:text-white">0</span>
                     <span class="text-[10px] font-bold text-gray-400 uppercase">Forfaits</span>
@@ -394,6 +397,10 @@
                 <div class="bg-gray-50 dark:bg-slate-700/50 p-4 rounded-2xl">
                     <span id="impact-tickets" class="block text-2xl font-bold text-gray-800 dark:text-white">0</span>
                     <span class="text-[10px] font-bold text-gray-400 uppercase">Tickets</span>
+                </div>
+                <div class="bg-gray-50 dark:bg-slate-700/50 p-4 rounded-2xl">
+                    <span id="impact-paiements" class="block text-2xl font-bold text-gray-800 dark:text-white">0</span>
+                    <span class="text-[10px] font-bold text-gray-400 uppercase">Transactions</span>
                 </div>
             </div>
 
@@ -823,9 +830,23 @@
 
     async function handleDeleteZone() {
         const id = document.getElementById('detail-zone-id-input').value;
-        
+        await deleteZoneWithImpact(id);
+    }
+    
+    async function deleteZoneFromList(id, name) {
+        // Stocker l'ID pour la suppression
+        document.getElementById('detail-zone-id-input').value = id;
+        await deleteZoneWithImpact(id, name);
+    }
+    
+    async function deleteZoneWithImpact(id, name = null) {
         try {
-            // 1. Fetch impact analysis
+            // Show loading state
+            const modal = document.getElementById('delete-zone-modal');
+            const step1 = document.getElementById('delete-step-1');
+            const step2 = document.getElementById('delete-step-2');
+            
+            // Fetch impact analysis
             const response = await fetch("{{ url('/wifizones') }}/" + id + "/impact", {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
@@ -834,14 +855,16 @@
             });
             
             const data = await response.json();
+            
             if (data.success) {
                 document.getElementById('impact-forfaits').innerText = data.forfaits_count;
                 document.getElementById('impact-tickets').innerText = data.tickets_count;
+                document.getElementById('impact-paiements').innerText = data.paiements_count || 0;
                 
                 // Show modal step 1
-                document.getElementById('delete-zone-modal').classList.remove('hidden');
-                document.getElementById('delete-step-1').classList.remove('hidden');
-                document.getElementById('delete-step-2').classList.add('hidden');
+                if (modal) modal.classList.remove('hidden');
+                if (step1) step1.classList.remove('hidden');
+                if (step2) step2.classList.add('hidden');
             } else {
                 showErrorModal("Erreur", data.message || "Impossible d'analyser l'impact.");
             }

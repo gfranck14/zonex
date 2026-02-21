@@ -324,8 +324,12 @@ class ForfaitController extends Controller
                     }
 
                     // 4b. GESTION DOUBLON TICKET (Row Level)
-                    // Strict : On vérifie l'existence GLOBALE du username
-                    $exists = \App\Models\Ticket::where('username', $username)->exists();
+                    // On vérifie l'existence UNIQUEMENT pour le forfait selectionné
+                    // en utilisant la combinaison username + password
+                    $exists = \App\Models\Ticket::where('username', $username)
+                        ->where('password', $password)
+                        ->where('forfaits_id', $forfaitId)
+                        ->exists();
 
                     if ($exists) {
                         $duplicateTicketCount++;

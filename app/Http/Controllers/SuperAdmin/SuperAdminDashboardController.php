@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Paiement;
+use App\Models\Retrait;
 use Illuminate\Http\Request;
 
 class SuperAdminDashboardController extends Controller
@@ -61,6 +63,44 @@ class SuperAdminDashboardController extends Controller
             (object)['type' => 'deposit', 'amount' => 7500, 'created_at' => now()->subHours(3), 'proprio' => (object)['nom' => 'Ben']],
         ]);
 
+        // ==============================================
+        // DONNÉES DU JOUR (Temps réel)
+        // ==============================================
+        $today = now()->startOfDay();
+        $todayEnd = now()->endOfDay();
+
+        // Paiements réussis du jour
+        $paiementsReussisJour = Paiement::where('statut', 'reussi')
+            ->whereBetween('created_at', [$today, $todayEnd])
+            ->get();
+        $paiementsReussisCount = $paiementsReussisJour->count();
+        $paiementsReussisMontant = $paiementsReussisJour->sum('montant');
+
+        // Paiements échoués du jour
+        $paiementsEchouesJour = Paiement::whereIn('statut', ['echoue', 'annule'])
+            ->whereBetween('created_at', [$today, $todayEnd])
+            ->get();
+        $paiementsEchouesCount = $paiementsEchouesJour->count();
+        $paiementsEchouesMontant = $paiementsEchouesJour->sum('montant');
+
+        // Retraits en attente
+        $retraitsEnAttente = Retrait::where('status', 'pending')
+            ->get();
+        $retraitsEnAttenteCount = $retraitsEnAttente->count();
+        $retraitsEnAttenteMontant = $retraitsEnAttente->sum('amount');
+
+        // Retraits payés (complétés)
+        $retraitsPayes = Retrait::whereIn('status', ['completed', 'processing'])
+            ->whereBetween('created_at', [$today, $todayEnd])
+            ->get();
+        $retraitsPayesCount = $retraitsPayes->count();
+        $retraitsPayesMontant = $retraitsPayes->sum('amount');
+
+        // Commission du jour (ccorp_fee des retraits complétés)
+        $commissionJour = Retrait::whereIn('status', ['completed', 'processing'])
+            ->whereBetween('created_at', [$today, $todayEnd])
+            ->sum('ccorp_fee');
+
         return view('superadmin.super_admin_dashboard', compact(
             'stats',
             'monthlyRevenue',
@@ -68,7 +108,16 @@ class SuperAdminDashboardController extends Controller
             'newPropriosThisMonth',
             'topProprios',
             'recentActivity',
-            'recentTransactions'
+            'recentTransactions',
+            'paiementsReussisCount',
+            'paiementsReussisMontant',
+            'paiementsEchouesCount',
+            'paiementsEchouesMontant',
+            'retraitsEnAttenteCount',
+            'retraitsEnAttenteMontant',
+            'retraitsPayesCount',
+            'retraitsPayesMontant',
+            'commissionJour'
         ));
     }
 

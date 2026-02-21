@@ -74,8 +74,7 @@
                             <!-- Bouton Copier (Stop Propagation pour ne pas ouvrir le détail) -->
                             <button onclick="event.stopPropagation(); showToast('Lien copié !')" class="w-full flex items-center justify-center gap-2 text-xs font-bold text-brand-blue hover:underline py-2">
                                 <i class="fas fa-copy w-4 h-4"></i>
-                                Copier lien d'intégration
-                            </button>
+                                Copier lien du Portail captif
                         </div>
 
                         <!-- Pied : Actions -->
@@ -123,7 +122,7 @@
                             <!-- Bouton Copier (Stop Propagation pour ne pas ouvrir le détail) -->
                             <button onclick="event.stopPropagation(); showToast('Lien copié !')" class="w-full flex items-center justify-center gap-2 text-xs font-bold text-brand-blue hover:underline py-2">
                                 <i class="fas fa-copy w-4 h-4"></i>
-                                Copier lien d'intégration
+                                Copier lien du Portail captif
                             </button>
                         </div>
 
@@ -192,12 +191,12 @@
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
                                 </div>
                                 <div>
-                                    <h3 class="text-lg font-bold text-gray-800 dark:text-white">Lien d'authentification</h3>
+                                    <h3 class="text-lg font-bold text-gray-800 dark:text-white">Lien du Portail captif</h3>
                                     <p class="text-xs text-gray-400 dark:text-gray-500">À configurer dans le Hotspot Mikrotik (Login URL).</p>
                                 </div>
                             </div>
                             <div class="bg-slate-900 dark:bg-black rounded-2xl p-5 relative group border border-slate-700 shadow-inner">
-                                <code class="text-brand-blue font-mono text-xs break-all block pr-10 leading-relaxed">https://auth.wifizone-manager.com/connect?zone_id=<span class="text-white font-bold" id="code-zone-id">WZ-8821-XJ</span>&mac=$(mac)&ip=$(ip)</code>
+                                <code class="text-brand-blue font-mono text-xs break-all block pr-10 leading-relaxed">https://auth.wifizone-manager.com/connect?zone_id=<span class="text-white font-bold" id="code-zone-id">WZ-8821-XJ</span></code>
                                 <button onclick="showToast('Lien d\'authentification copié', 'success')" class="absolute top-4 right-4 text-gray-400 hover:text-white" title="Copier">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
                                 </button>

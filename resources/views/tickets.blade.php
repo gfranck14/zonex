@@ -717,7 +717,8 @@
                                         <i class="fas fa-copy w-4 h-4"></i>
                                     </button>
                                     
-                                    <!-- Bouton Supprimer -->
+                                    <!-- Bouton Supprimer (uniquement pour les tickets libres) -->
+                                    @if($ticket->statut == 'libre')
                                     <form id="delete-ticket-form-{{ $ticket->id }}" action="{{ route('tickets.destroy', $ticket->id) }}" method="POST">
                                         @csrf
                                         @method('DELETE')
@@ -725,6 +726,7 @@
                                             <i class="fas fa-trash w-4 h-4"></i>
                                         </button>
                                     </form>
+                                    @endif
                                 </td>
                             </tr>
                             @endforeach
@@ -2036,7 +2038,7 @@
         })
         .catch(error => {
             bar.classList.remove('animate-pulse');
-            // console.error(error); // Masqué pour éviter confusion utilisateur
+            console.error('Import error:', error); // Afficher l'erreur complète pour le diagnostic
             
             // Fermer la modale d'importation
             closeImportModal();

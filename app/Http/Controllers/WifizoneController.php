@@ -63,7 +63,7 @@ class WifizoneController extends Controller
             return response()->json([
                 'success' => true,
                 'token' => $zone->token,
-                'url' => url('/portal/login?z=' . $zone->token . '&mac=$(mac)')
+                'url' => url('/portal/landing/' . $zone->token )
             ]);
 
         } catch (\Exception $e) {
@@ -131,7 +131,7 @@ class WifizoneController extends Controller
     }
 
     /**
-     * Récupère l'impact de la suppression d'une zone (nombre forfaits/tickets)
+     * Récupère l'impact de la suppression d'une zone (nombre forfaits/tickets/paiements)
      */
     public function getImpact($id)
     {
@@ -145,11 +145,15 @@ class WifizoneController extends Controller
 
             $forfaitsCount = $zone->forfaits->count();
             $ticketsCount = $zone->forfaits->sum('tickets_count');
+            
+            // Compter les paiements associés aux forfaits de la zone
+            $paiementsCount = \App\Models\Paiement::whereIn('forfait_id', $zone->forfaits->pluck('id'))->count();
 
             return response()->json([
                 'success' => true,
                 'forfaits_count' => $forfaitsCount,
-                'tickets_count' => $ticketsCount
+                'tickets_count' => $ticketsCount,
+                'paiements_count' => $paiementsCount
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Zone introuvable'], 404);
