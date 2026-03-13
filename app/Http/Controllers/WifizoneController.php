@@ -43,6 +43,7 @@ class WifizoneController extends Controller
             $data = $request->validate([
                 'nom_zone' => 'required|string|max:255',
                 'adresse' => 'nullable|string|max:255',
+                'hotspot_address' => 'nullable|string|max:255',
             ]);
 
             // Récupération de l'ID du proprio connecté
@@ -57,6 +58,7 @@ class WifizoneController extends Controller
                 'proprio_id' => $proprioId,
                 'nom_zone' => $data['nom_zone'],
                 'adresse' => $data['adresse'],
+                'hotspot_address' => $data['hotspot_address'] ?? null,
                 'token' => 'wz_' . Str::random(10),
             ]);
 
@@ -87,6 +89,7 @@ class WifizoneController extends Controller
             $data = $request->validate([
                 'nom_zone' => 'required|string|max:255',
                 'adresse' => 'nullable|string|max:255',
+                'hotspot_address' => 'nullable|string|max:255',
                 'display_name' => 'nullable|string|max:255',
                 'welcome_message' => 'nullable|string',
                 'primary_color' => 'nullable|string|max:50',

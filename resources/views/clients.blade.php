@@ -25,7 +25,7 @@
         </script>
     @endif
 
-    <div class="bg-brand-bgLight dark:bg-brand-bgDark w-full h-full rounded-2xl shadow-2xl overflow-y-auto no-scrollbar relative p-6 pb-10 transition-colors duration-300">
+    <div class="bg-brand-bgLight dark:bg-brand-bgDark w-full h-full rounded-2xl shadow-2xl overflow-y-auto no-scrollbar relative p-4 md:p-6 pb-24 md:pb-10 transition-colors duration-300">
         <!-- HEADER : Titre + Boutons Actions -->
         <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
 

@@ -1,0 +1,752 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+/* --- 1. LE CERVEAU DES COULEURS (Variables) --- */
+:root {
+    /* --- MODE CLAIR (Par défaut) --- */
+    --bg-main: #072b47;          /* Fond principal (Bleu Profond) */
+    --bg-sidebar: #072b47;       /* Menu gauche (même couleur) */
+    --bg-card: #FFFFFF;          /* Fond des widgets */
+    --bg-input: #F8FAFC;         /* Fond des champs */
+    
+    --text-main: #1E293B;        /* Texte principal (noir/gris foncé) */
+    --text-muted: #64748B;       /* Texte secondaire (gris) */
+    --text-sidebar: #FFFFFF;     /* Texte du menu */
+    
+    --border-color: #E2E8F0;     /* Bordures subtiles */
+    
+    --color-primary: #0EA5E9;    /* Cyan (Brand Blue) */
+    --color-success: #84CC16;    /* Vert */
+}
+
+/* --- MODE SOMBRE (Surcharge automatique) --- */
+.dark {
+    --bg-main: #0f172a;          /* Fond principal (Bleu Nuit) */
+    --bg-sidebar: #0f172a;       /* Menu gauche (même couleur) */
+    --bg-card: #1E293B;          /* Widgets gris foncé (Slate 800) */
+    --bg-input: #020617;         /* Champs noir profond (cohérent avec le fond) */
+    
+    --text-main: #F1F5F9;        /* Texte principal (blanc) */
+    --text-muted: #94A3B8;       /* Texte secondaire (gris clair) */
+    --text-sidebar: #E2E8F0;
+    
+    --border-color: #334155;     /* Bordures sombres */
+}
+
+/* --- 2. CONFIGURATION GLOBALE --- */
+html { font-size: 14px; }
+body { font-family: 'Outfit', sans-serif; }
+
+/* Application des couleurs globales (Le secret de l'harmonie) */
+body {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* Force les titres à suivre la couleur principale */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-main);
+}
+
+/* --- 3. GESTION MOBILE (Menu Hamburger) --- */
+/* Sidebar Mobile : Cachée par défaut sur petit écran */
+@media (max-width: 768px) {
+    aside {
+        position: fixed;
+        left: -100%; /* Hors écran */
+        top: 0;
+        bottom: 0;
+        z-index: 50;
+        transition: left 0.3s ease-in-out;
+        width: 80%; /* Largeur mobile */
+    }
+    aside.open {
+        left: 0; /* Entre dans l'écran */
+        box-shadow: 10px 0 50px rgba(0,0,0,0.5);
+    }
+    /* Overlay sombre quand menu ouvert */
+    .mobile-overlay {
+        position: fixed;
+        inset: 0;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 40;
+        display: none;
+    }
+    .mobile-overlay.active {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: var(--bg-main);
+    }
+}
+
+/* --- 3. COMPOSANTS (Harmonisés) --- */
+
+/* Modal Background - Light Mode */
+.modal-bg-light {
+    background-color: #edf2f7 !important;
+}
+
+/* Dark Mode : Fond des modales */
+:root.dark .modal-bg-light {
+    background-color: var(--bg-card) !important;
+}
+
+/* Sidebar */
+aside {
+    background-color: var(--bg-sidebar) !important;
+    color: var(--text-sidebar);
+}
+
+/* Cartes et Conteneurs Blancs */
+.bg-white, .bg-brand-light, .bg-brand-cardLight {
+    background-color: var(--bg-card) !important;
+    border-color: var(--border-color);
+}
+
+/* Inputs & Selects (Formulaires) */
+input, select, textarea, .bg-gray-50 {
+    background-color: var(--bg-input) !important;
+    color: var(--text-main) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* --- NAVIGATION MODERNISÉE --- */
+
+/* Item Actif : Design "Glass" avec barre latérale */
+.nav-item-active {
+    background: linear-gradient(90deg, rgba(14, 165, 233, 0.15) 0%, transparent 100%); /* Dégradé léger */
+    border-left: 3px solid #0EA5E9; /* Barre Cyan */
+    color: #FFFFFF !important;
+    font-weight: 600;
+    border-radius: 0 12px 12px 0; /* Arrondi seulement à droite */
+    padding-left: 1rem; /* On compense la bordure */
+    margin-left: 0;     /* Collé au bord gauche */
+    box-shadow: none;   /* Pas d'ombre lourde */
+}
+
+.nav-item-active svg {
+    stroke: #0EA5E9; /* Icône Cyan */
+    filter: drop-shadow(0 0 5px rgba(14,165,233, 0.5)); /* Petite lueur */
+}
+
+/* Item Inactif */
+.nav-item-inactive {
+    color: #94A3B8;
+    margin: 0 1rem; /* Marge normale pour les inactifs */
+    border-radius: 12px;
+    border-left: 3px solid transparent; /* Pour éviter le saut au survol */
+}
+
+.nav-item-inactive:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #F1F5F9;
+}
+
+/* Onglets */
+.tab-btn.active {
+    border-bottom: 3px solid #072b47; /* Devenu Bleu Profond */
+    color: #072b47; 
+    font-weight: 800;
+}
+
+/* Important : En Dark Mode, le bleu profond ne se voit pas, on le passe en blanc/cyan */
+:root.dark .tab-btn.active {
+    border-bottom-color: #0EA5E9;
+    color: #FFFFFF;
+}
+
+/* Utilitaires */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* --- INPUTS UNIFORMISÉS (Renforcés) --- */
+.input-standard {
+    width: 100%;
+    border-radius: 0.75rem; /* rounded-xl */
+    padding: 1rem 1rem; /* Un peu plus haut */
+    font-size: 0.95rem; 
+    font-weight: 600;
+    outline: none;
+    transition: all 0.2s ease-in-out;
+    
+    /* Light Mode : Fond Blanc pur + Bordure Grise visible */
+    background-color: #FFFFFF; 
+    border: 1.5px solid #CBD5E1; /* Slate 300, épaisseur 1.5px */
+    color: #0F172A; 
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Légère ombre */
+}
+
+.input-standard:focus {
+    border-color: #083e5f; 
+    box-shadow: 0 0 0 4px rgba(8, 62, 95, 0.1); 
+}
+
+.input-standard::placeholder {
+    color: #94A3B8; 
+}
+
+/* Dark Mode : Fond Foncé (mais pas noir) + Bordure visible */
+:root.dark .input-standard {
+    background-color: #0F172A; /* Slate 900 (Contraste sur le fond Slate 800) */
+    border-color: #475569; /* Slate 600 */
+    color: #F8FAFC; 
+    box-shadow: none;
+}
+
+:root.dark .input-standard:focus {
+    border-color: #0EA5E9; 
+    background-color: #020617; /* Devient plus sombre au focus */
+    box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15);
+}
+
+/* --- NOUVEAUX STYLES D'INPUTS MODERNES --- */
+
+/* Input Style 1 : Minimaliste avec bordure inférieure */
+.input-minimal {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--border-color);
+    padding: 0.75rem 0;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-main);
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.input-minimal:focus {
+    border-bottom-color: var(--color-primary);
+}
+
+.input-minimal::placeholder {
+    color: var(--text-muted);
+}
+
+/* Input Style 2 : Glassmorphism */
+.input-glass {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 1rem;
+    padding: 1rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-main);
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.input-glass:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
+}
+
+.input-glass::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Dark Mode pour Glassmorphism */
+:root.dark .input-glass {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+:root.dark .input-glass:focus {
+    background: rgba(0, 0, 0, 0.4);
+}
+
+/* Input Style 3 : Gradient moderne */
+.input-gradient {
+    width: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 1rem;
+    padding: 1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: white;
+    outline: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.input-gradient:focus {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4);
+}
+
+.input-gradient::placeholder {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Input Style 4 : Neon Glow */
+.input-neon {
+    width: 100%;
+    background: var(--bg-card);
+    border: 2px solid var(--color-primary);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-main);
+    outline: none;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.input-neon:focus {
+    border-color: var(--color-primary);
+    box-shadow: 
+        0 0 10px var(--color-primary),
+        0 0 20px var(--color-primary),
+        0 0 30px var(--color-primary);
+    animation: neon-pulse 1.5s infinite;
+}
+
+@keyframes neon-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+.input-neon::placeholder {
+    color: var(--text-muted);
+}
+
+/* Input Style 5 : Outlined avec icône */
+.input-outlined {
+    width: 100%;
+    background: transparent;
+    border: 2px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-main);
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.input-outlined:focus {
+    border-color: var(--color-primary);
+    background: var(--bg-input);
+    box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+}
+
+.input-outlined::placeholder {
+    color: var(--text-muted);
+}
+
+/* Input Style 6 : Floating Label (conteneur) */
+.input-floating-group {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.input-floating {
+    width: 100%;
+    background: var(--bg-input);
+    border: 2px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 1.5rem 1rem 0.5rem 1rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-main);
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.input-floating:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+}
+
+.floating-label {
+    position: absolute;
+    left: 1rem;
+    top: 1rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.input-floating:focus ~ .floating-label,
+.input-floating:not(:placeholder-shown) ~ .floating-label {
+    top: 0.25rem;
+    left: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    background: var(--bg-card);
+    padding: 0 0.25rem;
+}
+
+/* Input Style 7 : Search moderne */
+.input-search {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 2rem;
+    padding: 0.75rem 1rem 0.75rem 3rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-main);
+    outline: none;
+    transition: all 0.3s ease;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394A3B8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 1rem center;
+    background-size: 1.25rem;
+}
+
+.input-search:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+}
+
+.input-search::placeholder {
+    color: var(--text-muted);
+}
+
+/* Input Style 8 : Code/Monospace */
+.input-code {
+    width: 100%;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    font-family: 'Fira Code', 'Courier New', monospace;
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: #e2e8f0;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.input-code:focus {
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
+}
+
+.input-code::placeholder {
+    color: #64748b;
+}
+
+/* --- UTILITAIRES POUR INPUTS --- */
+
+/* Tailles */
+.input-sm { padding: 0.5rem 0.75rem; font-size: 0.875rem; }
+.input-lg { padding: 1.25rem 1.5rem; font-size: 1.125rem; }
+
+/* États */
+.input-success { border-color: var(--color-success) !important; }
+.input-error { border-color: #ef4444 !important; }
+.input-warning { border-color: var(--color-accent) !important; }
+
+/* Désactivé */
+.input-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--bg-input) !important;
+}
+
+/* --- ANIMATION DÉFILEMENT TÉMOIGNAGES --- */
+.scrolling-wrapper {
+    animation: scroll-vertical 10s linear infinite;
+}
+
+@keyframes scroll-vertical {
+    0%, 20% { transform: translateY(0); } /* Reste sur le 1er */
+    25%, 45% { transform: translateY(-100%); } /* Glisse et reste sur le 2ème */
+    50%, 70% { transform: translateY(-200%); } /* Glisse et reste sur le 3ème */
+    75%, 100% { transform: translateY(0); } /* Retour au début */
+}
+
+/* --- TRANSITIONS DE PAGES (Fluidité Application) --- */
+
+/* Animation d'entrée : Slide Latéral Soyeux */
+main {
+    animation: silkySlide 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    will-change: transform, opacity;
+}
+
+@keyframes silkySlide {
+    0% { 
+        opacity: 0; 
+        /* Glisse depuis la droite (20px) */
+        transform: translateX(20px); 
+    }
+    100% { 
+        opacity: 1; 
+        transform: translateX(0); 
+    }
+}
+
+/* Animation pour le header */
+header {
+    animation: slideDownFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideDownFade {
+    from { 
+        opacity: 0; 
+        transform: translateY(-20px) scale(0.98); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0) scale(1); 
+    }
+}
+
+/* Animation pour la sidebar */
+aside {
+    animation: slideLeftFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideLeftFade {
+    from { 
+        opacity: 0; 
+        transform: translateX(-20px) scale(0.98); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateX(0) scale(1); 
+    }
+}
+
+/* Animation pour les cartes et conteneurs */
+.bg-white, .bg-brand-cardLight, .bg-brand-cardDark {
+    animation: fadeInScale 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInScale {
+    from { 
+        opacity: 0; 
+        transform: scale(0.95); 
+    }
+    to { 
+        opacity: 1; 
+        transform: scale(1); 
+    }
+}
+
+/* Animation pour les KPIs et éléments importants */
+.animate-fade-in {
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInUp {
+    from { 
+        opacity: 0; 
+        transform: translateY(20px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+/* Animation pour les tableaux */
+table {
+    animation: tableSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes tableSlideIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(15px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+/* Animation pour les boutons */
+button {
+    animation: buttonPop 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+@keyframes buttonPop {
+    0% { 
+        opacity: 0; 
+        transform: scale(0.8); 
+    }
+    80% { 
+        transform: scale(1.05); 
+    }
+    100% { 
+        opacity: 1; 
+        transform: scale(1); 
+    }
+}
+
+/* Animation pour les modales */
+.modal-bg-light {
+    animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modalFadeIn {
+    from { 
+        opacity: 0; 
+        transform: scale(0.9) translateY(10px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: scale(1) translateY(0); 
+    }
+}
+
+/* Effet de transition fluide entre pages */
+body {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Animation pour les changements de thème */
+.dark-mode-transition {
+    transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+                color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animation pour les hover states */
+.hover-lift {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+                box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Animation pour les chargements */
+.loading-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        opacity: 1; 
+    }
+    50% { 
+        opacity: 0.5; 
+    }
+}
+
+/* Animation pour les notifications */
+.toast-slide-in {
+    animation: toastSlideIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+@keyframes toastSlideIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(100%) scale(0.8); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0) scale(1); 
+    }
+}
+
+/* Délai d'animation progressif pour les éléments */
+.animate-delay-100 { animation-delay: 0.1s; }
+
+/* --- PHONE INPUT SPECIAL (Family Floating) --- */
+
+.phone-input-container {
+    position: relative;
+    width: 100%;
+}
+
+/* L'input lui-même */
+.phone-input-field {
+    width: 100%;
+    background-color: transparent;
+    border: 1.5px solid #CBD5E1; /* Slate 300 */
+    border-radius: 0.75rem;
+    padding: 1rem 1rem 0.5rem 1rem;
+    padding-left: 7.5rem; /* Espace réservé pour Drapeau + Code */
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0F172A;
+    outline: none;
+    transition: all 0.2s;
+    height: 3.5rem; /* Hauteur fixe pour alignement */
+}
+
+/* Dark Mode */
+:root.dark .phone-input-field {
+    background-color: #1E293B;
+    border-color: #475569;
+    color: white;
+}
+
+/* Focus State */
+.phone-input-field:focus {
+    border-color: #0EA5E9;
+    box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+}
+
+/* Le Label Flottant (Calculé pour ne pas toucher le drapeau) */
+.phone-floating-label {
+    position: absolute;
+    left: 7.5rem; /* S'aligne avec le texte, pas le drapeau */
+    top: 1rem;
+    font-size: 0.875rem;
+    color: #64748B;
+    pointer-events: none;
+    transition: all 0.2s;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+/* Animation du Label */
+.phone-input-field:focus ~ .phone-floating-label,
+.phone-input-field:not(:placeholder-shown) ~ .phone-floating-label {
+    top: 0.25rem;
+    font-size: 0.65rem;
+    color: #0EA5E9;
+    font-weight: 700;
+}
+
+/* Le Sélecteur Pays (Intégré) */
+.country-selector-btn {
+    position: absolute;
+    left: 1.5px; /* Collé à la bordure */
+    top: 1.5px;
+    bottom: 1.5px;
+    width: 7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background-color: #F1F5F9; /* Fond gris léger distinctif */
+    border-radius: 0.7rem 0 0 0.7rem; /* Arrondi gauche uniquement */
+    border-right: 1px solid #CBD5E1; /* Ligne de séparation */
+    cursor: pointer;
+    transition: background 0.2s;
+    z-index: 10;
+}
+
+:root.dark .country-selector-btn {
+    background-color: #0F172A;
+    border-right-color: #475569;
+}
+
+.country-selector-btn:hover {
+    background-color: #E2E8F0;
+}
+:root.dark .country-selector-btn:hover {
+    background-color: #1E293B;
+}
+.animate-delay-200 { animation-delay: 0.2s; }
+.animate-delay-300 { animation-delay: 0.3s; }
+.animate-delay-400 { animation-delay: 0.4s; }
+.animate-delay-500 { animation-delay: 0.5s; }

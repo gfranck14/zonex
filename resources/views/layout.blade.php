@@ -2,20 +2,23 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>WifiProfit - Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
    <script src="{{ asset('assets/js/config.js') }}"></script>
    <script src="{{ asset('assets/js/main.js') }}"></script>
-   <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <meta name="theme-color" content="#072b47">
+    <link rel="apple-touch-icon" href="/pwa-icon-192.png">
 </head>
 <!-- BODY : Fond sombre auto en dark mode -->
-<body class="bg-brand-sidebarLight dark:bg-brand-sidebarDark text-slate-800 dark:text-slate-100 h-screen w-screen overflow-hidden flex transition-colors duration-300">
+<body class="bg-brand-sidebarLight dark:bg-brand-sidebarDark text-slate-800 dark:text-slate-100 h-[100dvh] w-screen overflow-hidden flex transition-colors duration-300">
 
     <!-- SIDEBAR : Couleur Light (#215ba0) vs Dark (#0f172a) -->
-    <aside class="w-64 flex-shrink-0 flex flex-col justify-between py-6 px-4 h-full bg-brand-sidebarLight dark:bg-brand-sidebarDark transition-colors duration-300 text-white">
+    <aside class="hidden md:flex w-64 flex-shrink-0 flex-col justify-between py-6 px-4 h-full bg-brand-sidebarLight dark:bg-brand-sidebarDark transition-colors duration-300 text-white">
         <div>
             <!-- Brand -->
             <div class="flex items-center gap-3 px-4 mb-8">
@@ -99,11 +102,19 @@
         <div class="flex-1">
             <!-- On affiche dynamiquement le nom du proprio connecté -->
             <p class="text-sm font-bold text-white">
-                {{ Auth::guard('proprio')->user()->nom }} {{ Auth::guard('proprio')->user()->prenom }}
+                @if(Auth::guard('proprio')->check())
+                    {{ Auth::guard('proprio')->user()->nom }} {{ Auth::guard('proprio')->user()->prenom }}
+                @else
+                    Visiteur
+                @endif
             </p>
             <!-- Petit indicateur de déconnexion au survol -->
             <p class="text-[10px] text-blue-200 group-hover:text-red-400 transition">
-                Propriétaire (Déconnexion)
+                @if(Auth::guard('proprio')->check())
+                    Propriétaire (Déconnexion)
+                @else
+                    Visiteur
+                @endif
             </p>
         </div>
 
@@ -122,11 +133,66 @@
     </aside>
 
     <!-- MAIN CONTENT -->
-    <main class="flex-1 py-4 pr-4 pl-0 h-full relative">
+    <main class="flex-1 p-4 pb-28 md:p-0 md:py-4 md:pr-4 md:pl-0 h-[100dvh] flex flex-col overflow-hidden relative">
     @yield('content')
     </main>
 
     <!-- AJOUTEZ CETTE LIGNE ICI 👇 -->
     @yield('scripts')
+
+    <!-- BOTTOM NAVIGATION (MOBILE ONLY) -->
+    <nav class="md:hidden fixed bottom-0 left-0 w-full bg-brand-sidebarLight dark:bg-brand-sidebarDark z-[100] pb-safe pt-2">
+        <div class="flex items-center justify-around px-1 pb-3 overflow-x-auto no-scrollbar gap-1">
+            <a href="{{ route('dashboard') }}" class="flex flex-col items-center gap-1.5 min-w-[60px] {{ request()->routeIs('dashboard') ? 'text-brand-blue drop-shadow-[0_0_8px_rgba(14,165,233,0.5)]' : 'text-gray-400 hover:text-white' }} transition-all">
+                <i class="fas fa-th-large text-xl"></i>
+                <span class="text-[10px] font-medium">Dashboard</span>
+            </a>
+            
+            <a href="{{ route('wifizones') }}" class="flex flex-col items-center gap-1.5 min-w-[60px] {{ request()->routeIs('wifizones') ? 'text-brand-blue drop-shadow-[0_0_8px_rgba(14,165,233,0.5)]' : 'text-gray-400 hover:text-white' }} transition-all">
+                <i class="fas fa-map-marker-alt text-xl"></i>
+                <span class="text-[10px] font-medium">Zones</span>
+            </a>
+            
+            <a href="{{ route('forfait_ticket') }}" class="flex flex-col items-center gap-1.5 min-w-[60px] {{ request()->routeIs('forfait_ticket') ? 'text-brand-blue drop-shadow-[0_0_8px_rgba(14,165,233,0.5)]' : 'text-gray-400 hover:text-white' }} transition-all">
+                <i class="fas fa-ticket-alt text-xl"></i>
+                <span class="text-[10px] font-medium">Tickets</span>
+            </a>
+            
+            <a href="{{ route('clients') }}" class="flex flex-col items-center gap-1.5 min-w-[60px] {{ request()->routeIs('clients') ? 'text-brand-blue drop-shadow-[0_0_8px_rgba(14,165,233,0.5)]' : 'text-gray-400 hover:text-white' }} transition-all">
+                <i class="fas fa-users text-xl"></i>
+                <span class="text-[10px] font-medium">Clients</span>
+            </a>
+            
+            <a href="{{ route('paiements') }}" class="flex flex-col items-center gap-1.5 min-w-[60px] {{ request()->routeIs('paiements') ? 'text-brand-blue drop-shadow-[0_0_8px_rgba(14,165,233,0.5)]' : 'text-gray-400 hover:text-white' }} transition-all">
+                <i class="fas fa-credit-card text-xl"></i>
+                <span class="text-[10px] font-medium">Paiements</span>
+            </a>
+            
+            <a href="{{ route('settings') }}" class="flex flex-col items-center gap-1.5 min-w-[60px] {{ request()->routeIs('settings') ? 'text-brand-blue drop-shadow-[0_0_8px_rgba(14,165,233,0.5)]' : 'text-gray-400 hover:text-white' }} transition-all">
+                <i class="fas fa-cog text-xl"></i>
+                <span class="text-[10px] font-medium">Params</span>
+            </a>
+        </div>
+    </nav>
+    <!-- PWA Install Prompt Modal -->
+    <div id="pwa-install-modal" class="fixed inset-0 bg-black/60 z-[9999] hidden flex items-end sm:items-center justify-center p-4 transition-opacity duration-300">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl p-6 shadow-2xl transform transition-transform duration-300 translate-y-full sm:translate-y-0" id="pwa-modal-content">
+            <div class="flex flex-col items-center text-center">
+                <div class="w-16 h-16 bg-gradient-to-br from-brand-blue to-brand-green rounded-2xl flex items-center justify-center shadow-lg shadow-blue-900/20 mb-4">
+                    <i class="fas fa-wifi text-3xl text-white"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Installer WiFiProfit</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">Installez notre application pour un accès rapide et une meilleure expérience!</p>
+                <div class="flex gap-3 w-full">
+                    <button onclick="closePWAInstallModal()" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                        Plus tard
+                    </button>
+                    <button onclick="installPWA()" class="flex-1 px-4 py-2 bg-brand-blue text-white rounded-xl font-medium hover:bg-blue-600 transition-colors">
+                        Installer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

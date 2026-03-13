@@ -32,6 +32,7 @@ class WifiZone extends Model
         'proprio_id',
         'nom_zone',
         'adresse',
+        'hotspot_address',
         'token',
         'display_name',
         'welcome_message',

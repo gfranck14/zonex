@@ -132,7 +132,7 @@
         </div>
 
         <!-- Inputs Wrapper -->
-        <form id="auth-form" method="POST" action="{{ route('client.login') }}" class="space-y-4">
+        <form id="auth-form" method="POST" action="{{ route('client.login', $token) }}" class="space-y-4">
             @csrf
             <input type="hidden" name="mac" value="{{ $mac }}">
             <input type="hidden" name="zone_id" value="{{ $wifizone->id ?? '' }}">
@@ -354,9 +354,19 @@
                         if (data.success) {
                             // Succès - Afficher toast et rediriger
                             showToast(data.message || 'Opération réussie !', 'success');
-                            setTimeout(() => {
-                                window.location.href = data.redirect || window.location.href;
-                            }, 1500);
+                            
+                            // Gérer la redirection WiFi automatique
+                            if (data.wifi_redirect && data.redirect) {
+                                showToast('Connexion WiFi automatique en cours...', 'info');
+                                setTimeout(() => {
+                                    window.location.href = data.redirect;
+                                }, 1000);
+                            } else {
+                                // Redirection normale vers le shop
+                                setTimeout(() => {
+                                    window.location.href = data.redirect || window.location.href;
+                                }, 1500);
+                            }
                         } else {
                             // Erreur retournée par le serveur
                             const errorMsg = data.errors && data.errors.length > 0 
@@ -442,7 +452,7 @@
                 submitBtn.innerText = "Créer mon compte";
                 helperText.innerText = "Déjà un compte ? Se connecter";
             } else {
-                form.action = "{{ route('client.login') }}";
+                form.action = "{{ route('client.login', $token) }}";
                 pseudoField.classList.add('hidden');
                 passwordConfirmField.classList.add('hidden');
                 document.getElementById('pseudo_input').required = false;

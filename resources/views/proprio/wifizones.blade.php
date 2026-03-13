@@ -101,12 +101,7 @@
                     @php
                         $zoneTicketCount = $zone->forfaits->sum('tickets_count');
                     @endphp
-                    @if($zoneTicketCount > 0)
-                    <button onclick="event.stopPropagation(); previewBulkDelete('zone', {{ $zone->id }}, '{{ $zone->nom_zone }}')" class="px-3 bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 transition" title="Supprimer tous les tickets">
-                        <i class="fas fa-trash-alt w-5 h-5"></i>
-                    </button>
-                    @endif
-                    <button onclick="event.stopPropagation(); deleteZoneFromList({{ $zone->id }}, '{{ addslashes($zone->nom_zone) }}')" class="px-3 bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 transition" title="Supprimer la zone">
+                    <button onclick="event.stopPropagation(); confirmDeleteZone({{ $zone->id }}, '{{ addslashes($zone->nom_zone) }}');" class="px-3 bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 transition" title="Supprimer la zone">
                         <i class="fas fa-trash w-5 h-5"></i>
                     </button>
                     <button onclick="event.stopPropagation(); showDetail({{ json_encode($zone) }});" class="w-10 flex items-center justify-center bg-gray-100 dark:bg-slate-700 text-gray-500 rounded-xl hover:text-brand-blue transition">
@@ -193,12 +188,16 @@
                                 <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Adresse physique</label>
                                 <input type="text" name="adresse" id="detail-zone-address" disabled class="w-full bg-gray-50 dark:bg-slate-800 dark:text-white border-none rounded-xl p-3 text-sm font-medium outline-none focus:ring-2 focus:ring-brand-blue/20 disabled:opacity-70 disabled:cursor-not-allowed transition-all">
                             </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Adresse Hotspot</label>
+                                <input type="text" name="hotspot_address" id="detail-zone-hotspot-address" disabled class="w-full bg-gray-50 dark:bg-slate-800 dark:text-white border-none rounded-xl p-3 text-sm font-medium outline-none focus:ring-2 focus:ring-brand-blue/20 disabled:opacity-70 disabled:cursor-not-allowed transition-all">
+                            </div>
                             <div class="pt-4 flex justify-between items-center">
                                 <div class="flex gap-3">
                                     <button type="button" id="edit-zone-btn" onclick="toggleZoneEdit()" class="bg-brand-blue text-white px-8 py-3 rounded-xl text-sm font-bold hover:brightness-110 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">Modifier</button>
                                     <button type="button" id="cancel-zone-btn" onclick="cancelZoneEdit()" class="hidden border border-gray-200 dark:border-slate-700 text-gray-500 dark:text-gray-400 px-6 py-3 rounded-xl text-sm font-bold hover:bg-gray-50 dark:hover:bg-slate-800 transition">Annuler</button>
                                 </div>
-                                <button type="button" onclick="handleDeleteZone()" class="text-red-500 hover:text-red-600 text-xs font-bold flex items-center gap-2">
+                                <button type="button" onclick="confirmDeleteZoneFromDetail()" class="text-red-500 hover:text-red-600 text-xs font-bold flex items-center gap-2">
                                     <i class="fas fa-trash-alt"></i> Supprimer cette zone
                                 </button>
                             </div>
@@ -296,7 +295,7 @@
         </div>
     </main>
        <!-- MODALE : AJOUTER UNE ZONE (Wizard) -->
-    <div id="add-zone-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div id="add-zone-modal" class="hidden fixed inset-0 z-[150] flex items-center justify-center p-4">
         <!-- Fond flouté -->
         <div class="absolute inset-0 bg-brand-sidebarLight/60 dark:bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeWizard()"></div>
         
@@ -327,6 +326,11 @@
         <input type="text" id="new-zone-address" placeholder=" " class="input-floating">
         <label class="floating-label">Lieu / Adresse (Optionnel)</label>
         <p class="text-xs text-gray-400 mt-1">Ex: Cocody, Rue des Jardins</p>
+    </div>
+    <div class="input-floating-group">
+        <input type="text" id="new-zone-hotspot-address" placeholder=" " class="input-floating">
+        <label class="floating-label">Adresse Hotspot</label>
+        <p class="text-xs text-gray-400 mt-1">Ex: 192.168.88.1 ou hotspot.example.com</p>
     </div>
     <div class="pt-4 flex justify-between items-center">
         <button onclick="closeWizard()" class="text-xs font-bold text-gray-400 hover:text-gray-600">Annuler</button>
@@ -377,52 +381,59 @@
     </div>
 </div>
 
-<!-- MODALE DE SUPPRESSION SÉCURISÉE (2 ÉTAPES) -->
-<div id="delete-zone-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[110] hidden">
-    <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl border border-gray-100 dark:border-slate-700">
-        <div id="delete-step-1" class="text-center space-y-6">
-            <div class="w-20 h-20 bg-orange-100 dark:bg-orange-900/30 rounded-3xl flex items-center justify-center mx-auto text-orange-500 shadow-inner">
-                <i class="fas fa-exclamation-triangle text-4xl"></i>
-            </div>
-            <div>
-                <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">Attention !</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Vous êtes sur le point de supprimer une zone WiFi. Cette action entraînera la suppression de :</p>
-            </div>
-            
-            <div class="grid grid-cols-3 gap-4">
-                <div class="bg-gray-50 dark:bg-slate-700/50 p-4 rounded-2xl">
-                    <span id="impact-forfaits" class="block text-2xl font-bold text-gray-800 dark:text-white">0</span>
-                    <span class="text-[10px] font-bold text-gray-400 uppercase">Forfaits</span>
-                </div>
-                <div class="bg-gray-50 dark:bg-slate-700/50 p-4 rounded-2xl">
-                    <span id="impact-tickets" class="block text-2xl font-bold text-gray-800 dark:text-white">0</span>
-                    <span class="text-[10px] font-bold text-gray-400 uppercase">Tickets</span>
-                </div>
-                <div class="bg-gray-50 dark:bg-slate-700/50 p-4 rounded-2xl">
-                    <span id="impact-paiements" class="block text-2xl font-bold text-gray-800 dark:text-white">0</span>
-                    <span class="text-[10px] font-bold text-gray-400 uppercase">Transactions</span>
-                </div>
-            </div>
+<!-- MODALE DE SUPPRESSION ZONE WIFI (SIMPLIFIÉ) -->
+<div id="delete-zone-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
+    <div class="absolute inset-0" onclick="closeDeleteModal()"></div>
+    
+    <!-- Loading state -->
+    <div id="delete-loading" class="hidden bg-white dark:bg-slate-800 w-full max-w-md rounded-[2.5rem] p-8 relative z-10 text-center shadow-2xl border border-gray-100 dark:border-slate-700">
+        <div class="w-20 h-20 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-500 flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-circle-notch fa-spin text-2xl"></i>
+        </div>
+        <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Chargement...</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Analyse de l'impact en cours</p>
+    </div>
 
-            <div class="flex gap-4 pt-2">
-                <button onclick="closeDeleteModal()" class="flex-1 px-6 py-4 border border-gray-200 dark:border-slate-600 rounded-2xl text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 transition">Annuler</button>
-                <button onclick="showDeleteStep2()" class="flex-1 px-6 py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-2xl text-sm font-bold transition shadow-lg shadow-orange-500/20">Continuer</button>
+    <!-- Step 1: Impact -->
+    <div id="delete-step-1" class="hidden bg-white dark:bg-slate-800 w-full max-w-md rounded-[2.5rem] p-8 relative z-10 text-center shadow-2xl border border-gray-100 dark:border-slate-700">
+        <div class="w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-900/20 text-orange-500 flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-exclamation-triangle text-2xl"></i>
+        </div>
+        <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Attention !</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Vous êtes sur le point de supprimer une zone WiFi. Cette action entraînera la suppression de :</p>
+        
+        <div class="grid grid-cols-3 gap-4 mb-6">
+            <div class="bg-gray-50 dark:bg-slate-700 p-4 rounded-2xl">
+                <span id="impact-forfaits" class="block text-2xl font-bold text-gray-800 dark:text-white">0</span>
+                <span class="text-[10px] font-bold text-gray-400 uppercase">Forfaits</span>
+            </div>
+            <div class="bg-gray-50 dark:bg-slate-700 p-4 rounded-2xl">
+                <span id="impact-tickets" class="block text-2xl font-bold text-gray-800 dark:text-white">0</span>
+                <span class="text-[10px] font-bold text-gray-400 uppercase">Tickets</span>
+            </div>
+            <div class="bg-gray-50 dark:bg-slate-700 p-4 rounded-2xl">
+                <span id="impact-paiements" class="block text-2xl font-bold text-gray-800 dark:text-white">0</span>
+                <span class="text-[10px] font-bold text-gray-400 uppercase">Transactions</span>
             </div>
         </div>
 
-        <div id="delete-step-2" class="text-center space-y-6 hidden">
-            <div class="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-3xl flex items-center justify-center mx-auto text-red-500 shadow-inner">
-                <i class="fas fa-trash-alt text-4xl"></i>
-            </div>
-            <div>
-                <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">Confirmation finale</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Êtes-vous absolument sûr ? Cette action est irréversible et toutes les données seront perdues.</p>
-            </div>
-            
-            <div class="flex gap-4 pt-2">
-                <button onclick="confirmFinalDelete()" class="flex-1 px-6 py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl text-sm font-bold transition shadow-lg shadow-red-500/20">Supprimer définitivement</button>
-                <button onclick="closeDeleteModal()" class="flex-1 px-6 py-4 border border-gray-200 dark:border-slate-600 rounded-2xl text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 transition">Annuler</button>
-            </div>
+        <div class="flex gap-4">
+            <button onclick="closeDeleteModal()" class="flex-1 px-6 py-4 border border-gray-200 dark:border-slate-600 rounded-2xl text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 transition">Annuler</button>
+            <button onclick="showDeleteStep2()" class="flex-1 px-6 py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-2xl text-sm font-bold transition shadow-lg shadow-orange-500/20">Continuer</button>
+        </div>
+    </div>
+
+    <!-- Step 2: Confirmation -->
+    <div id="delete-step-2" class="hidden bg-white dark:bg-slate-800 w-full max-w-md rounded-[2.5rem] p-8 relative z-10 text-center shadow-2xl border border-gray-100 dark:border-slate-700">
+        <div class="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/20 text-red-500 flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-trash-alt text-2xl"></i>
+        </div>
+        <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Confirmation finale</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Êtes-vous absolument sûr ? Cette action est irréversible et toutes les données seront perdues.</p>
+        
+        <div class="flex gap-4">
+            <button onclick="confirmFinalDelete()" class="flex-1 px-6 py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl text-sm font-bold transition shadow-lg shadow-red-500/20">Supprimer définitivement</button>
+            <button onclick="closeDeleteModal()" class="flex-1 px-6 py-4 border border-gray-200 dark:border-slate-600 rounded-2xl text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 transition">Annuler</button>
         </div>
     </div>
 </div>
@@ -521,6 +532,9 @@
     }
 
     function openWizard() {
+        // Fermer tous les autres modaux d'abord
+        closeAllModals();
+        
         document.getElementById('add-zone-modal').classList.remove('hidden');
         document.getElementById('step-1').classList.remove('hidden');
         document.getElementById('step-2').classList.add('hidden');
@@ -531,10 +545,97 @@
     function closeWizard() {
         document.getElementById('add-zone-modal').classList.add('hidden');
     }
+    
+    // Fonction pour fermer tous les modaux
+    function closeAllModals() {
+        document.getElementById('add-zone-modal').classList.add('hidden');
+        document.getElementById('delete-zone-modal').classList.add('hidden');
+        document.getElementById('bulk-delete-tickets-modal').classList.add('hidden');
+        document.getElementById('error-modal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+    
+    // APPROCHE ALTERNATIVE : Suppression simple avec confirmation native
+    async function confirmDeleteZone(id, name) {
+        console.log('[DELETE_ZONE] Simple delete called - Zone ID:', id, 'Name:', name);
+        
+        // Confirmation native plus fiable
+        const confirmed = confirm(`⚠️ Êtes-vous sûr de vouloir supprimer la zone "${name}" ?\n\nCette action est IRRÉVERSIBLE et supprimera :\n• Tous les forfaits associés\n• Tous les tickets associés\n• Toutes les transactions\n\nCliquez sur OK pour confirmer la suppression.`);
+        
+        if (!confirmed) {
+            console.log('[DELETE_ZONE] User cancelled deletion');
+            return;
+        }
+        
+        try {
+            console.log('[DELETE_ZONE] User confirmed - sending DELETE request');
+            
+            // Afficher un indicateur de chargement simple
+            const btn = event.target.closest('button');
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin w-5 h-5"></i>';
+            
+            const response = await fetch("{{ url('/wifizones') }}/" + id, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    _method: 'DELETE'
+                })
+            });
+            
+            console.log('[DELETE_ZONE] DELETE response status:', response.status);
+            const data = await response.json();
+            console.log('[DELETE_ZONE] DELETE response data:', data);
+            
+            if (data.success) {
+                console.log('[DELETE_ZONE] Zone deleted successfully');
+                // Afficher un message de succès simple
+                alert('✅ Zone "' + name + '" supprimée avec succès !');
+                // Recharger la page pour voir les changements
+                window.location.reload();
+            } else {
+                console.error('[DELETE_ZONE] Delete failed:', data.message);
+                alert('❌ Erreur: ' + (data.message || 'Erreur lors de la suppression'));
+                // Restaurer le bouton
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            }
+        } catch (error) {
+            console.error('[DELETE_ZONE] Network error during delete:', error);
+            alert('❌ Erreur réseau: ' + error.message);
+            // Restaurer le bouton
+            const btn = event.target.closest('button');
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        }
+    }
+    
+    // Suppression depuis la vue détaillée
+    async function confirmDeleteZoneFromDetail() {
+        const idInput = document.getElementById('detail-zone-id-input');
+        const nameInput = document.getElementById('detail-zone-name');
+        const id = idInput ? idInput.value : null;
+        const name = nameInput ? nameInput.value : 'cette zone';
+        
+        if (!id) {
+            alert('❌ Erreur: ID de zone non trouvé');
+            return;
+        }
+        
+        // Utiliser la même fonction de confirmation
+        await confirmDeleteZone(id, name);
+    }
 
     async function goToStep2() {
         const nom = document.getElementById('new-zone-name').value;
         const adresse = document.getElementById('new-zone-address').value;
+        const hotspotAddress = document.getElementById('new-zone-hotspot-address').value;
         const btn = document.getElementById('btn-next-wizard');
         const btnText = document.getElementById('btn-next-text');
         const btnIcon = document.getElementById('btn-next-icon');
@@ -562,7 +663,8 @@
                 },
                 body: JSON.stringify({
                     nom_zone: nom,
-                    adresse: adresse
+                    adresse: adresse,
+                    hotspot_address: hotspotAddress
                 })
             });
 
@@ -622,13 +724,13 @@
         document.getElementById('zone-list').classList.add('hidden');
         document.getElementById('zone-detail').classList.remove('hidden');
         
-        currentZoneId = zone.id; // Store zone ID for bulk delete
-        
+        // Remplir les champs
         document.getElementById('display-zone-id').innerText = 'WZ-' + zone.id;
         document.getElementById('zone-title').innerText = zone.nom_zone;
         document.getElementById('detail-zone-id-input').value = zone.id;
         document.getElementById('detail-zone-name').value = zone.nom_zone;
         document.getElementById('detail-zone-address').value = zone.adresse || '';
+        document.getElementById('detail-zone-hotspot-address').value = zone.hotspot_address || '';
         document.getElementById('code-zone-id').innerText = zone.token;
 
         // Sync Icon with stock status
@@ -676,7 +778,8 @@
             isEditingZone = true;
             initialZoneData = {
                 nom_zone: document.getElementById('detail-zone-name').value,
-                adresse: document.getElementById('detail-zone-address').value
+                adresse: document.getElementById('detail-zone-address').value,
+                hotspot_address: document.getElementById('detail-zone-hotspot-address').value
             };
             
             inputs.forEach(input => input.disabled = false);
@@ -695,10 +798,12 @@
     function checkZoneChanges() {
         const currentName = document.getElementById('detail-zone-name').value;
         const currentAddress = document.getElementById('detail-zone-address').value;
+        const currentHotspotAddress = document.getElementById('detail-zone-hotspot-address').value;
         const btn = document.getElementById('edit-zone-btn');
 
         const hasChanged = currentName !== initialZoneData.nom_zone || 
-                           currentAddress !== initialZoneData.adresse;
+                          currentAddress !== initialZoneData.adresse ||
+                          currentHotspotAddress !== initialZoneData.hotspot_address;
         
         btn.disabled = !hasChanged;
     }
@@ -716,6 +821,7 @@
         if (initialZoneData.nom_zone) {
             document.getElementById('detail-zone-name').value = initialZoneData.nom_zone;
             document.getElementById('detail-zone-address').value = initialZoneData.adresse;
+            document.getElementById('detail-zone-hotspot-address').value = initialZoneData.hotspot_address || '';
         }
         
         inputs.forEach(input => {
@@ -734,6 +840,7 @@
         const cancelBtn = document.getElementById('cancel-zone-btn');
         const name = document.getElementById('detail-zone-name').value;
         const address = document.getElementById('detail-zone-address').value;
+        const hotspotAddress = document.getElementById('detail-zone-hotspot-address').value;
         
         const originalText = btn.innerText;
         btn.disabled = true;
@@ -751,7 +858,8 @@
                 body: JSON.stringify({
                     _method: 'PUT',
                     nom_zone: name,
-                    adresse: address
+                    adresse: address,
+                    hotspot_address: hotspotAddress
                 })
             });
             
@@ -766,8 +874,8 @@
                 cancelBtn.classList.add('hidden');
                 document.querySelectorAll('#zone-profile-form input, #zone-profile-form select').forEach(input => input.disabled = true);
                 
-                // Update the original data for next edit
-                initialZoneData = { nom_zone: name, adresse: address };
+                // Update original data for next edit
+                initialZoneData = { nom_zone: name, adresse: address, hotspot_address: hotspotAddress };
             } else {
                 showErrorModal("Erreur", data.message || "Erreur lors de la mise à jour");
                 btn.disabled = false;
@@ -805,12 +913,9 @@
                 },
                 body: JSON.stringify({
                     _method: 'PUT',
-                    // On doit renvoyer aussi les champs obligatoires (nom_zone) ou modifier le validateur pour 'sometimes'
-                    // Pour simplifier ici, on suppose que le validateur du controller est assez souple ou on réutilise les valeurs existantes
-                    // Mais Wait! Le controller demande 'nom_zone' required.
-                    // Donc il faut récupérer la valeur actuelle.
                     nom_zone: document.getElementById('detail-zone-name').value,
                     adresse: document.getElementById('detail-zone-address').value,
+                    hotspot_address: document.getElementById('detail-zone-hotspot-address').value,
                     display_name: displayName,
                     welcome_message: msg
                 })
@@ -829,22 +934,70 @@
     }
 
     async function handleDeleteZone() {
-        const id = document.getElementById('detail-zone-id-input').value;
+        const idInput = document.getElementById('detail-zone-id-input');
+        const id = idInput ? idInput.value : null;
+        console.log('[DELETE_ZONE] handleDeleteZone called - Zone ID:', id);
+        
+        if (!id) {
+            return;
+        }
+        
+        // Fermer tous les autres modaux d'abord
+        closeAllModals();
+        
+        // Afficher le modal avec loading
+        const modal = document.getElementById('delete-zone-modal');
+        const loading = document.getElementById('delete-loading');
+        const step1 = document.getElementById('delete-step-1');
+        const step2 = document.getElementById('delete-step-2');
+        
+        // Reset et afficher avec des classes CSS
+        modal.classList.remove('hidden');
+        loading.classList.remove('hidden');
+        step1.classList.add('hidden');
+        step2.classList.add('hidden');
+        
         await deleteZoneWithImpact(id);
     }
     
     async function deleteZoneFromList(id, name) {
+        console.log('[DELETE_ZONE] Button pressed - Zone ID:', id, 'Name:', name);
+        
         // Stocker l'ID pour la suppression
-        document.getElementById('detail-zone-id-input').value = id;
+        const idInput = document.getElementById('detail-zone-id-input');
+        if (idInput) idInput.value = id;
+        
+        // Fermer tous les autres modaux d'abord
+        closeAllModals();
+        
+        // Afficher le modal avec loading
+        const modal = document.getElementById('delete-zone-modal');
+        const loading = document.getElementById('delete-loading');
+        const step1 = document.getElementById('delete-step-1');
+        const step2 = document.getElementById('delete-step-2');
+        
+        // Reset et afficher avec des classes CSS
+        modal.classList.remove('hidden');
+        loading.classList.remove('hidden');
+        step1.classList.add('hidden');
+        step2.classList.add('hidden');
+        
+        // Bloquer le scroll
+        document.body.style.overflow = 'hidden';
+        
+        console.log('[DELETE_ZONE] Modal shown, fetching impact data...');
+        
+        // Récupérer les données d'impact
         await deleteZoneWithImpact(id, name);
     }
     
     async function deleteZoneWithImpact(id, name = null) {
         try {
-            // Show loading state
-            const modal = document.getElementById('delete-zone-modal');
+            const loading = document.getElementById('delete-loading');
             const step1 = document.getElementById('delete-step-1');
             const step2 = document.getElementById('delete-step-2');
+            
+            console.log('[DELETE_ZONE] Starting fetch to /wifizones/' + id + '/impact');
             
             // Fetch impact analysis
             const response = await fetch("{{ url('/wifizones') }}/" + id + "/impact", {
@@ -854,39 +1007,59 @@
                 }
             });
             
+            console.log('[DELETE_ZONE] Fetch response status:', response.status);
+            
             const data = await response.json();
+            console.log('[DELETE_ZONE] Fetch response data:', data);
             
             if (data.success) {
+                console.log('[DELETE_ZONE] Impact data retrieved successfully');
+                console.log('[DELETE_ZONE] Forfaits:', data.forfaits_count, 'Tickets:', data.tickets_count, 'Paiements:', data.paiements_count);
+                
+                // Masquer le loading et afficher step 1 avec des classes CSS
+                loading.classList.add('hidden');
+                step1.classList.remove('hidden');
+                step2.classList.add('hidden');
+                
                 document.getElementById('impact-forfaits').innerText = data.forfaits_count;
                 document.getElementById('impact-tickets').innerText = data.tickets_count;
                 document.getElementById('impact-paiements').innerText = data.paiements_count || 0;
                 
-                // Show modal step 1
-                if (modal) modal.classList.remove('hidden');
-                if (step1) step1.classList.remove('hidden');
-                if (step2) step2.classList.add('hidden');
+                console.log('[DELETE_ZONE] Step 1 displayed, waiting for user action');
             } else {
+                console.error('[DELETE_ZONE] Error retrieving impact data:', data.message);
+                loading.classList.add('hidden');
+                closeDeleteModal();
                 showErrorModal("Erreur", data.message || "Impossible d'analyser l'impact.");
             }
         } catch (error) {
+            console.error('[DELETE_ZONE] Network error:', error);
+            loading.classList.add('hidden');
+            closeDeleteModal();
             showErrorModal("Erreur", "Une erreur réseau est survenue");
         }
     }
 
     function showDeleteStep2() {
+        console.log('[DELETE_ZONE] User clicked Continue - showing step 2');
         document.getElementById('delete-step-1').classList.add('hidden');
         document.getElementById('delete-step-2').classList.remove('hidden');
     }
 
     function closeDeleteModal() {
-        document.getElementById('delete-zone-modal').classList.add('hidden');
+        console.log('[DELETE_ZONE] Modal closed by user');
+        const modal = document.getElementById('delete-zone-modal');
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
     }
 
     async function confirmFinalDelete() {
         const id = document.getElementById('detail-zone-id-input').value;
+        console.log('[DELETE_ZONE] User confirmed deletion - Zone ID:', id);
         closeDeleteModal();
         
         try {
+            console.log('[DELETE_ZONE] Sending DELETE request to /wifizones/' + id);
             const response = await fetch("{{ url('/wifizones') }}/" + id, {
                 method: 'POST',
                 headers: {
@@ -900,14 +1073,20 @@
                 })
             });
             
+            console.log('[DELETE_ZONE] DELETE response status:', response.status);
             const data = await response.json();
+            console.log('[DELETE_ZONE] DELETE response data:', data);
+            
             if (data.success) {
+                console.log('[DELETE_ZONE] Zone deleted successfully');
                 showErrorModal("Succès", "Zone supprimée avec succès", 'success');
                 setTimeout(() => window.location.reload(), 1500);
             } else {
+                console.error('[DELETE_ZONE] Delete failed:', data.message);
                 showErrorModal("Erreur", data.message || "Erreur lors de la suppression");
             }
         } catch (error) {
+            console.error('[DELETE_ZONE] Network error during delete:', error);
             showErrorModal("Erreur", "Une erreur réseau est survenue");
         }
     }

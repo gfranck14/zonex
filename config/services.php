@@ -44,4 +44,8 @@ return [
         'env' => env('FEDAPAY_ENV', 'live'),
     ],
 
+    'mikrotik' => [
+        'secret' => env('MIKROTIK_WEBHOOK_SECRET'),
+    ],
+
 ];

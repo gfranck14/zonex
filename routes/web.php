@@ -14,6 +14,13 @@ use App\Http\Controllers\WithdrawalController;
 use App\Http\Controllers\PayoutController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\MikrotikEventController;
+
+
+
+use App\Http\Controllers\HotspotController;
+
+
 
 // SuperAdmin Controllers
 use App\Http\Controllers\SuperAdmin\SuperAdminAuthController;
@@ -30,17 +37,41 @@ use App\Http\Controllers\SuperAdmin\SupportTicketController;
 // =============================================================================
 // Routes pour le parcours client: Landing, Auth, Shop, Ticket
 
+// =============================================================================
+// WEBHOOK MIKROTIK HOTSPOT (PUBLIQUE - sans CSRF)
+// =============================================================================
+Route::prefix('api/hotspot')->name('mikrotik.')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->group(function () {
+    // Webhook unique pour logout avec zone
+    Route::post('/logout', [MikrotikEventController::class, 'handleLogoutWithZone'])
+         ->name('logout');
+});
+
+
+Route::post('/hotspot/logout', [HotspotController::class, 'logout']);
+
+
+
 // Route racine : redirige vers le portail client pour la démo
 Route::get('/', function () {
     return redirect()->route('dashboard');
 });
+
+// Page d'accueil centre de soins (démonstration)
+Route::get('/care-center-home', function () {
+    return view('care-center-home');
+})->name('care.center.home');
+
+// Dashboard centre de soins
+Route::get('/care-center-dashboard', function () {
+    return view('care-center-dashboard');
+})->name('care.center.dashboard');
 
 // Groupe Portail Client
 Route::prefix('portal')->name('client.')->group(function () {
     // Publiques
     Route::get('/landing/{token}', [ClientPortalController::class, 'landing'])->name('landing');
     Route::post('/register', [ClientPortalController::class, 'register'])->name('register');
-    Route::post('/login', [ClientPortalController::class, 'login'])->name('login');
+    Route::post('/login/{token}', [ClientPortalController::class, 'login'])->name('login');
     
     // Réinitialisation de mot de passe client
     Route::get('/reset-password/{token}', [ClientPortalController::class, 'showResetPasswordForm'])->name('reset-password.form');

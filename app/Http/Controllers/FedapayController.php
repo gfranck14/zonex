@@ -1388,44 +1388,4 @@ class FedapayController extends Controller
             ]);
         }
     }
-    
-    /**
-     * Créer et assigner un ticket au client
-     */
-    private function createAndAssignTicket($paiement)
-    {
-        // Chercher un ticket libre existant
-        $ticket = Ticket::where('forfaits_id', $paiement->forfait_id)
-            ->where('statut', 'libre')
-            ->first();
-        
-        // Si pas de ticket, en créer un nouveau
-        if (!$ticket) {
-            $forfait = Forfait::find($paiement->forfait_id);
-            $ticket = Ticket::create([
-                'forfaits_id' => $forfait->id,
-                'username' => 'TXN_' . strtoupper(substr(md5(time()), 0, 6)),
-                'password' => rand(1000, 9999),
-                'statut' => 'libre',
-                'date_vente' => null,
-            ]);
-        }
-        
-        // Marquer le ticket comme vendu et l'assigner
-        // Utiliser le montant du paiement comme prix d'achat
-        $ticket->update([
-            'statut' => 'vendu',
-            'client_id' => $paiement->client_id,
-            'date_vente' => now(),
-            'paiement_id' => $paiement->id,
-            'prix_achat' => $paiement->montant,
-        ]);
-        
-        // Mettre à jour le paiement avec l'ID du ticket
-        $paiement->update(['ticket_id' => $ticket->id]);
-        
-        // Mettre à jour les dépenses du client
-        $client = Client::find($paiement->client_id);
-        $client->increment('total_depense', $paiement->montant);
-    }
 }

@@ -33,7 +33,9 @@ class ForfaitController extends Controller
         // 2. Récupérer tous les forfaits de toutes les zones du propriétaire
         $forfaits = Forfait::whereHas('wifizone', function($query) use ($proprioId) {
             $query->where('proprio_id', $proprioId);
-        })->withCount('tickets')->get();
+        })->withCount(['tickets as tickets_count' => function($q) {
+            $q->where('statut', 'libre');
+        }])->get();
 
         // 3. Calculer le statut de stock pour chaque zone (icônes d'état)
         $zoneStockStatus = [];

@@ -38,7 +38,12 @@ class Ticket extends Model
         'client_id',
         'date_vente',
         'import_batch_id',
-        'prix_achat'
+        'prix_achat',
+        'last_ip',
+        'last_mac',
+        'statut_connexion',
+        'logout_cause',
+        'derniere_connexion',
     ];
 
     /**
@@ -48,6 +53,7 @@ class Ticket extends Model
      */
     protected $casts = [
         'date_vente' => 'datetime',
+        'derniere_connexion' => 'datetime',
     ];
 
     /**

@@ -39,7 +39,7 @@
 @endphp
 
 @section('content')
-<div class="bg-brand-bgLight dark:bg-brand-bgDark w-full h-full rounded-2xl shadow-2xl overflow-y-auto no-scrollbar relative p-6 pb-10 transition-colors duration-300">
+<div class="bg-brand-bgLight dark:bg-brand-bgDark w-full h-full rounded-2xl shadow-2xl overflow-y-auto no-scrollbar relative p-4 md:p-6 pb-24 md:pb-10 transition-colors duration-300">
     <header class="flex justify-between items-center mb-8">
         <div>
             <h2 class="text-3xl font-bold text-gray-800 dark:text-white">Paramètres</h2>
@@ -140,38 +140,6 @@
                     </div>
                 </form>
             </div>
-            
-            <!-- Sécurité -->
-            <div class="bg-white dark:bg-brand-cardDark p-8 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 relative z-10">
-                <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
-                    <i class="fas fa-shield-alt w-5 h-5 text-red-400"></i>Sécurité
-                </h3>
-                
-                <form id="password-form" class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-                    @csrf
-                    <div class="input-floating-group md:col-span-1 relative">
-                        <input type="password" name="current_password" id="current_password" placeholder=" " class="input-floating pr-10" required>
-                        <label class="floating-label">Mot de passe actuel</label>
-                        <button type="button" onclick="togglePasswordVisibility('current_password')" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors">
-                            <i class="far fa-eye" id="icon-current_password"></i>
-                        </button>
-                    </div>
-                    <div class="input-floating-group md:col-span-1 relative">
-                        <input type="password" name="new_password" id="new_password" placeholder=" " class="input-floating pr-10" required>
-                        <label class="floating-label">Nouveau mot de passe</label>
-                        <button type="button" onclick="togglePasswordVisibility('new_password')" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors">
-                            <i class="far fa-eye" id="icon-new_password"></i>
-                        </button>
-                    </div>
-                    <div class="input-floating-group md:col-span-1">
-                        <input type="password" name="new_password_confirmation" placeholder=" " class="input-floating" required>
-                        <label class="floating-label">Confirmer</label>
-                    </div>
-                    <button type="submit" class="bg-brand-blue text-white px-6 py-3 rounded-xl text-sm font-bold hover:brightness-110 transition h-[50px]">
-                        Mettre à jour
-                    </button>
-                </form>
-            </div>
         </div>
         
         <!-- 2. NOTIFICATIONS WHATSAPP -->
@@ -265,6 +233,17 @@
                     </div>
                 </form>
             </div>
+        </div>
+
+        <!-- CARD DÉCONNEXION (MOBILE ONLY) -->
+        <div class="md:hidden mb-safe px-4">
+            <form action="{{ route('proprio.logout') }}" method="POST" class="bg-red-500 hover:bg-red-600 rounded-3xl p-6 shadow-lg shadow-red-500/20 transition-all duration-300 transform hover:scale-[1.02]">
+                @csrf
+                <button type="submit" class="w-full flex items-center justify-center gap-3 text-white font-bold text-lg">
+                    <i class="fas fa-sign-out-alt text-xl"></i>
+                    <span>Se déconnecter</span>
+                </button>
+            </form>
         </div>
     </div>
 </div>
@@ -452,40 +431,6 @@
         e.preventDefault();
         if (isEditingProfile && !document.getElementById('edit-profile-btn').disabled) {
             saveProfileChanges();
-        }
-    });
-
-    // 2. Mise à jour du Mot de passe
-    document.getElementById('password-form').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const btn = this.querySelector('button[type="submit"]');
-        const originalText = btn.innerText;
-        btn.disabled = true;
-        btn.innerText = 'Mise à jour...';
-
-        const formData = new FormData(this);
-        
-        try {
-            const response = await fetch("{{ route('settings.password.update') }}", {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-            const data = await response.json();
-            
-            if (data.success) {
-                showToast(data.message, 'success');
-                this.reset();
-            } else {
-                showToast(data.message || 'Erreur', 'error');
-            }
-        } catch (error) {
-            showToast('Erreur lors du changement de mot de passe', 'error');
-        } finally {
-            btn.disabled = false;
-            btn.innerText = originalText;
         }
     });
 
