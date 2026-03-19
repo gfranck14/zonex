@@ -227,6 +227,9 @@
                 <p class="text-xs text-center text-gray-400 mt-4 cursor-pointer hover:text-custom-blue transition" id="helper-text" onclick="if(currentMode==='login') toggleMode('register'); else toggleMode('login');">
                     Pas encore de compte ? Créer un compte
                 </p>
+                <p class="text-xs text-center text-gray-400 mt-2 cursor-pointer hover:text-custom-blue transition font-medium" onclick="showAdminModal()">
+                    Je suis administrateur
+                </p>
             </div>
         </form>
 
@@ -253,6 +256,41 @@
                     Fermer
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal Administrateur -->
+    <div id="admin-modal" class="fixed inset-0 bg-black/50 z-[9999] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 transform transition-all">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-shield-alt text-blue-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Connexion Administrateur</h3>
+                <p class="text-sm text-gray-600 mb-6">Entrez vos identifiants Ticket Admin pour vous connecter</p>
+            </div>
+            
+            <form id="admin-form" onsubmit="handleAdminLogin(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nom d'utilisateur</label>
+                        <input type="text" id="admin-username" required class="input-standard" placeholder="Entrez le nom d'utilisateur">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
+                        <input type="password" id="admin-password" required class="input-standard" placeholder="Entrez le mot de passe">
+                    </div>
+                </div>
+                
+                <div class="flex gap-3 mt-6">
+                    <button type="button" onclick="closeAdminModal()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium">
+                        Annuler
+                    </button>
+                    <button type="submit" id="admin-submit-btn" class="flex-1 px-4 py-2 bg-custom-blue text-white rounded-xl hover:bg-blue-700 transition font-medium">
+                        Se connecter
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -284,6 +322,10 @@
                 case 'warning':
                     colors = 'bg-orange-500 text-white';
                     icon = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>';
+                    break;
+                case 'info':
+                    colors = 'bg-blue-500 text-white';
+                    icon = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
                     break;
                 default:
                     colors = 'bg-[#083e5f] text-white';
@@ -352,11 +394,14 @@
                 if (response.ok) {
                     return response.json().then(data => {
                         if (data.success) {
-                            // Succès - Afficher toast et rediriger
                             showToast(data.message || 'Opération réussie !', 'success');
                             
-                            // Gérer la redirection WiFi automatique
-                            if (data.wifi_redirect && data.redirect) {
+                            // Vérifier si une redirection vers réinitialisation est requise
+                            if (data.redirect_required && data.reset_password) {
+                                setTimeout(() => {
+                                    window.location.href = data.redirect_url;
+                                }, 1500);
+                            } else if (data.wifi_redirect && data.redirect) {
                                 showToast('Connexion WiFi automatique en cours...', 'info');
                                 setTimeout(() => {
                                     window.location.href = data.redirect;
@@ -369,10 +414,20 @@
                             }
                         } else {
                             // Erreur retournée par le serveur
-                            const errorMsg = data.errors && data.errors.length > 0 
-                                ? data.errors.join(' ') 
-                                : data.message || 'Erreur lors de l\'opération';
-                            showToast(errorMsg, 'error');
+                            let errorMsg, toastType = 'error';
+                            
+                            if (data.error_type === 'session_multiple') {
+                                // Message spécifique pour session multiple
+                                errorMsg = data.message;
+                                toastType = 'warning'; // Couleur différente pour distinguer
+                            } else {
+                                // Erreur normale
+                                errorMsg = data.errors && data.errors.length > 0 
+                                    ? data.errors.join(' ') 
+                                    : data.message || 'Erreur lors de l\'opération';
+                            }
+                            
+                            showToast(errorMsg, toastType);
                             submitBtn.disabled = false;
                             submitBtn.innerText = originalText;
                         }
@@ -380,10 +435,20 @@
                 } else {
                     // Erreur HTTP (422, 401, etc.)
                     return response.json().then(data => {
-                        const errorMsg = data.errors && data.errors.length > 0 
-                            ? data.errors.join(' ') 
-                            : data.message || 'Erreur lors de l\'opération';
-                        showToast(errorMsg, 'error');
+                        let errorMsg, toastType = 'error';
+                        
+                        if (data.error_type === 'session_multiple') {
+                            // Message spécifique pour session multiple
+                            errorMsg = data.message;
+                            toastType = 'warning'; // Couleur différente pour distinguer
+                        } else {
+                            // Erreur normale
+                            errorMsg = data.errors && data.errors.length > 0 
+                                ? data.errors.join(' ') 
+                                : data.message || 'Erreur lors de l\'opération';
+                        }
+                        
+                        showToast(errorMsg, toastType);
                         submitBtn.disabled = false;
                         submitBtn.innerText = originalText;
                     }).catch(() => {
@@ -556,6 +621,106 @@
                 console.error('Erreur:', error);
                 showToast('Erreur lors de l\'achat. Veuillez réessayer.', 'error');
             });
+        }
+
+        // Fonctions pour le modal administrateur
+        function showAdminModal() {
+            // Stocker le hotspot_address en session avant d'ouvrir le modal
+            const token = '{{ $token }}';
+            
+            // Récupérer le hotspot_address via une requête API
+            fetch(`/portal/get-hotspot-address/${token}`, {
+                method: 'GET',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Stocker en session (localStorage pour la persistance)
+                    sessionStorage.setItem('hotspot_address', data.hotspot_address);
+                    
+                    // Ouvrir le modal
+                    document.getElementById('admin-modal').classList.remove('hidden');
+                    document.getElementById('admin-username').focus();
+                } else {
+                    showToast('Erreur: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                showToast('Erreur lors de la récupération de l\'adresse hotspot', 'error');
+            });
+        }
+
+        function closeAdminModal() {
+            document.getElementById('admin-modal').classList.add('hidden');
+            document.getElementById('admin-form').reset();
+        }
+
+        async function handleAdminLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('admin-username').value;
+            const password = document.getElementById('admin-password').value;
+            const submitBtn = document.getElementById('admin-submit-btn');
+            
+            if (!username || !password) {
+                showToast('Veuillez remplir tous les champs', 'error');
+                return;
+            }
+
+            // Désactiver le bouton et montrer le chargement
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Connexion...';
+            
+            try {
+                // Vérifier les identifiants avec le controller
+                const response = await fetch('/portal/verify-admin-credentials', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                        token: '{{ $token }}'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Fermer le modal IMMÉDIATEMENT (sans passer par la fonction pour éviter tout délai)
+                    document.getElementById('admin-modal').classList.add('hidden');
+                    
+                    // Récupérer le hotspot_address directement depuis la réponse (prioritaire) ou sessionStorage
+                    const hotspotAddress = data.hotspot_address || sessionStorage.getItem('hotspot_address');
+                    
+                    // Rediriger immédiatement vers le portail captif avec les identifiants
+                    if (hotspotAddress) {
+                        const loginUrl = `${hotspotAddress}/login?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+                        window.location.href = loginUrl;
+                    } else {
+                        // Fallback si pas d'adresse hotspot
+                        showToast('Adresse hotspot non trouvée', 'error');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = 'Se connecter';
+                    }
+                } else {
+                    // Réactiver le bouton en cas d'erreur
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Se connecter';
+                    showToast(data.message || 'Identifiants incorrects', 'error');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Se connecter';
+                showToast('Erreur de connexion. Veuillez réessayer.', 'error');
+            }
         }
     </script>
 

@@ -66,6 +66,15 @@
         <p class="text-sm text-gray-500 mt-2 font-medium text-center">
             Créez un nouveau mot de passe pour votre compte
         </p>
+        
+        @if(session('reset_password_redirect_url'))
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mt-4">
+                <p class="text-xs text-blue-700 flex items-center gap-2">
+                    <i class="fas fa-info-circle"></i>
+                    Après la réinitialisation, vous serez redirigé vers votre page d'origine.
+                </p>
+            </div>
+        @endif
     </div>
 
     <div class="w-full max-w-xs">
@@ -94,6 +103,19 @@
                     <button type="button" onclick="togglePasswordVisibility('password_input')" class="absolute right-3 top-4 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors">
                         <i class="far fa-eye" id="icon-password_input"></i>
                     </button>
+                </div>
+
+                <!-- Message d'information -->
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
+                    <i class="fas fa-info-circle text-amber-500 mt-0.5"></i>
+                    <div class="text-xs text-amber-700">
+                        <p class="font-medium mb-1">Règles de sécurité :</p>
+                        <ul class="space-y-0.5">
+                            <li>• Minimum 6 caractères</li>
+                            <li>• Le mot de passe "12345" n'est pas autorisé</li>
+                            <li>• Choisissez un mot de passe unique et mémorable</li>
+                        </ul>
+                    </div>
                 </div>
 
                 <!-- Confirmer mot de passe -->
@@ -161,6 +183,37 @@
         if (form) {
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
+                
+                // Validation du mot de passe
+                const passwordInput = document.getElementById('password_input');
+                const password = passwordInput.value;
+                const confirmPassword = document.getElementById('password_confirmation_input').value;
+                
+                // Empêcher l'utilisation de "12345"
+                if (password === '12345') {
+                    showToast('Le mot de passe "12345" n\'est pas autorisé. Veuillez choisir un mot de passe plus sécurisé.', 'error');
+                    passwordInput.focus();
+                    passwordInput.classList.add('border-red-500');
+                    setTimeout(() => {
+                        passwordInput.classList.remove('border-red-500');
+                    }, 3000);
+                    return;
+                }
+                
+                // Vérifier que les mots de passe correspondent
+                if (password !== confirmPassword) {
+                    showToast('Les mots de passe ne correspondent pas.', 'error');
+                    document.getElementById('password_confirmation_input').focus();
+                    return;
+                }
+                
+                // Vérifier la longueur minimale (au moins 6 caractères)
+                if (password.length < 6) {
+                    showToast('Le mot de passe doit contenir au moins 6 caractères.', 'error');
+                    passwordInput.focus();
+                    return;
+                }
+                
                 const submitBtn = document.getElementById('submit-btn');
                 const originalText = submitBtn.innerText;
                 submitBtn.disabled = true;

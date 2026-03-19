@@ -7,6 +7,7 @@ use App\Models\Forfait;
 use App\Models\Ticket;
 use App\Models\WifiZone;
 use App\Models\BlockedClient;
+use App\Services\ClientSessionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -16,6 +17,12 @@ use Illuminate\Support\Str;
 
 class ClientPortalController extends Controller
 {
+    protected $sessionService;
+
+    public function __construct(ClientSessionService $sessionService)
+    {
+        $this->sessionService = $sessionService;
+    }
     /**
      * Page d'accueil / Landing (Login & Register) - Token obligatoire
      */
@@ -155,6 +162,70 @@ class ClientPortalController extends Controller
                 'timestamp' => now()->toISOString()
             ]);
             
+            // 🔍 VÉRIFIER SI LE MOT DE PASSE EST CELUI PAR DÉFAUT (12345)
+            if ($password === '12345') {
+                Log::warning('🔐 CONNEXION AVEC MOT DE PASSE PAR DÉFAUT', [
+                    'client_id' => $client->id,
+                    'client_pseudo' => $client->pseudo,
+                    'client_telephone' => $client->telephone,
+                    'ip' => $request->ip(),
+                    'timestamp' => now()->toISOString()
+                ]);
+
+                // Sauvegarder l'URL d'origine en session
+                $originalUrl = $request->headers->get('referer', '/portal');
+                session(['reset_password_redirect_url' => $originalUrl]);
+                
+                Log::info('📍 URL D\'ORIGINE SAUVEGARDÉE', [
+                    'client_id' => $client->id,
+                    'original_url' => $originalUrl,
+                    'has_referer' => $request->headers->has('referer'),
+                    'timestamp' => now()->toISOString()
+                ]);
+
+                // Générer un token de réinitialisation
+                $resetToken = \Illuminate\Support\Str::random(64);
+                \Illuminate\Support\Facades\DB::table('client_password_resets')->updateOrInsert(
+                    ['telephone' => $client->telephone],
+                    [
+                        'telephone' => $client->telephone,
+                        'token' => hash('sha256', $resetToken),
+                        'created_at' => now()
+                    ]
+                );
+
+                // Retourner une réponse de succès mais avec redirection forcée
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Redirection vers la réinitialisation du mot de passe...',
+                    'redirect_required' => true,
+                    'redirect_url' => route('client.reset-password.form', ['token' => $resetToken, 'telephone' => $client->telephone]),
+                    'reset_password' => true
+                ]);
+            }
+            
+            // 🔍 VÉRIFIER SI LE CLIENT A DÉJÀ UNE SESSION ACTIVE
+            $existingSession = $this->sessionService->getActiveSession($client->id);
+            
+            if ($existingSession) {
+                // 🚫 BLOQUER LA CONNEXION MULTIPLE
+                Log::warning('🚫 TENTATIVE DE CONNEXION MULTIPLE BLOQUÉE', [
+                    'client_id' => $client->id,
+                    'client_pseudo' => $client->pseudo,
+                    'current_ip' => $request->ip(),
+                    'existing_ip' => $existingSession->ip_address,
+                    'existing_activity' => $existingSession->last_activity,
+                    'existing_duration' => $existingSession->created_at->diffForHumans(now()),
+                    'timestamp' => now()->toISOString()
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ce compte est déjà connecté sur un autre appareil',
+                    'error_type' => 'session_multiple'
+                ], 409);
+            }
+            
             // Récupérer le token de la wifizone depuis l'URL actuelle
             $token = request()->route('token');
             
@@ -236,6 +307,13 @@ class ClientPortalController extends Controller
                 Auth::guard('client')->login($client);
                 $request->session()->regenerate();
                 
+                // 📝 ENREGISTRER LA SESSION ACTIVE
+                $this->sessionService->createSession(
+                    $client,
+                    $request->ip(),
+                    $request->userAgent()
+                );
+                
                 $client->update(['derniere_zone' => $wifizone->id]);
                 session(['zone_id' => $wifizone->id]);
                 session(['wifizone_token' => $token]);
@@ -289,6 +367,13 @@ class ClientPortalController extends Controller
                 // Connecter le client
                 Auth::guard('client')->login($client);
                 $request->session()->regenerate();
+                
+                // 📝 ENREGISTRER LA SESSION ACTIVE
+                $this->sessionService->createSession(
+                    $client,
+                    $request->ip(),
+                    $request->userAgent()
+                );
                 
                 $client->update(['derniere_zone' => $wifizone->id]);
                 session(['zone_id' => $wifizone->id]);
@@ -347,6 +432,13 @@ class ClientPortalController extends Controller
                 Auth::guard('client')->login($client);
                 $request->session()->regenerate();
                 
+                // 📝 ENREGISTRER LA SESSION ACTIVE
+                $this->sessionService->createSession(
+                    $client,
+                    $request->ip(),
+                    $request->userAgent()
+                );
+                
                 $client->update(['derniere_zone' => $wifizone->id]);
                 session(['zone_id' => $wifizone->id]);
                 session(['wifizone_token' => $token]);
@@ -386,6 +478,13 @@ class ClientPortalController extends Controller
             // Connecter le client et afficher le shop
             Auth::guard('client')->login($client);
             $request->session()->regenerate();
+            
+            // 📝 ENREGISTRER LA SESSION ACTIVE
+            $this->sessionService->createSession(
+                $client,
+                $request->ip(),
+                $request->userAgent()
+            );
             
             $client->update(['derniere_zone' => $wifizone->id]);
             session(['zone_id' => $wifizone->id]);
@@ -434,6 +533,7 @@ class ClientPortalController extends Controller
     public function showResetPasswordForm(Request $request, $token)
     {
         $telephone = $request->get('telephone');
+        $error = null;
         
         // Vérifier que le token est valide
         $resetRecord = \Illuminate\Support\Facades\DB::table('client_password_resets')
@@ -443,12 +543,14 @@ class ClientPortalController extends Controller
             ->first();
         
         if (!$resetRecord) {
-            return redirect()->route('client.landing')->with('error', 'Lien de réinitialisation invalide ou expiré.');
+            $error = 'Lien de réinitialisation invalide ou expiré.';
+            return redirect()->route('client.landing')->with('error', $error);
         }
         
         return view('PortailClient.reset-password', [
             'token' => $token,
-            'telephone' => $telephone
+            'telephone' => $telephone,
+            'error' => $error
         ]);
     }
 
@@ -460,11 +562,27 @@ class ClientPortalController extends Controller
         $request->validate([
             'token' => 'required|string',
             'telephone' => 'required|string',
-            'password' => 'required|string|min:4|confirmed',
+            'password' => [
+                'required',
+                'string',
+                'min:6',
+                'confirmed',
+                function ($attribute, $value, $fail) {
+                    if ($value === '12345') {
+                        $fail('Le mot de passe "12345" n\'est pas autorisé. Veuillez choisir un mot de passe plus sécurisé.');
+                    }
+                },
+            ],
         ]);
         
         $client = Client::where('telephone', $request->telephone)->first();
         if (!$client) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Client non trouvé.'
+                ], 404);
+            }
             return back()->withErrors(['telephone' => 'Client non trouvé.']);
         }
 
@@ -477,7 +595,43 @@ class ClientPortalController extends Controller
             ->where('telephone', $request->telephone)
             ->delete();
 
-        return redirect()->route('client.landing')->with('success', 'Mot de passe réinitialisé avec succès.');
+        // Logger la réinitialisation
+        \Illuminate\Support\Facades\Log::info('Mot de passe client réinitialisé', [
+            'client_id' => $client->id,
+            'client_telephone' => $request->telephone,
+            'timestamp' => now()->toISOString()
+        ]);
+
+        // Récupérer l'URL de redirection sauvegardée en session
+        $redirectUrl = session('reset_password_redirect_url', '/portal');
+        
+        Log::info('🔄 REDIRECTION VERS URL D\'ORIGINE', [
+            'client_id' => $client->id,
+            'redirect_url' => $redirectUrl,
+            'was_saved_in_session' => session()->has('reset_password_redirect_url'),
+            'timestamp' => now()->toISOString()
+        ]);
+        
+        // Supprimer l'URL de redirection de la session
+        session()->forget('reset_password_redirect_url');
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Mot de passe réinitialisé avec succès.',
+                'redirect' => $redirectUrl
+            ]);
+        }
+
+        return redirect($redirectUrl)->with('success', 'Mot de passe réinitialisé avec succès.');
+    }
+
+    /**
+     * Affiche la page de succès de réinitialisation (sans token)
+     */
+    public function showResetPasswordSuccessPage(Request $request)
+    {
+        return view('PortailClient.reset-password-success-simple');
     }
 
     /**
@@ -566,6 +720,18 @@ class ClientPortalController extends Controller
      */
     public function logout(Request $request)
     {
+        $client = Auth::guard('client')->user();
+        
+        if ($client) {
+            // 🔓 NETTOYER LA SESSION ACTIVE
+            $this->sessionService->invalidateAllClientSessions($client->id);
+            
+            Log::info('Client déconnecté et sessions nettoyées', [
+                'client_id' => $client->id,
+                'ip' => $request->ip()
+            ]);
+        }
+        
         // Récupérer le token de la wifizone depuis la session avant de détruire la session
         $wifizoneToken = session('wifizone_token');
         
@@ -583,11 +749,12 @@ class ClientPortalController extends Controller
         
         // Rediriger vers la landing avec le token si disponible
         if ($wifizoneToken) {
-            return redirect()->route('client.landing', ['token' => $wifizoneToken]);
+            return redirect()->route('client.landing', ['token' => $wifizoneToken])
+                ->with('success', 'Vous êtes bien déconnecté.');
         }
         
         // Fallback si pas de token
-        return redirect('/');
+        return redirect('/')->with('success', 'Vous êtes bien déconnecté.');
     }
 
     /**
@@ -599,5 +766,125 @@ class ClientPortalController extends Controller
             'redirectUrl' => url('/portal/landing/' . $token),
             'token' => $token
         ]);
+    }
+
+    /**
+     * Récupère l'adresse hotspot pour un token donné
+     */
+    public function getHotspotAddress($token)
+    {
+        try {
+            // Récupérer la zone WiFi via le token
+            $wifiZone = \App\Models\WifiZone::where('token', $token)->first();
+            
+            if (!$wifiZone) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Zone WiFi non trouvée'
+                ], 404);
+            }
+
+            // Nettoyer et normaliser l'adresse hotspot
+            $hotspotAddress = $wifiZone->hotspot_address;
+            
+            // Si l'adresse commence par http://127.0.0.1:8000/portal/landing/, la nettoyer
+            if (str_contains($hotspotAddress, '127.0.0.1:8000/portal/landing/')) {
+                $hotspotAddress = str_replace('http://127.0.0.1:8000/portal/landing/', '', $hotspotAddress);
+            }
+            
+            // S'assurer que l'adresse a un protocole si c'est juste une IP
+            if (!str_starts_with($hotspotAddress, 'http://') && !str_starts_with($hotspotAddress, 'https://')) {
+                $hotspotAddress = 'http://' . $hotspotAddress;
+            }
+            
+            return response()->json([
+                'success' => true,
+                'hotspot_address' => $hotspotAddress
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur récupération hotspot address: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur serveur lors de la récupération'
+            ], 500);
+        }
+    }
+
+    /**
+     * Vérifie les identifiants administrateur Ticket Admin
+     */
+    public function verifyAdminCredentials(Request $request)
+    {
+        try {
+            $username = $request->input('username');
+            $password = $request->input('password');
+            $token = $request->input('token');
+
+            // Valider les entrées
+            if (!$username || !$password || !$token) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tous les champs sont requis'
+                ], 422);
+            }
+
+            // Récupérer la zone WiFi via le token
+            $wifiZone = \App\Models\WifiZone::where('token', $token)->first();
+            
+            if (!$wifiZone) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Zone WiFi non trouvée'
+                ], 404);
+            }
+
+            // Vérifier les identifiants
+            $storedUsername = $wifiZone->ticket_admin_username;
+            $storedPassword = $wifiZone->ticket_admin_password;
+
+            if (!$storedUsername || !$storedPassword) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Aucun identifiant administrateur configuré pour cette zone'
+                ], 404);
+            }
+
+            if ($username !== $storedUsername || $password !== $storedPassword) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Identifiants incorrects'
+                ], 401);
+            }
+
+            // Identifiants corrects, retourner l'adresse du hotspot
+            // S'assurer que hotspot_address ne contient pas de préfixe incorrect
+            $hotspotAddress = $wifiZone->hotspot_address;
+            
+            // Si l'adresse commence par http://127.0.0.1:8000/portal/landing/, la nettoyer
+            if (str_contains($hotspotAddress, '127.0.0.1:8000/portal/landing/')) {
+                $hotspotAddress = str_replace('http://127.0.0.1:8000/portal/landing/', '', $hotspotAddress);
+            }
+            
+            // S'assurer que l'adresse a un protocole si c'est juste une IP
+            if (!str_starts_with($hotspotAddress, 'http://') && !str_starts_with($hotspotAddress, 'https://')) {
+                $hotspotAddress = 'http://' . $hotspotAddress;
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Identifiants vérifiés avec succès',
+                'hotspot_address' => $hotspotAddress
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur vérification admin credentials: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur serveur lors de la vérification'
+            ], 500);
+        }
     }
 }

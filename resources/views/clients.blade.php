@@ -326,15 +326,15 @@
     <div id="reset-password-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeResetPasswordModal()"></div>
         <div class="bg-white dark:bg-brand-cardDark w-full max-w-sm rounded-3xl p-6 relative z-10 text-center shadow-2xl border border-gray-100 dark:border-slate-700 animate-scale-in">
-            <div class="w-16 h-16 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+            <div class="w-16 h-16 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
                 <i class="fas fa-key"></i>
             </div>
-            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Générer un lien de réinitialisation</h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Un lien sera généré pour permettre au client de réinitialiser son mot de passe.</p>
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Réinitialiser le mot de passe</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Le mot de passe de ce client sera réinitialisé à <strong>12345</strong>. Cette action est immédiate.</p>
             
             <div class="flex gap-3">
                 <button onclick="closeResetPasswordModal()" class="flex-1 py-3 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-slate-700 transition">Annuler</button>
-                <button onclick="generateResetLink()" class="flex-1 py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition shadow-lg">Générer le lien</button>
+                <button onclick="resetPasswordTo12345()" class="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 transition shadow-lg">Réinitialiser</button>
             </div>
         </div>
     </div>
@@ -713,6 +713,34 @@
             } catch (e) {
                 console.error(e);
                 showToast('Erreur système', 'error');
+            }
+        }
+
+        async function resetPasswordTo12345() {
+            if (!currentClientId) return;
+            
+            try {
+                const response = await fetch(`/clients/${currentClientId}/reset-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        password: '12345'
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    closeResetPasswordModal();
+                    showToast('Le mot de passe a été réinitialisé à 12345 avec succès', 'success');
+                } else {
+                    showToast(data.message || 'Erreur lors de la réinitialisation', 'error');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showToast('Erreur de connexion au serveur', 'error');
             }
         }
 

@@ -68,14 +68,22 @@ Route::get('/care-center-dashboard', function () {
 
 // Groupe Portail Client
 Route::prefix('portal')->name('client.')->group(function () {
+    // Page d'accueil du portail (redirection par défaut)
+    Route::get('/', function () {
+        return view('PortailClient.landing-default')->with('info', 'Veuillez entrer un token pour accéder au portail.');
+    })->name('landing.default');
+    
     // Publiques
     Route::get('/landing/{token}', [ClientPortalController::class, 'landing'])->name('landing');
     Route::post('/register', [ClientPortalController::class, 'register'])->name('register');
     Route::post('/login/{token}', [ClientPortalController::class, 'login'])->name('login');
+    Route::get('/get-hotspot-address/{token}', [ClientPortalController::class, 'getHotspotAddress'])->name('get-hotspot-address');
+    Route::post('/verify-admin-credentials', [ClientPortalController::class, 'verifyAdminCredentials'])->name('verify-admin-credentials');
     
     // Réinitialisation de mot de passe client
     Route::get('/reset-password/{token}', [ClientPortalController::class, 'showResetPasswordForm'])->name('reset-password.form');
     Route::post('/reset-password', [ClientPortalController::class, 'resetPassword'])->name('reset-password.submit');
+    Route::get('/reset-password-success', [ClientPortalController::class, 'showResetPasswordSuccessPage'])->name('reset-password.success.page');
     Route::get('/password-reset-success/{token}', [ClientPortalController::class, 'showPasswordResetSuccess'])->name('password.reset.success');
     
     // Route Fedapay publique pour paiement direct
@@ -85,7 +93,7 @@ Route::prefix('portal')->name('client.')->group(function () {
     Route::post('/fedapay/pay/{forfait}', [FedapayController::class, 'initiatePayment'])->name('fedapay.initiate');
     
     // Protégées (Besoin d'être connecté en tant que 'client')
-    Route::middleware('auth:client')->group(function () {
+    Route::middleware(['auth:client', 'redirect.if.not.client'])->group(function () {
         Route::get('/shop', [ClientPortalController::class, 'shop'])->name('shop');
         Route::post('/buy/{forfait}', [ClientPortalController::class, 'buy'])->name('buy');
         Route::get('/ticket/{ticket}', [ClientPortalController::class, 'ticket'])->name('ticket');
@@ -149,6 +157,7 @@ Route::middleware('auth:proprio')->group(function () {
     Route::get('/wifizones/{id}/impact', [WifizoneController::class, 'getImpact'])->name('wifizones.impact');
     Route::put('/wifizones/{id}', [WifizoneController::class, 'update'])->name('wifizones.update');
     Route::delete('/wifizones/{id}', [WifizoneController::class, 'destroy'])->name('wifizones.destroy');
+    Route::post('/wifizones/{id}/ticket-credentials', [WifizoneController::class, 'saveTicketCredentials'])->name('wifizones.ticket-credentials');
 
     // Forfaits et Tickets
     Route::get('/forfait-ticket', [ForfaitController::class, 'index'])->name('forfait_ticket');
@@ -173,6 +182,7 @@ Route::middleware('auth:proprio')->group(function () {
     Route::put('/clients/{id}', [ClientController::class, 'update'])->name('clients.update');
     Route::delete('/clients/{id}', [ClientController::class, 'destroy'])->name('clients.destroy');
     Route::post('/clients/{id}/block', [ClientController::class, 'toggleBlock'])->name('clients.block');
+    Route::post('/clients/{id}/reset-password', [ClientController::class, 'resetPassword'])->name('clients.reset-password');
     Route::post('/clients/{id}/reset-password-link', [ClientController::class, 'generateResetPasswordLink'])->name('clients.reset-password-link');
     Route::get('/clients/{id}/history', [ClientController::class, 'history'])->name('clients.history');
     

@@ -205,46 +205,95 @@
                     </div>
                 </div>
                 <div id="content-integration" class="tab-content hidden">
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div class="lg:col-span-2 bg-white dark:bg-brand-cardDark p-8 rounded-3xl shadow-sm">
-                            <div class="flex items-center gap-3 mb-6">
-                                <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-400">
-                                    <i class="fas fa-sync w-5 h-5"></i>
+                    <div class="space-y-8">
+                        <!-- Ligne 1 : Lien portail + Walled Garden -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <div class="lg:col-span-2 bg-white dark:bg-brand-cardDark p-8 rounded-3xl shadow-sm">
+                                <div class="flex items-center gap-3 mb-6">
+                                    <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                                        <i class="fas fa-sync w-5 h-5"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-bold text-gray-800 dark:text-white">Lien du Portail captif</h3>
+                                        <p class="text-xs text-gray-400 dark:text-gray-500">URL du portail de connexion pour vos clients.</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 class="text-lg font-bold text-gray-800 dark:text-white">Lien du Portail captif</h3>
-                                    <p class="text-xs text-gray-400 dark:text-gray-500">URL du portail de connexion pour vos clients.</p>
+                                <div class="bg-slate-900 dark:bg-black rounded-2xl p-5 relative group border border-slate-700 shadow-inner">
+                                    <code id="auth-link-code" class="text-brand-blue font-mono text-xs break-all block pr-10 leading-relaxed">{{ url('/portal/landing') }}/<span class="text-white font-bold" id="code-zone-id">WZ-8821-XJ</span></code>
+                                    <button onclick="copyToClipboard(document.getElementById('auth-link-code').innerText)" class="absolute top-4 right-4 text-gray-400 hover:text-white" title="Copier">
+                                        <i class="fas fa-copy w-5 h-5"></i>
+                                    </button>
+                                </div>
+                                <div class="mt-6 bg-yellow-50 dark:bg-yellow-900/50 border border-yellow-100 dark:border-yellow-800 rounded-xl p-4 flex gap-3">
+                                    <i class="fas fa-exclamation-triangle w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0"></i>
+                                    <p class="text-xs text-yellow-800 dark:text-yellow-200">Assuez-vous que le <strong>Walled Garden</strong> est configuré.</p>
                                 </div>
                             </div>
-                            <div class="bg-slate-900 dark:bg-black rounded-2xl p-5 relative group border border-slate-700 shadow-inner">
-                                <code id="auth-link-code" class="text-brand-blue font-mono text-xs break-all block pr-10 leading-relaxed">{{ url('/portal/landing') }}/<span class="text-white font-bold" id="code-zone-id">WZ-8821-XJ</span></code>
-                                <button onclick="copyToClipboard(document.getElementById('auth-link-code').innerText)" class="absolute top-4 right-4 text-gray-400 hover:text-white" title="Copier">
-                                    <i class="fas fa-copy w-5 h-5"></i>
-                                </button>
-                            </div>
-                            <div class="mt-6 bg-yellow-50 dark:bg-yellow-900/50 border border-yellow-100 dark:border-yellow-800 rounded-xl p-4 flex gap-3">
-                                <i class="fas fa-exclamation-triangle w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0"></i>
-                                <p class="text-xs text-yellow-800 dark:text-yellow-200">Assuez-vous que le <strong>Walled Garden</strong> est configuré.</p>
+                            <div class="bg-white dark:bg-brand-cardDark p-8 rounded-3xl shadow-sm">
+                                <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">Walled Garden 🛡️</h3>
+                                <p class="text-xs text-gray-400 dark:text-gray-500 mb-4">Domaines à autoriser (Allow) IP List.</p>
+                                <ul id="walled-garden-list" class="space-y-3 text-xs font-mono text-gray-600 dark:text-gray-300">
+                                    <li class="flex items-center gap-2">
+                                        <i class="fas fa-check w-4 h-4 text-green-500"></i>
+                                        {{ request()->getHost() }}
+                                    </li>
+                                    <li class="flex items-center gap-2">
+                                        <i class="fas fa-check w-4 h-4 text-green-500"></i>
+                                        *.cinetpay.com
+                                    </li>
+                                    <li class="flex items-center gap-2">
+                                        <i class="fas fa-check w-4 h-4 text-green-500"></i>
+                                        *.kkiapay.me
+                                    </li>
+                                </ul>
+                                <button onclick="copyToClipboard('{{ request()->getHost() }}\n*.cinetpay.com\n*.kkiapay.me')" class="mt-6 w-full py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-xs font-bold hover:bg-gray-50 dark:hover:bg-slate-700">Copier la liste</button>
                             </div>
                         </div>
-                        <div class="bg-white dark:bg-brand-cardDark p-8 rounded-3xl shadow-sm">
-                            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">Walled Garden 🛡️</h3>
-                            <p class="text-xs text-gray-400 dark:text-gray-500 mb-4">Domaines à autoriser (Allow) IP List.</p>
-                            <ul id="walled-garden-list" class="space-y-3 text-xs font-mono text-gray-600 dark:text-gray-300">
-                                <li class="flex items-center gap-2">
-                                    <i class="fas fa-check w-4 h-4 text-green-500"></i>
-                                    {{ request()->getHost() }}
-                                </li>
-                                <li class="flex items-center gap-2">
-                                    <i class="fas fa-check w-4 h-4 text-green-500"></i>
-                                    *.cinetpay.com
-                                </li>
-                                <li class="flex items-center gap-2">
-                                    <i class="fas fa-check w-4 h-4 text-green-500"></i>
-                                    *.kkiapay.me
-                                </li>
-                            </ul>
-                            <button onclick="copyToClipboard('{{ request()->getHost() }}\n*.cinetpay.com\n*.kkiapay.me')" class="mt-6 w-full py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-xs font-bold hover:bg-gray-50 dark:hover:bg-slate-700">Copier la liste</button>
+
+                        <!-- Ligne 2 : Ticket Admin uniquement -->
+                        <div class="grid grid-cols-1 lg:grid-cols-1 max-w-2xl">
+                            <!-- Carte Ticket Admin -->
+                            <div class="bg-white dark:bg-brand-cardDark p-8 rounded-3xl shadow-sm relative">
+                                <!-- Bouton Modifier en haut à droite -->
+                                <button onclick="toggleTicketEdit()" class="absolute top-6 right-6 w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors" title="Modifier">
+                                    <i class="fas fa-pen w-3.5 h-3.5"></i>
+                                </button>
+                                
+                                <div class="flex items-center gap-3 mb-6">
+                                    <div class="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-900/50 flex items-center justify-center text-green-600 dark:text-green-400">
+                                        <i class="fas fa-ticket-alt w-5 h-5"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-bold text-gray-800 dark:text-white">Ticket Admin</h3>
+                                        <p class="text-xs text-gray-400 dark:text-gray-500">Identifiants d'administration des tickets.</p>
+                                    </div>
+                                </div>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Login</label>
+                                        <div class="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-600">
+                                            <input type="text" id="ticket-admin-login" class="w-full bg-transparent dark:text-white border-none outline-none text-sm font-mono" placeholder="Entrez le login..." value="" disabled>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Mot de passe</label>
+                                        <div class="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-600 relative">
+                                            <input type="password" id="ticket-admin-password" class="w-full bg-transparent dark:text-white border-none outline-none text-sm font-mono pr-10" placeholder="Entrez le mot de passe..." value="" disabled>
+                                            <button type="button" onclick="togglePasswordVisibility('ticket-admin-password')" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                                <i class="fas fa-eye w-4 h-4"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-3 pt-2">
+                                        <button onclick="saveTicketCredentials()" class="flex-1 bg-green-500 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-green-600 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed" id="save-ticket-btn" disabled>
+                                            <i class="fas fa-save mr-2"></i>Enregistrer
+                                        </button>
+                                        <button onclick="cancelTicketEdit()" class="hidden border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-50 dark:hover:bg-slate-700 transition" id="cancel-ticket-btn">
+                                            Annuler
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -732,6 +781,10 @@
         document.getElementById('detail-zone-address').value = zone.adresse || '';
         document.getElementById('detail-zone-hotspot-address').value = zone.hotspot_address || '';
         document.getElementById('code-zone-id').innerText = zone.token;
+        
+        // Remplir les champs Ticket Admin
+        document.getElementById('ticket-admin-login').value = zone.ticket_admin_username || '';
+        document.getElementById('ticket-admin-password').value = zone.ticket_admin_password || '';
 
         // Sync Icon with stock status
         const totalStock = zone.forfaits.reduce((acc, f) => acc + (f.tickets_count || 0), 0);
@@ -1197,6 +1250,182 @@
         } catch (error) {
             showErrorModal("Erreur", "Une erreur réseau est survenue");
         }
+    }
+
+    // Fonctions pour les identifiants Ticket Admin
+    function togglePasswordVisibility(inputId) {
+        const input = document.getElementById(inputId);
+        const icon = event.target;
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+
+    // Variables pour stocker les valeurs initiales
+    let ticketInitialValues = {};
+
+    function toggleTicketEdit() {
+        const loginInput = document.getElementById('ticket-admin-login');
+        const passwordInput = document.getElementById('ticket-admin-password');
+        const saveBtn = document.getElementById('save-ticket-btn');
+        const cancelBtn = document.getElementById('cancel-ticket-btn');
+
+        if (loginInput.disabled) {
+            // Activer le mode édition
+            ticketInitialValues = {
+                login: loginInput.value,
+                password: passwordInput.value
+            };
+
+            loginInput.disabled = false;
+            passwordInput.disabled = false;
+            saveBtn.disabled = false;
+            cancelBtn.classList.remove('hidden');
+
+            loginInput.classList.add('bg-white', 'dark:bg-slate-700');
+            passwordInput.classList.add('bg-white', 'dark:bg-slate-700');
+        } else {
+            // Désactiver le mode édition
+            cancelTicketEdit();
+        }
+    }
+
+    function cancelTicketEdit() {
+        const loginInput = document.getElementById('ticket-admin-login');
+        const passwordInput = document.getElementById('ticket-admin-password');
+        const saveBtn = document.getElementById('save-ticket-btn');
+        const cancelBtn = document.getElementById('cancel-ticket-btn');
+
+        // Restaurer les valeurs initiales depuis les données de la zone
+        loginInput.value = ticketInitialValues.login;
+        passwordInput.value = ticketInitialValues.password;
+
+        // Désactiver les champs
+        loginInput.disabled = true;
+        passwordInput.disabled = true;
+        saveBtn.disabled = true;
+        cancelBtn.classList.add('hidden');
+
+        loginInput.classList.remove('bg-white', 'dark:bg-slate-700');
+        passwordInput.classList.remove('bg-white', 'dark:bg-slate-700');
+    }
+
+    async function saveTicketCredentials() {
+        const login = document.getElementById('ticket-admin-login').value;
+        const password = document.getElementById('ticket-admin-password').value;
+        const zoneId = document.getElementById('detail-zone-id-input').value;
+
+        if (!login || !password) {
+            showToast("Veuillez remplir tous les champs", 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/wifizones/${zoneId}/ticket-credentials`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    ticket_login: login,
+                    ticket_password: password
+                })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                // Afficher le message approprié selon l'action
+                const message = data.action === 'created' 
+                    ? "Identifiants Ticket Admin créés avec succès" 
+                    : "Identifiants Ticket Admin modifiés avec succès";
+                    
+                showToast(message, 'success');
+                
+                // Rafraîchir la page après un court délai pour refléter les nouvelles valeurs
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showToast(data.message || "Erreur lors de l'enregistrement", 'error');
+            }
+        } catch (error) {
+            showToast("Une erreur réseau est survenue", 'error');
+        }
+    }
+
+    // Fonction Toast pour afficher les notifications
+    function showToast(message, type = 'success') {
+        // Créer le conteneur de toasts s'il n'existe pas
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'fixed top-4 right-4 z-[9999] flex flex-col gap-3 pointer-events-none';
+            document.body.appendChild(container);
+        }
+        
+        // Définir les couleurs et icônes selon le type
+        const configs = {
+            success: {
+                bg: 'bg-green-500',
+                icon: 'fa-check-circle',
+                text: 'text-white'
+            },
+            error: {
+                bg: 'bg-red-500',
+                icon: 'fa-exclamation-circle',
+                text: 'text-white'
+            },
+            info: {
+                bg: 'bg-blue-500',
+                icon: 'fa-info-circle',
+                text: 'text-white'
+            }
+        };
+
+        const config = configs[type] || configs.success;
+
+        // Créer l'élément toast
+        const toast = document.createElement('div');
+        toast.className = `${config.bg} ${config.text} px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transform transition-all duration-500 translate-x-full opacity-0 pointer-events-auto min-w-[300px] max-w-md`;
+        toast.innerHTML = `
+            <div class="flex-shrink-0">
+                <i class="fas ${config.icon} text-lg"></i>
+            </div>
+            <div class="flex-1">
+                <p class="text-sm font-medium">${message}</p>
+            </div>
+            <button onclick="this.parentElement.remove()" class="flex-shrink-0 ml-4 hover:opacity-75 transition-opacity">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        `;
+
+        // Ajouter au conteneur
+        container.appendChild(toast);
+
+        // Animation d'entrée
+        requestAnimationFrame(() => {
+            toast.classList.remove('translate-x-full', 'opacity-0');
+            toast.classList.add('translate-x-0', 'opacity-100');
+        });
+
+        // Auto-suppression après 5 secondes
+        setTimeout(() => {
+            toast.classList.add('translate-x-full', 'opacity-0');
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            }, 500);
+        }, 5000);
     }
 </script>
 @endsection

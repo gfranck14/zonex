@@ -37,6 +37,8 @@ class WifiZone extends Model
         'display_name',
         'welcome_message',
         'primary_color',
+        'ticket_admin_username',
+        'ticket_admin_password',
     ];
 
     /**

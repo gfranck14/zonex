@@ -233,4 +233,50 @@ class WifizoneController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Sauvegarde les identifiants Ticket Admin
+     */
+    public function saveTicketCredentials(Request $request, $id)
+    {
+        try {
+            $zone = WifiZone::where('proprio_id', Auth::guard('proprio')->id())
+                ->where('id', $id)
+                ->firstOrFail();
+
+            $validated = $request->validate([
+                'ticket_login' => 'required|string|max:255',
+                'ticket_password' => 'required|string|max:255',
+            ]);
+
+            // Vérifier si c'est une création ou une modification
+            $isCreation = !$zone->ticket_admin_username && !$zone->ticket_admin_password;
+            
+            $zone->update([
+                'ticket_admin_username' => $validated['ticket_login'],
+                'ticket_admin_password' => $validated['ticket_password'],
+            ]);
+
+            $message = $isCreation 
+                ? 'Identifiants Ticket Admin créés avec succès' 
+                : 'Identifiants Ticket Admin modifiés avec succès';
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'action' => $isCreation ? 'created' : 'updated'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation : ' . $e->getMessage()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'enregistrement : ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

@@ -386,6 +386,40 @@ class ClientController extends Controller
     }
 
     /**
+     * Réinitialise le mot de passe d'un client à 12345
+     *
+     * @param int $id
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function resetPassword($id, Request $request)
+    {
+        $client = Client::findOrFail($id);
+        
+        // Hasher le nouveau mot de passe
+        $newPassword = '12345';
+        $hashedPassword = \Illuminate\Support\Facades\Hash::make($newPassword);
+        
+        // Mettre à jour le mot de passe
+        $client->update([
+            'password' => $hashedPassword
+        ]);
+        
+        // Logger l'action
+        \Illuminate\Support\Facades\Log::info('Mot de passe réinitialisé', [
+            'client_id' => $client->id,
+            'client_telephone' => $client->telephone,
+            'reset_by' => auth('proprio')->user()->id,
+            'timestamp' => now()->toISOString()
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Le mot de passe a été réinitialisé à 12345 avec succès'
+        ]);
+    }
+
+    /**
      * Génère un lien de réinitialisation de mot de passe pour un client
      *
      * @param int $id
