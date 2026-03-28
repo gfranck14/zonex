@@ -1,4 +1,5 @@
 @extends('layout')
+@section('title', 'Paramètres')
 
 @php
     /**

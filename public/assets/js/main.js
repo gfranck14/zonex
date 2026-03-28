@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", function () {
-    generateSidebar();
 
     // Détecter la page actuelle et générer le header approprié
     const path = window.location.pathname;
@@ -69,129 +68,12 @@ function generateHeader(title, subtitle) {
                 </div>
             `}
             
-            <!-- BOUTON MOBILE (Menu Hamburger) -->
-            <button onclick="toggleMobileMenu()" class="md:hidden absolute top-0 right-0 p-2 text-gray-500">
-                <i class="fas fa-bars w-8 h-8"></i>
-            </button>
         </header>
     `;
 
-    // Ajouter l'overlay mobile s'il n'existe pas déjà
-    if (!document.querySelector('.mobile-overlay')) {
-        const overlay = document.createElement('div');
-        overlay.className = 'mobile-overlay';
-        overlay.onclick = closeMobileMenu;
-        document.body.appendChild(overlay);
-    }
 }
 
-function generateSidebar() {
-    const sidebarContainer = document.getElementById('sidebar-container');
-    if (!sidebarContainer) return;
 
-    // 1. Détecter la page actuelle
-    const path = window.location.pathname;
-    const page = path.split("/").pop() || "index.html"; // Par défaut index.html
-
-    // 2. Définir les classes (Actif vs Inactif)
-    const activeClass = "nav-item-active flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all shadow-md";
-    const inactiveClass = "nav-item-inactive flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all hover:text-white";
-
-    // 3. Fonction helper pour générer un lien
-    const getLinkClass = (targetPage) => {
-        return page === targetPage ? activeClass : inactiveClass;
-    };
-
-    // 4. Le HTML de la Sidebar (Exactement ton design validé)
-    const sidebarHTML = `
-    <aside class="w-64 flex-shrink-0 flex flex-col justify-between py-6 px-4 h-full bg-brand-sidebarLight dark:bg-brand-sidebarDark transition-colors duration-300 text-white">
-        <div>
-            <!-- LOGO -->
-            <div class="flex items-center gap-3 px-4 mb-8">
-                <div class="w-10 h-10 bg-gradient-to-br from-brand-blue to-brand-green rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50">
-                    <i class="fas fa-wifi text-white"></i>
-                </div>
-                <div>
-                    <h1 class="text-lg font-bold text-white tracking-tight leading-none">WiFi<span class="text-brand-blue">Profit</span></h1>
-                    <p class="text-[10px] text-blue-200 uppercase tracking-widest">Manager</p>
-                </div>
-            </div>
-
-            <!-- MENU -->
-            <nav class="space-y-2">
-                <a href="index.html" class="${getLinkClass('index.html')}">
-                    <i class="fas fa-th-large w-5 h-5"></i>
-                    <span class="font-medium">Dashboard</span>
-                </a>
-                <a href="wifi-zones.html" class="${getLinkClass('wifi-zones.html')}">
-                    <i class="fas fa-map-marker-alt w-5 h-5"></i>
-                    <span class="font-medium">Wifi Zones</span>
-                </a>
-                <a href="tickets.html" class="${getLinkClass('tickets.html')}">
-                    <i class="fas fa-ticket-alt w-5 h-5"></i>
-                    <span class="font-medium">Forfaits & Tickets</span>
-                </a>
-                <a href="clients.html" class="${getLinkClass('clients.html')}">
-                    <i class="fas fa-users w-5 h-5"></i>
-                    <span class="font-medium">Clients</span>
-                </a>
-                <a href="paiements.html" class="${getLinkClass('paiements.html')}">
-                    <i class="fas fa-credit-card w-5 h-5"></i>
-                    <span class="font-medium">Paiements</span>
-                </a>
-                
-                <a href="settings.html" class="${getLinkClass('settings.html')} mt-8">
-                    <i class="fas fa-cog w-5 h-5"></i>
-                    <span class="font-medium">Paramètres</span>
-                </a>
-            </nav>
-        </div>
-
-        <!-- FOOTER SIDEBAR (Dark Mode + Profil) -->
-        <div class="mt-auto">
-            <button onclick="toggleTheme()" class="w-full flex items-center justify-between bg-black/20 hover:bg-black/30 px-4 py-2 rounded-xl mb-4 text-xs font-bold transition">
-                <span>Mode Apparence</span>
-                <div class="flex items-center gap-2">
-                    <i class="fas fa-sun w-4 h-4 text-yellow-300 block dark:hidden"></i>
-                    <i class="fas fa-moon w-4 h-4 text-white hidden dark:block"></i>
-                </div>
-            </button>
-
-            <p class="px-4 text-[10px] text-blue-200 font-mono mb-2 opacity-60">v2.4.0-stable</p>
-            <div class="pt-4 border-t border-white/10">
-                <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 cursor-pointer transition">
-                    <div class="w-10 h-10 rounded-full bg-brand-light border-2 border-brand-blue flex items-center justify-center overflow-hidden"><img src="https://i.pravatar.cc/150?img=11"></div>
-                    <div><p class="text-sm font-bold text-white">Caleb G.</p><p class="text-[10px] text-blue-200">Propriétaire</p></div>
-                </div>
-            </div>
-        </div>
-    </aside>
-    `;
-
-    sidebarContainer.innerHTML = sidebarHTML;
-}
-
-// Fonction pour gérer le menu mobile
-function toggleMobileMenu() {
-    const sidebar = document.querySelector('aside');
-    const overlay = document.querySelector('.mobile-overlay');
-
-    if (sidebar && overlay) {
-        sidebar.classList.toggle('open');
-        overlay.classList.toggle('active');
-    }
-}
-
-// Fonction pour fermer le menu mobile (appelée depuis l'overlay)
-function closeMobileMenu() {
-    const sidebar = document.querySelector('aside');
-    const overlay = document.querySelector('.mobile-overlay');
-
-    if (sidebar && overlay) {
-        sidebar.classList.remove('open');
-        overlay.classList.remove('active');
-    }
-}
 
 // Fonction pour générer un Empty State (état vide)
 function generateEmptyState(title, description, buttonText, buttonAction) {
@@ -428,11 +310,12 @@ function showToast(message, type = 'success') {
 
 /* --- GESTION DES TICKETS (ACTIONS) --- */
 
-// 1. Copier le code
-function copyCode(code) {
+// 1. Copier le code (Login, Password ou Complet)
+function copyCode(code, label = '') {
     // Utilisation de l'API Clipboard moderne
     navigator.clipboard.writeText(code).then(() => {
-        showToast(`Code <strong>${code}</strong> copié !`, 'success');
+        const msg = label ? `<strong>${label}</strong> copié !` : `Code <strong>${code}</strong> copié !`;
+        showToast(msg, 'success');
     }).catch(err => {
         console.error('Erreur copie', err);
         showToast('Erreur lors de la copie', 'error');
@@ -697,19 +580,35 @@ function sortTable(n, tableId) {
     let rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
     switching = true;
     dir = "asc";
+    
     while (switching) {
         switching = false;
         rows = table.rows;
         for (i = 1; i < (rows.length - 1); i++) {
             shouldSwitch = false;
-            x = rows[i].getElementsByTagName("TD")[n];
-            y = rows[i + 1].getElementsByTagName("TD")[n];
+            
+            // On récupère le texte brut sans le HTML pour plus de précision
+            let xVal = rows[i].getElementsByTagName("TD")[n].innerText.toLowerCase().trim();
+            let yVal = rows[i + 1].getElementsByTagName("TD")[n].innerText.toLowerCase().trim();
+            
+            // Tentative de conversion en nombre si c'est une valeur monétaire (ex: "1 000 F")
+            let xNum = parseFloat(xVal.replace(/[^0-9.-]+/g,""));
+            let yNum = parseFloat(yVal.replace(/[^0-9.-]+/g,""));
+            
+            // Si les deux sont des nombres valides, on compare numériquement
+            let compare;
+            if (!isNaN(xNum) && !isNaN(yNum) && xVal.match(/[0-9]/) && yVal.match(/[0-9]/)) {
+                compare = xNum - yNum;
+            } else {
+                compare = xVal.localeCompare(yVal, undefined, { numeric: true, sensitivity: 'base' });
+            }
+
             if (dir == "asc") {
-                if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+                if ((typeof compare === 'number' && compare > 0) || (typeof compare === 'string' && compare > 0)) {
                     shouldSwitch = true; break;
                 }
             } else if (dir == "desc") {
-                if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+                if ((typeof compare === 'number' && compare < 0) || (typeof compare === 'string' && compare < 0)) {
                     shouldSwitch = true; break;
                 }
             }

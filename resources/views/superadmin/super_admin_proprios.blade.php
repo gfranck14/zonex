@@ -197,7 +197,7 @@
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeAddProprioModal()"></div>
         <div class="bg-gray-800 w-full max-w-md rounded-2xl p-6 relative z-10 shadow-2xl">
             <h3 class="text-xl font-bold text-white mb-4">Nouveau Propriétaire</h3>
-            <form action="{{ route('admin.proprios.store') }}" method="POST" class="space-y-4">
+            <form action="{{ route('superadmin.proprios.store') }}" method="POST" class="space-y-4">
                 @csrf
                 <div>
                     <label class="block text-xs font-bold text-gray-400 mb-2">Nom</label>

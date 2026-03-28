@@ -95,7 +95,7 @@ class ProprioManagementController extends Controller
      */
     public function impersonate(Request $request, $id)
     {
-        return redirect()->route('dashboard')
+        return redirect()->route('proprio.dashboard')
             ->with('info', 'Vous êtes maintenant connecté en tant que proprietaire');
     }
 

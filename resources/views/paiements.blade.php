@@ -1,4 +1,5 @@
 @extends('layout')
+@section('title', 'Paiements')
 
 @section('content')
         <div class="bg-brand-bgLight dark:bg-brand-bgDark w-full h-full rounded-2xl shadow-2xl overflow-y-auto no-scrollbar relative p-4 md:p-6 pb-24 md:pb-10 transition-colors duration-300">
@@ -12,7 +13,7 @@
                         </div>
                         <!-- Zone Selector -->
                         <div class="mb-4">
-                            <form method="GET" action="{{ route('paiements') }}">
+                            <form method="GET" action="{{ route('proprio.paiements') }}">
                                 <select name="filter_zone" onchange="this.form.submit()" class="bg-white/10 dark:bg-slate-700 text-white border border-white/20 rounded-xl py-2 px-4 text-xs font-bold outline-none cursor-pointer hover:bg-white/20 transition w-full">
                                     <option value="">Toutes les zones</option>
                                     @foreach($zones as $zone)
@@ -22,10 +23,55 @@
                             </form>
                         </div>
                         <div class="flex justify-between items-end mb-2">
-                            <div><p class="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Solde Disponible</p><h3 id="solde-display" class="text-5xl font-bold tracking-tight text-white">{{ number_format($balance ?? 0, 0, ',', ' ') }} <span class="text-2xl text-brand-blue font-normal">F</span></h3></div>
-                            <div class="bg-white/10 p-3 rounded-xl"><i class="fas fa-wallet w-6 h-6 text-white"></i></div>
+                            <div><p class="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">{{ $filterZone ? 'Recettes de la Zone' : 'Solde Disponible' }}</p><h3 id="solde-display" class="text-5xl font-bold tracking-tight text-white">{{ number_format($balance ?? 0, 0, ',', ' ') }} <span class="text-2xl text-brand-blue font-normal">F</span></h3></div>
+                            <div class="bg-white/10 p-3 rounded-xl flex items-center justify-center"><i class="fas fa-wallet text-xl text-white"></i></div>
                         </div>
-                        <p class="text-xs text-gray-400">{{ $filterZone ? 'Solde de la zone sélectionnée' : 'Solde total de toutes vos zones' }}</p>
+                        <p class="text-xs text-gray-400 mb-4">{{ $filterZone ? 'Total brut généré par cette seule zone' : 'Solde total de toutes vos zones' }}</p>
+
+                        <!-- KPI Revenus par zone — Bento Grid -->
+                        @if(!$filterZone && isset($zoneRevenues) && count($zoneRevenues) > 0)
+                        @php
+                            $sorted = collect($zoneRevenues)->sortByDesc('revenue')->values()->all();
+                            $count = count($sorted);
+                            $maxRevenue = $sorted[0]['revenue'] ?? 1;
+                            $colors = [
+                                ['from-blue-500/20', 'to-cyan-500/10', 'text-cyan-400', 'border-cyan-500/20'],
+                                ['from-purple-500/20', 'to-pink-500/10', 'text-purple-400', 'border-purple-500/20'],
+                                ['from-emerald-500/20', 'to-teal-500/10', 'text-emerald-400', 'border-emerald-500/20'],
+                                ['from-amber-500/20', 'to-orange-500/10', 'text-amber-400', 'border-amber-500/20'],
+                                ['from-rose-500/20', 'to-red-500/10', 'text-rose-400', 'border-rose-500/20'],
+                                ['from-indigo-500/20', 'to-violet-500/10', 'text-indigo-400', 'border-indigo-500/20'],
+                            ];
+                            // Single row up to 5, mosaic 2 rows for 6+
+                            $gridCols = match(true) {
+                                $count <= 2 => 'grid-cols-2',
+                                $count <= 3 => 'grid-cols-3',
+                                $count <= 5 => 'grid-cols-' . $count,
+                                default => 'grid-cols-3 sm:grid-cols-4',
+                            };
+                        @endphp
+                        <div class="mt-4 pt-4 border-t border-white/10 relative z-20">
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Revenus par zone</p>
+                            <div class="grid gap-2 {{ $gridCols }}">
+                                @foreach($sorted as $i => $zr)
+                                @php
+                                    $c = $colors[$i % count($colors)];
+                                    $pct = $maxRevenue > 0 ? round(($zr['revenue'] / $maxRevenue) * 100) : 0;
+                                @endphp
+                                <div class="bg-gradient-to-br {{ $c[0] }} {{ $c[1] }} border {{ $c[3] }} rounded-xl p-2.5 flex flex-col justify-between hover:scale-[1.03] transition-transform cursor-default">
+                                    <div class="flex items-center gap-1.5 mb-1.5">
+                                        <i class="fas fa-wifi {{ $c[2] }} text-[10px]"></i>
+                                        <span class="text-gray-300 text-[10px] font-semibold truncate" title="{{ $zr['name'] }}">{{ $zr['name'] }}</span>
+                                    </div>
+                                    <p class="text-white font-bold text-sm leading-tight">{{ number_format($zr['revenue'], 0, ',', ' ') }} <span class="text-[9px] font-normal {{ $c[2] }}">F</span></p>
+                                    <div class="mt-1.5 h-0.5 rounded-full bg-white/10 overflow-hidden">
+                                        <div class="h-full rounded-full bg-gradient-to-r {{ $c[0] }} {{ $c[1] }} opacity-80" style="width: {{ $pct }}%"></div>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
                     </div>
                 </div>
                 <!-- Widget Retrait Rapide -->
@@ -36,7 +82,7 @@
                             <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Virement vers Mobile Money</p>
                         </div>
                         <div class="w-10 h-10 bg-blue-50 dark:bg-slate-700 rounded-xl flex items-center justify-center text-brand-blue">
-                            <i class="fas fa-arrow-down w-5 h-5"></i>
+                            <i class="fas fa-arrow-down text-lg"></i>
                         </div>
                     </div>
 
@@ -55,15 +101,15 @@
                                     <option value="500000">500 000 F</option>
                                 </select>
                                 <!-- Chevron custom -->
-                                <div class="absolute right-3 top-3.5 pointer-events-none text-gray-500">
-                                    <i class="fas fa-chevron-down w-4 h-4"></i>
+                                <div class="absolute right-3 top-0 bottom-0 flex items-center pointer-events-none text-gray-500">
+                                    <i class="fas fa-chevron-down text-xs"></i>
                                 </div>
                             </div>
                         </div>
                         
                         <!-- Note Warning masquée par défaut -->
                         <div id="high-amount-note" class="hidden bg-orange-50 dark:bg-orange-900/20 p-2 rounded-lg flex items-center gap-2 border border-orange-100 dark:border-orange-800">
-                            <i class="fas fa-exclamation-triangle w-4 h-4 text-orange-500 flex-shrink-0"></i>
+                            <i class="fas fa-exclamation-triangle text-xs text-orange-500 flex-shrink-0"></i>
                             <p class="text-[10px] text-orange-600 dark:text-orange-400 font-medium leading-tight">Délai de traitement : 24h pour ce montant.</p>
                         </div>
 
@@ -87,16 +133,16 @@
                     </div>
 
                     <!-- Bouton Action -->
-                    <button onclick="openWithdrawalModal()" class="w-full bg-brand-sidebarLight dark:bg-brand-blue text-white py-3 rounded-xl text-sm font-bold hover:brightness-110 transition shadow-lg flex justify-center items-center gap-2">
+                    <button onclick="openWithdrawalModal()" class="w-full mt-6 bg-brand-sidebarLight dark:bg-brand-blue text-white py-4 rounded-2xl text-sm font-bold hover:brightness-110 transition shadow-lg flex justify-center items-center gap-2">
                         Configurer le virement
-                        <i class="fas fa-arrow-right w-4 h-4"></i>
+                        <i class="fas fa-arrow-right text-xs"></i>
                     </button>
                 </div>
             </div>
             <div class="bg-white dark:bg-brand-cardDark rounded-3xl shadow-sm overflow-hidden animate-fade-in">
                 <div class="p-6 border-b border-gray-100 dark:border-slate-700 flex flex-wrap justify-between items-center gap-4">
                     <h3 class="font-bold text-lg text-gray-800 dark:text-white">Historique de paiements</h3>
-                    <form method="GET" action="{{ route('paiements') }}" class="flex gap-3">
+                    <form method="GET" action="{{ route('proprio.paiements') }}" class="flex gap-3">
                         <select name="filter_zone" onchange="this.form.submit()" class="bg-gray-50 dark:bg-slate-700 dark:text-white border-none text-xs font-bold text-gray-600 dark:text-gray-300 rounded-xl py-2 px-4 outline-none cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600">
                             <option value="">Toutes les Zones</option>
                             @foreach($zones as $zone)
@@ -112,7 +158,7 @@
                         </select>
                         <input type="date" name="filter_date" value="{{ request('filter_date') }}" onchange="this.form.submit()" class="bg-gray-50 dark:bg-slate-700 dark:text-white border-none text-xs font-bold text-gray-600 dark:text-gray-300 rounded-xl py-2 px-4 outline-none cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600">
                         @if(request('filter_zone') || request('filter_status') || request('filter_date'))
-                            <a href="{{ route('paiements') }}" class="p-2 text-red-500 flex items-center hover:bg-red-50 rounded-xl transition">
+                            <a href="{{ route('proprio.paiements') }}" class="p-2 text-red-500 flex items-center hover:bg-red-50 rounded-xl transition">
                                 <i class="fas fa-times"></i>
                             </a>
                         @endif
@@ -178,7 +224,7 @@
                             <!-- MILIEU : Sélecteur lignes -->
                             <div class="flex items-center gap-2 order-3 md:order-2">
                                 <span class="text-xs text-gray-400">Afficher</span>
-                                <form method="GET" action="{{ route('paiements') }}" class="inline-block">
+                                <form method="GET" action="{{ route('proprio.paiements') }}" class="inline-block">
                                     @if(request('filter_zone')) <input type="hidden" name="filter_zone" value="{{ request('filter_zone') }}"> @endif
                                     @if(request('filter_status')) <input type="hidden" name="filter_status" value="{{ request('filter_status') }}"> @endif
                                     @if(request('filter_date')) <input type="hidden" name="filter_date" value="{{ request('filter_date') }}"> @endif
@@ -308,7 +354,7 @@
                                 class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-600 rounded-r-xl text-sm font-bold focus:ring-2 focus:ring-brand-blue/20 outline-none transition placeholder-gray-400" 
                                 oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                             >
-                            <i class="fas fa-mobile-alt absolute right-4 top-3.5 text-gray-400"></i>
+                            <i class="fas fa-mobile-alt absolute right-4 top-0 bottom-0 flex items-center text-gray-400"></i>
                         </div>
                         <input type="hidden" id="withdrawal-phone-code" value="+229">
                     </div>
@@ -421,6 +467,23 @@
         </div>
     </div>
 
+    <!-- MODALE CONFIRMATION ANNULATION -->
+    <div id="cancel-withdrawal-modal" class="hidden fixed inset-0 z-[110] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeCancelWithdrawalModal()"></div>
+        <div class="bg-white dark:bg-brand-cardDark w-full max-w-sm rounded-3xl p-6 relative z-10 text-center shadow-2xl border border-gray-100 dark:border-slate-700 animate-scale-in">
+            <div class="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Annuler le retrait ?</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Cette action annulera la demande de versement. Les fonds seront recrédités sur votre solde disponible.</p>
+            
+            <div class="flex gap-3">
+                <button onclick="closeCancelWithdrawalModal()" class="flex-1 py-3 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-slate-700 transition">Non, garder</button>
+                <button onclick="executeCancelWithdrawal()" class="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition shadow-lg">Oui, annuler</button>
+            </div>
+        </div>
+    </div>
+
 @endsection
 
 @section('scripts')
@@ -428,6 +491,76 @@
     // Configuration AJAX avec Token CSRF
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     
+    /**
+     * Fonctions de Gestion de la Modale de Retrait (Wizard)
+     */
+    function openWithdrawalModal() {
+        const withdrawSelect = document.getElementById('withdraw-select');
+        const amount = parseInt(withdrawSelect.value);
+        
+        // Mise à jour des affichages du montant partout
+        document.getElementById('modal-amount-display').innerText = amount.toLocaleString('fr-FR') + ' F';
+        document.getElementById('withdrawal-amount-display').innerText = amount.toLocaleString('fr-FR') + ' F';
+        document.getElementById('withdrawal-amount-highlight').innerText = amount.toLocaleString('fr-FR') + ' F';
+        
+        // Affichage
+        document.getElementById('withdrawal-modal').classList.remove('hidden');
+    }
+
+    function closeWithdrawalModal() {
+        document.getElementById('withdrawal-modal').classList.add('hidden');
+        backToWithdrawalStep1();
+    }
+
+    function proceedToWithdrawalStep2() {
+        const nameInput = document.getElementById('withdrawal-name');
+        const phoneInput = document.getElementById('withdrawal-phone');
+        const name = nameInput.value.trim();
+        const phone = phoneInput.value.trim();
+        
+        if(!name || !phone) {
+            showToast('Veuillez remplir toutes les informations bénéficiaire', 'error');
+            return;
+        }
+        
+        // Mise à jour du récapitulatif
+        document.getElementById('withdrawal-name-display').innerText = name;
+        document.getElementById('withdrawal-name-highlight').innerText = name;
+        document.getElementById('withdrawal-phone-display').innerText = document.getElementById('withdrawal-code').innerText + ' ' + phone;
+        document.getElementById('withdrawal-network-display').innerText = document.getElementById('withdrawal-network').value.toUpperCase();
+        
+        // Animation passage étape
+        document.getElementById('withdrawal-step-1').classList.add('hidden');
+        document.getElementById('withdrawal-step-2').classList.remove('hidden');
+    }
+
+    function backToWithdrawalStep1() {
+        document.getElementById('withdrawal-step-2').classList.add('hidden');
+        document.getElementById('withdrawal-step-1').classList.remove('hidden');
+    }
+
+    // Gestion des pays
+    function toggleCountryMenu(prefix) {
+        const menu = document.getElementById(`${prefix}-country-menu`);
+        if(menu) menu.classList.toggle('hidden');
+    }
+
+    function selectCountry(iso, code, prefix) {
+        document.getElementById(`${prefix}-flag`).src = `https://flagcdn.com/w40/${iso}.png`;
+        document.getElementById(`${prefix}-code`).innerText = code;
+        document.getElementById(`${prefix}-phone-code`).value = code;
+        toggleCountryMenu(prefix);
+    }
+
+    // Fermeture du menu si clic ailleurs
+    window.addEventListener('click', function(e) {
+        const menu = document.getElementById('withdrawal-country-menu');
+        const btn = document.querySelector('button[onclick*="toggleCountryMenu"]');
+        if (menu && !menu.contains(e.target) && !btn.contains(e.target)) {
+            menu.classList.add('hidden');
+        }
+    });
+
     /**
      * Calcule les frais de transaction selon la grille
      * 0 – 10 000 XOF: 150 XOF
@@ -505,7 +638,7 @@
         confirmBtn.innerText = 'Traitement...';
 
         try {
-            const response = await fetch("{{ route('api.withdrawals.store') }}", {
+            const response = await fetch("{{ route('proprio.api.withdrawals.store') }}", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -574,7 +707,7 @@
         tbody.innerHTML = '<tr><td colspan="8" class="p-10 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i> Chargement...</td></tr>';
 
         try {
-            const response = await fetch("{{ route('api.withdrawals.index') }}");
+            const response = await fetch("{{ route('proprio.api.withdrawals.index') }}");
             const data = await response.json();
 
             if (data.success) {
@@ -634,7 +767,7 @@
                 <td class="p-4"><span class="${statusStyles[w.status] || ''} px-2 py-1 rounded-lg text-[10px] font-bold">${statusLabels[w.status] || w.status}</span></td>
                 <td class="p-4">
                     ${(w.status === 'pending' || w.status === 'processing') ? `
-                        <button onclick="cancelWithdrawal(${w.id}, this)" class="px-3 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-[10px] font-bold hover:bg-red-100 dark:hover:bg-red-900/30 transition flex items-center gap-1">
+                        <button onclick="promptCancelWithdrawal(${w.id}, this)" class="px-3 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-[10px] font-bold hover:bg-red-100 dark:hover:bg-red-900/30 transition flex items-center gap-1">
                             <i class="fas fa-times w-3 h-3"></i> Annuler
                         </button>
                     ` : '-'}
@@ -645,10 +778,30 @@
     }
 
     /**
-     * Surcharge de l'annulation (appel API)
+     * Surcharge de l'annulation (appel API avec modale personnalisée)
      */
-    async function cancelWithdrawal(withdrawalId, btn) {
-        if (!confirm('Voulez-vous vraiment annuler cette demande de retrait ?')) return;
+    let currentWithdrawalToCancel = null;
+    let currentCancelBtn = null;
+
+    function promptCancelWithdrawal(withdrawalId, btn) {
+        currentWithdrawalToCancel = withdrawalId;
+        currentCancelBtn = btn;
+        document.getElementById('cancel-withdrawal-modal').classList.remove('hidden');
+    }
+
+    function closeCancelWithdrawalModal() {
+        document.getElementById('cancel-withdrawal-modal').classList.add('hidden');
+        currentWithdrawalToCancel = null;
+        currentCancelBtn = null;
+    }
+
+    async function executeCancelWithdrawal() {
+        if (!currentWithdrawalToCancel) return;
+        
+        let withdrawalId = currentWithdrawalToCancel;
+        let btn = currentCancelBtn;
+        
+        closeCancelWithdrawalModal();
 
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';

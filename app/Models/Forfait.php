@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Modèle représentant un forfait WiFi.
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Forfait extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     /**
      * Nom de la table dans la base de données.
@@ -27,7 +28,7 @@ class Forfait extends Model
      * - nom: Nom du forfait
      * - prix: Prix du forfait
      * - validite: Durée de validité du forfait (ex: "1h", "24h", "7j")
-     * - profile_mikrotik: Nom du profil MikroTik associé
+     * - temps_limit: Limite de temps du forfait (ex: "2 heures", "1 jour", "1 mois")
      * - description: Description détaillée du forfait
      * - color_class: Classe CSS pour la couleur du forfait dans l'interface
      */
@@ -36,9 +37,13 @@ class Forfait extends Model
         'nom',
         'prix',
         'validite',
-        'profile_mikrotik',
+        'temps_limit',
         'description',
-        'color_class'
+        'color_class',
+        'is_active',
+        'stock_max',
+        'seuil_alerte',
+        'auto_replenish'
     ];
 
     /**

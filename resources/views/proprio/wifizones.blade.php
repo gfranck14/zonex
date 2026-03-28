@@ -2,7 +2,7 @@
 
 @extends('layout')
 
-@section('title', ' Dashboard')
+@section('title', 'Wifi Zones')
 
 
 
@@ -17,7 +17,7 @@
 <div id="zone-list" class="animate-fade-in">
     <div class="flex justify-between items-center mb-8">
         <div>
-            <h2 class="text-3xl font-bold text-gray-800 dark:text-white">Mes Zones</h2>
+            <h2 class="text-3xl font-bold text-gray-800 dark:text-white">Wifi Zones</h2>
             <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">Gérez vos emplacements physiques.</p>
         </div>
         <button onclick="openWizard()" class="bg-brand-sidebarLight dark:bg-brand-sidebarDark text-white px-5 py-3 rounded-xl text-sm font-bold shadow-lg hover:brightness-110 transition flex items-center gap-2">
@@ -95,7 +95,7 @@
 
                 <!-- Pied : Actions -->
                 <div class="flex gap-2 mt-auto">
-                    <a href="{{ route('forfait_ticket', ['filter_zone' => $zone->id]) }}#stock" onclick="event.stopPropagation();" class="flex-1 bg-brand-sidebarLight dark:bg-slate-700 text-white py-3 rounded-xl text-xs font-bold hover:brightness-110 transition shadow-lg text-center">
+                    <a href="{{ route('proprio.forfait_ticket', ['filter_zone' => $zone->id]) }}#stock" onclick="event.stopPropagation();" class="flex-1 bg-brand-sidebarLight dark:bg-slate-700 text-white py-3 rounded-xl text-xs font-bold hover:brightness-110 transition shadow-lg text-center">
                         GÉRER LE STOCK
                     </a>
                     @php
@@ -226,7 +226,7 @@
                                 </div>
                                 <div class="mt-6 bg-yellow-50 dark:bg-yellow-900/50 border border-yellow-100 dark:border-yellow-800 rounded-xl p-4 flex gap-3">
                                     <i class="fas fa-exclamation-triangle w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0"></i>
-                                    <p class="text-xs text-yellow-800 dark:text-yellow-200">Assuez-vous que le <strong>Walled Garden</strong> est configuré.</p>
+                                    <p class="text-xs text-yellow-800 dark:text-yellow-200">Assurez-vous que le <strong>Walled Garden</strong> est configuré.</p>
                                 </div>
                             </div>
                             <div class="bg-white dark:bg-brand-cardDark p-8 rounded-3xl shadow-sm">
@@ -245,52 +245,116 @@
                                         <i class="fas fa-check w-4 h-4 text-green-500"></i>
                                         *.kkiapay.me
                                     </li>
+                                    <li class="flex items-center gap-2">
+                                        <i class="fas fa-check w-4 h-4 text-green-500"></i>
+                                        *.fedapay.com
+                                    </li>
                                 </ul>
-                                <button onclick="copyToClipboard('{{ request()->getHost() }}\n*.cinetpay.com\n*.kkiapay.me')" class="mt-6 w-full py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-xs font-bold hover:bg-gray-50 dark:hover:bg-slate-700">Copier la liste</button>
+                                <button onclick="copyToClipboard('{{ request()->getHost() }}\n*.cinetpay.com\n*.kkiapay.me\n*.fedapay.com')" class="mt-6 w-full py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-xs font-bold hover:bg-gray-50 dark:hover:bg-slate-700">Copier la liste</button>
                             </div>
                         </div>
 
-                        <!-- Ligne 2 : Ticket Admin uniquement -->
-                        <div class="grid grid-cols-1 lg:grid-cols-1 max-w-2xl">
-                            <!-- Carte Ticket Admin -->
-                            <div class="bg-white dark:bg-brand-cardDark p-8 rounded-3xl shadow-sm relative">
+                        <!-- Lignes 2 & 3 : Connexion MikroTik & Ticket Admin -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <!-- Carte Connexion MikroTik -->
+                            <div class="bg-white dark:bg-brand-cardDark p-8 rounded-3xl shadow-sm relative flex flex-col">
                                 <!-- Bouton Modifier en haut à droite -->
-                                <button onclick="toggleTicketEdit()" class="absolute top-6 right-6 w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors" title="Modifier">
+                                <button id="edit-connection-btn" onclick="toggleConnectionEdit()" class="absolute top-6 right-6 w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors" title="Modifier">
                                     <i class="fas fa-pen w-3.5 h-3.5"></i>
                                 </button>
                                 
                                 <div class="flex items-center gap-3 mb-6">
-                                    <div class="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-900/50 flex items-center justify-center text-green-600 dark:text-green-400">
-                                        <i class="fas fa-ticket-alt w-5 h-5"></i>
+                                    <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/50 flex items-center justify-center text-brand-blue dark:text-blue-400">
+                                        <i class="fas fa-network-wired w-5 h-5"></i>
                                     </div>
-                                    <div>
-                                        <h3 class="text-lg font-bold text-gray-800 dark:text-white">Ticket Admin</h3>
-                                        <p class="text-xs text-gray-400 dark:text-gray-500">Identifiants d'administration des tickets.</p>
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <h3 class="text-lg font-bold text-gray-800 dark:text-white">Connexion MikroTik</h3>
+                                            <span id="connection-status-badge" class="hidden px-2 py-1 rounded-full text-[10px] font-bold"></span>
+                                        </div>
+                                        <p class="text-xs text-gray-400 dark:text-gray-500">Identifiants de l'API pour synchroniser les données.</p>
                                     </div>
                                 </div>
-                                <div class="space-y-4">
-                                    <div>
-                                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Login</label>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="md:col-span-1">
+                                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Host / IP</label>
                                         <div class="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-600">
-                                            <input type="text" id="ticket-admin-login" class="w-full bg-transparent dark:text-white border-none outline-none text-sm font-mono" placeholder="Entrez le login..." value="" disabled>
+                                            <input type="text" id="api-host" class="w-full bg-transparent dark:text-white border-none outline-none text-sm font-mono" placeholder="192.168.88.1" disabled>
+                                        </div>
+                                    </div>
+                                    <div class="md:col-span-1">
+                                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Port</label>
+                                        <div class="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-600">
+                                            <input type="number" id="api-port" class="w-full bg-transparent dark:text-white border-none outline-none text-sm font-mono" placeholder="8728" disabled>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Utilisateur API</label>
+                                        <div class="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-600">
+                                            <input type="text" id="api-user" class="w-full bg-transparent dark:text-white border-none outline-none text-sm font-mono" placeholder="zonex_user" disabled>
                                         </div>
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Mot de passe</label>
                                         <div class="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-600 relative">
-                                            <input type="password" id="ticket-admin-password" class="w-full bg-transparent dark:text-white border-none outline-none text-sm font-mono pr-10" placeholder="Entrez le mot de passe..." value="" disabled>
+                                            <input type="password" id="api-password" class="w-full bg-transparent dark:text-white border-none outline-none text-sm font-mono pr-10" placeholder="••••••••" disabled>
+                                            <button type="button" onclick="togglePasswordVisibility('api-password')" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                                <i class="fas fa-eye w-4 h-4"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <button type="button" id="test-connection-btn" onclick="testMikrotikConnection()" class="flex items-center gap-2 bg-brand-blue/10 text-brand-blue px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-brand-blue/20 transition">
+                                        <i class="fas fa-plug"></i>
+                                        TESTER LA CONNEXION
+                                    </button>
+                                    <button type="button" id="edit-connection-btn" onclick="toggleConnectionEdit()" class="text-xs font-bold text-gray-500 hover:text-brand-blue transition">MODIFIER</button>
+                                    <div class="flex gap-2">
+                                        <button type="button" id="save-connection-btn" onclick="saveConnectionSettings()" class="hidden bg-brand-green text-white px-4 py-2.5 rounded-xl text-xs font-bold hover:scale-105 transition shadow-lg shadow-green-500/20">ENREGISTRER</button>
+                                        <button type="button" id="cancel-connection-btn" onclick="cancelConnectionEdit()" class="hidden text-xs font-bold text-gray-500 hover:text-red-500 transition">ANNULER</button>
+                                    </div>
+                                </div>
+                                <div id="connection-status-badge" class="hidden mt-3">
+                                    <span class="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-gray-100 text-gray-500 block">Status inconnu</span>
+                                </div>
+                            </div>
+                            <!-- Identifiants Ticket Admin -->
+                            <div class="bg-white dark:bg-brand-cardDark p-8 rounded-3xl shadow-sm relative flex flex-col">
+                                <button id="edit-ticket-btn" onclick="toggleTicketEdit()" class="absolute top-6 right-6 w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors" title="Modifier">
+                                    <i class="fas fa-pen w-3.5 h-3.5"></i>
+                                </button>
+                                
+                                <div class="flex items-center gap-3 mb-6">
+                                    <div class="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/50 flex items-center justify-center text-orange-600 dark:text-orange-400">
+                                        <i class="fas fa-user-shield w-5 h-5"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h3 class="text-lg font-bold text-gray-800 dark:text-white">Identifiants Ticket Admin</h3>
+                                        <p class="text-xs text-gray-400 dark:text-gray-500">Accès pour l'impression des tickets via le portail.</p>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Utilisateur Admin</label>
+                                        <div class="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-600">
+                                            <input type="text" id="ticket-admin-login" class="w-full bg-transparent dark:text-white border-none outline-none text-sm font-mono" placeholder="admin_login" disabled>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Mot de passe</label>
+                                        <div class="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-600 relative">
+                                            <input type="password" id="ticket-admin-password" class="w-full bg-transparent dark:text-white border-none outline-none text-sm font-mono pr-10" placeholder="••••••••" disabled>
                                             <button type="button" onclick="togglePasswordVisibility('ticket-admin-password')" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                                                 <i class="fas fa-eye w-4 h-4"></i>
                                             </button>
                                         </div>
                                     </div>
-                                    <div class="flex gap-3 pt-2">
-                                        <button onclick="saveTicketCredentials()" class="flex-1 bg-green-500 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-green-600 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed" id="save-ticket-btn" disabled>
-                                            <i class="fas fa-save mr-2"></i>Enregistrer
-                                        </button>
-                                        <button onclick="cancelTicketEdit()" class="hidden border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-50 dark:hover:bg-slate-700 transition" id="cancel-ticket-btn">
-                                            Annuler
-                                        </button>
+                                </div>
+                                <div class="flex items-center gap-4 mt-6">
+                                    <div class="flex gap-2">
+                                        <button type="button" id="save-ticket-btn" onclick="saveTicketCredentials()" class="hidden bg-brand-green text-white px-6 py-2.5 rounded-xl text-xs font-bold hover:scale-105 transition shadow-lg shadow-green-500/20">ENREGISTRER</button>
+                                        <button type="button" id="cancel-ticket-btn" onclick="cancelTicketEdit()" class="hidden text-xs font-bold text-gray-500 hover:text-red-500 transition">ANNULER</button>
                                     </div>
                                 </div>
                             </div>
@@ -353,82 +417,124 @@
             
             <!-- HEADER -->
             <div class="px-8 pt-8 pb-4">
-                <h3 class="text-2xl font-bold text-gray-800 dark:text-white">Ajouter un wifizone 🚀</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Étape <span id="wizard-step-num">1</span> sur 2</p>
+                <h3 class="text-2xl font-bold text-gray-800 dark:text-white">Nouvelle Zone WiFi 🚀</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Étape <span id="wizard-step-num">1</span> sur 3</p>
                 <!-- Barre de progression Wizard -->
                 <div class="h-1 w-full bg-gray-100 dark:bg-slate-700 rounded-full mt-4 overflow-hidden">
-                    <div id="wizard-progress" class="h-full bg-brand-blue w-1/2 transition-all duration-300"></div>
+                    <div id="wizard-progress" class="h-full bg-brand-blue w-1/3 transition-all duration-500 ease-out"></div>
                 </div>
             </div>
 
             <!-- CORPS (Les Étapes) -->
             <div class="p-8 pt-2">
                 
-               <!-- ÉTAPE 1 : IDENTITÉ -->
-<div id="step-1" class="space-y-5 animate-fade-in">
-    <div class="input-floating-group">
-        <input type="text" id="new-zone-name" placeholder=" " class="input-floating">
-        <label class="floating-label">Nom du WIFIZONE</label>
-        <p class="text-xs text-gray-400 mt-1">Ex: Routeur Maquis</p>
-    </div>
-    <div class="input-floating-group">
-        <input type="text" id="new-zone-address" placeholder=" " class="input-floating">
-        <label class="floating-label">Lieu / Adresse (Optionnel)</label>
-        <p class="text-xs text-gray-400 mt-1">Ex: Cocody, Rue des Jardins</p>
-    </div>
-    <div class="input-floating-group">
-        <input type="text" id="new-zone-hotspot-address" placeholder=" " class="input-floating">
-        <label class="floating-label">Adresse Hotspot</label>
-        <p class="text-xs text-gray-400 mt-1">Ex: 192.168.88.1 ou hotspot.example.com</p>
-    </div>
-    <div class="pt-4 flex justify-between items-center">
-        <button onclick="closeWizard()" class="text-xs font-bold text-gray-400 hover:text-gray-600">Annuler</button>
-        <button id="btn-next-wizard" onclick="goToStep2()" class="bg-brand-blue text-white px-6 py-3 rounded-xl text-sm font-bold hover:brightness-110 transition flex items-center gap-2">
-            <span id="btn-next-text">Suivant</span>
-            <i id="btn-next-icon" class="fas fa-arrow-right w-4 h-4"></i>
-        </button>
-    </div>
-</div>
+                <!-- ÉTAPE 1 : IDENTITÉ -->
+                <div id="step-1" class="space-y-6 animate-fade-in">
+                    <div class="input-floating-group">
+                        <input type="text" id="new-zone-name" placeholder=" " class="input-floating">
+                        <label class="floating-label">Nom du WIFIZONE</label>
+                        <p class="text-[10px] text-gray-400 mt-1 italic">Ex: Routeur Maquis, Bar Central...</p>
+                    </div>
+                    <div class="input-floating-group">
+                        <input type="text" id="new-zone-address" placeholder=" " class="input-floating">
+                        <label class="floating-label">Lieu / Adresse (Optionnel)</label>
+                        <p class="text-[10px] text-gray-400 mt-1">Sert pour votre propre repérage</p>
+                    </div>
+                    <div class="input-floating-group">
+                        <input type="text" id="new-zone-hotspot-address" placeholder=" " class="input-floating">
+                        <label class="floating-label">Adresse Hotspot (Portail DNS)</label>
+                        <p class="text-[10px] text-gray-400 mt-1 italic">Ex: 192.168.88.1 ou hotspot.zonex.ci</p>
+                    </div>
+                    <div class="pt-6 flex justify-between items-center border-t border-gray-100 dark:border-slate-800">
+                        <button onclick="closeWizard()" class="text-xs font-bold text-gray-400 hover:text-gray-600 transition">ANNULER</button>
+                        <button onclick="goToStep2()" class="bg-brand-blue text-white px-8 py-3 rounded-2xl text-sm font-bold hover:scale-105 transition shadow-lg shadow-blue-500/20 flex items-center gap-2">
+                            CONTINUER
+                            <i class="fas fa-arrow-right text-[10px]"></i>
+                        </button>
+                    </div>
+                </div>
 
-<!-- ÉTAPE 2 : TECHNIQUE -->
-<div id="step-2" class="hidden space-y-6 animate-fade-in">
-    <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-xl flex items-center gap-3 border border-green-100 dark:border-green-800">
-        <div class="w-8 h-8 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center text-brand-green">✓</div>
-        <div>
-            <p class="text-sm font-bold text-gray-800 dark:text-white">Zone créée avec succès !</p>
-            <p class="text-xs text-gray-500">Token: <span id="display-token" class="font-mono font-bold text-green-600"></span></p>
+                <!-- ÉTAPE 2 : MIKROTIK -->
+                <div id="step-2" class="hidden space-y-6 animate-fade-in">
+                    <div class="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-2xl border border-blue-100 dark:border-blue-800/30 flex gap-3">
+                        <i class="fas fa-info-circle text-brand-blue mt-1"></i>
+                        <p class="text-[11px] text-blue-800 dark:text-blue-300 leading-relaxed">
+                            Ces accès permettent à ZoneX de créer automatiquement les tickets sur votre routeur. 
+                            Assurez-vous que le service <b>API (port 8728)</b> est actif sur votre MikroTik.
+                        </p>
+                    </div>
+
+                    <div class="input-floating-group">
+                        <input type="text" id="new-api-host" placeholder=" " class="input-floating">
+                        <label class="floating-label">MikroTik IP / Hostname</label>
+                        <p class="text-[10px] text-gray-400 mt-1">Ex: 192.168.88.1 ou vpn.myserver.sn</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="input-floating-group">
+                            <input type="text" id="new-api-user" placeholder=" " class="input-floating">
+                            <label class="floating-label">Utilisateur API</label>
+                        </div>
+                        <div class="input-floating-group">
+                            <input type="password" id="new-api-password" placeholder=" " class="input-floating">
+                            <label class="floating-label">Mot de passe</label>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-4">
+                        <button onclick="testConnectionWizard()" id="btn-test-wizard" class="w-full py-3 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 rounded-xl text-xs font-bold hover:bg-gray-200 transition border border-gray-200 dark:border-slate-700 flex items-center justify-center gap-2">
+                            <i class="fas fa-vial"></i>
+                            TESTER LA CONNEXION
+                        </button>
+                        <div id="wizard-test-result" class="hidden text-center p-2 rounded-lg text-[10px] font-bold"></div>
+                    </div>
+
+                    <div class="pt-6 flex justify-between items-center border-t border-gray-100 dark:border-slate-800">
+                        <button onclick="prevStep(1)" class="text-xs font-bold text-gray-400 hover:text-gray-600 transition flex items-center gap-2">
+                            <i class="fas fa-arrow-left text-[10px]"></i>
+                            RETOUR
+                        </button>
+                        <button id="btn-create-zone" onclick="createZone()" class="bg-brand-green text-white px-8 py-3 rounded-2xl text-sm font-bold hover:scale-105 transition shadow-lg shadow-green-500/20 flex items-center gap-2">
+                            <span id="btn-create-text">FINALISER</span>
+                            <i id="btn-create-icon" class="fas fa-check text-[10px]"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ÉTAPE 3 : SUCCÈS -->
+                <div id="step-3" class="hidden space-y-6 animate-fade-in text-center">
+                    <div class="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-green">
+                        <i class="fas fa-check text-4xl"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-bold text-gray-800 dark:text-white">Zone Activée !</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Votre configuration est opérationnelle.</p>
+                    </div>
+
+                    <div class="flex flex-col gap-4 text-left">
+                        <div class="p-4 bg-gray-50 dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Token de Zone</label>
+                            <code id="display-token" class="text-lg font-mono font-bold text-brand-blue tracking-wider">WZ-XXXXXX</code>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">URL MikroTik (Login)</label>
+                            <div onclick="copyUrl()" class="p-4 bg-brand-sidebarLight dark:bg-slate-900 rounded-2xl flex justify-between items-center cursor-pointer hover:ring-2 ring-brand-blue/30 transition shadow-inner">
+                                <code id="display-url" class="text-[10px] text-blue-200 font-mono truncate mr-2 italic">https://...</code>
+                                <span class="bg-white/10 text-white text-[9px] font-bold px-2 py-1 rounded">COPIER</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4">
+                        <button onclick="finishWizard()" class="w-full bg-brand-sidebarLight dark:bg-slate-700 text-white py-4 rounded-2xl text-sm font-bold hover:brightness-110 transition shadow-lg">
+                            TERMINER & ACCÉDER
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-
-    <!-- URL -->
-    <div>
-        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">1. URL de Redirection (Login)</label>
-        <div onclick="copyUrl()" class="bg-brand-sidebarLight dark:bg-slate-900 p-4 rounded-xl flex justify-between items-center group cursor-pointer hover:ring-2 ring-brand-blue/50 transition">
-            <code id="display-url" class="text-xs text-blue-200 font-mono truncate mr-4">Chargement...</code>
-            <span class="text-xs font-bold text-white bg-white/20 px-2 py-1 rounded">COPIER</span>
-        </div>
-        <p class="text-[10px] text-gray-400 mt-1">À mettre dans le bouton "Se connecter" de votre Mikrotik.</p>
-    </div>
-
-    <!-- Walled Garden -->
-    <div>
-        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">2. Walled Garden (Autorisations)</label>
-        <div class="bg-gray-50 dark:bg-slate-800 p-3 rounded-xl border border-gray-200 dark:border-slate-700">
-            <ul class="text-xs font-mono text-gray-600 dark:text-gray-300 space-y-1">
-                <li>taplateforme.com</li>
-                <li>cinetpay.com</li>
-                <li>*.kkiapay.me</li>
-            </ul>
-        </div>
-    </div>
-
-    <div class="pt-2 flex justify-between items-center">
-        <button onclick="closeWizard()" class="text-xs font-bold text-gray-400 hover:text-gray-600">Annuler</button>
-        <button onclick="finishWizard()" class="bg-[#114c6c] text-white px-6 py-3 rounded-xl text-sm font-bold hover:brightness-110 transition shadow-lg">
-            Terminer & Voir la liste
-        </button>
-    </div>
-</div>
 
 <!-- MODALE DE SUPPRESSION ZONE WIFI (SIMPLIFIÉ) -->
 <div id="delete-zone-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
@@ -444,51 +550,80 @@
     </div>
 
     <!-- Step 1: Impact -->
-    <div id="delete-step-1" class="hidden bg-white dark:bg-slate-800 w-full max-w-md rounded-[2.5rem] p-8 relative z-10 text-center shadow-2xl border border-gray-100 dark:border-slate-700">
-        <div class="w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-900/20 text-orange-500 flex items-center justify-center mx-auto mb-6">
+    <div id="delete-step-1" class="hidden bg-white dark:bg-slate-800 w-full max-w-md rounded-[2.5rem] p-8 relative z-10 text-center shadow-2xl border border-gray-100 dark:border-slate-700 animate-fade-in">
+        <div class="w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-900/20 text-orange-500 flex items-center justify-center mx-auto mb-6 animate-pulse">
             <i class="fas fa-exclamation-triangle text-2xl"></i>
         </div>
         <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Attention !</h3>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Vous êtes sur le point de supprimer une zone WiFi. Cette action entraînera la suppression de :</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">La suppression de cette zone WiFi entraînera la perte définitive de :</p>
         
         <div class="grid grid-cols-3 gap-4 mb-6">
-            <div class="bg-gray-50 dark:bg-slate-700 p-4 rounded-2xl">
+            <div class="bg-gray-50 dark:bg-slate-700 p-4 rounded-2xl border border-gray-100 dark:border-slate-600 transition hover:scale-105">
                 <span id="impact-forfaits" class="block text-2xl font-bold text-gray-800 dark:text-white">0</span>
                 <span class="text-[10px] font-bold text-gray-400 uppercase">Forfaits</span>
             </div>
-            <div class="bg-gray-50 dark:bg-slate-700 p-4 rounded-2xl">
+            <div class="bg-gray-50 dark:bg-slate-700 p-4 rounded-2xl border border-gray-100 dark:border-slate-600 transition hover:scale-105">
                 <span id="impact-tickets" class="block text-2xl font-bold text-gray-800 dark:text-white">0</span>
                 <span class="text-[10px] font-bold text-gray-400 uppercase">Tickets</span>
             </div>
-            <div class="bg-gray-50 dark:bg-slate-700 p-4 rounded-2xl">
+            <div class="bg-gray-50 dark:bg-slate-700 p-4 rounded-2xl border border-gray-100 dark:border-slate-600 transition hover:scale-105">
                 <span id="impact-paiements" class="block text-2xl font-bold text-gray-800 dark:text-white">0</span>
-                <span class="text-[10px] font-bold text-gray-400 uppercase">Transactions</span>
+                <span class="text-[10px] font-bold text-gray-400 uppercase">Ventes</span>
             </div>
         </div>
 
-        <div class="flex gap-4">
-            <button onclick="closeDeleteModal()" class="flex-1 px-6 py-4 border border-gray-200 dark:border-slate-600 rounded-2xl text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 transition">Annuler</button>
-            <button onclick="showDeleteStep2()" class="flex-1 px-6 py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-2xl text-sm font-bold transition shadow-lg shadow-orange-500/20">Continuer</button>
+        <div class="flex flex-col gap-3">
+            <button onclick="showDeleteStep2()" class="w-full px-6 py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-2xl text-sm font-bold transition shadow-lg shadow-orange-500/30">
+                CONTINUER LA SUPPRESSION
+            </button>
+            <button onclick="closeDeleteModal()" class="w-full px-6 py-4 border border-gray-200 dark:border-slate-600 rounded-2xl text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
+                ANNULER
+            </button>
         </div>
     </div>
 
-    <!-- Step 2: Confirmation -->
-    <div id="delete-step-2" class="hidden bg-white dark:bg-slate-800 w-full max-w-md rounded-[2.5rem] p-8 relative z-10 text-center shadow-2xl border border-gray-100 dark:border-slate-700">
-        <div class="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/20 text-red-500 flex items-center justify-center mx-auto mb-6">
-            <i class="fas fa-trash-alt text-2xl"></i>
+    <!-- Step 2: Choix du type de suppression -->
+    <div id="delete-step-2" class="hidden bg-white dark:bg-slate-800 w-full max-w-md rounded-[2.5rem] p-8 relative z-10 shadow-2xl border border-gray-100 dark:border-slate-700 animate-fade-in">
+        <div class="text-center mb-6">
+            <div class="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/20 text-red-500 flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-trash-alt text-2xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Comment souhaitez-vous supprimer ?</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Choisissez le niveau de suppression pour cette zone.</p>
         </div>
-        <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Confirmation finale</h3>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Êtes-vous absolument sûr ? Cette action est irréversible et toutes les données seront perdues.</p>
         
-        <div class="flex gap-4">
-            <button onclick="confirmFinalDelete()" class="flex-1 px-6 py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl text-sm font-bold transition shadow-lg shadow-red-500/20">Supprimer définitivement</button>
-            <button onclick="closeDeleteModal()" class="flex-1 px-6 py-4 border border-gray-200 dark:border-slate-600 rounded-2xl text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 transition">Annuler</button>
-        </div>
+        <!-- Option 1 : Plateforme uniquement -->
+        <button onclick="confirmFinalDelete(false)" class="w-full mb-3 p-4 rounded-xl border border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition text-left">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-500 shrink-0">
+                    <i class="fas fa-cloud-arrow-down"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-bold text-gray-900 dark:text-white">Supprimer de la plateforme uniquement</p>
+                    <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Les données sont retirées de ZoneX mais les tickets et profils restent sur le MikroTik physique.</p>
+                </div>
+            </div>
+        </button>
+
+        <!-- Option 2 : Plateforme + MikroTik -->
+        <button onclick="confirmFinalDelete(true)" class="w-full mb-4 p-4 rounded-xl border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition text-left">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-500 shrink-0">
+                    <i class="fas fa-server"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-bold text-gray-900 dark:text-white">Supprimer de la plateforme ET du MikroTik</p>
+                    <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Nettoyage complet : déconnexion des clients, suppression des tickets et des profils sur le routeur.</p>
+                </div>
+            </div>
+        </button>
+
+        <button onclick="closeDeleteModal()" class="w-full py-3 text-sm font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition">ANNULER</button>
     </div>
 </div>
 
 <!-- MODALE DE SUPPRESSION EN MASSE DE TICKETS -->
-<div id="bulk-delete-tickets-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[110] hidden">
+<div id="bulk-delete-tickets-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] hidden">
     <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-lg w-full mx-4 shadow-2xl border border-gray-100 dark:border-slate-700">
         <div class="text-center space-y-6">
             <div id="bulk-delete-icon" class="w-20 h-20 bg-orange-100 dark:bg-orange-900/30 rounded-3xl flex items-center justify-center mx-auto text-orange-500 shadow-inner">
@@ -536,7 +671,7 @@
 </div>
 
 <!-- MODALE D'ERREUR PERSONNALISÉE -->
-<div id="error-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] hidden">
+<div id="error-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[300] hidden">
     <div class="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl border border-gray-100 dark:border-slate-700">
         <div class="text-center">
             <div id="error-icon-container" class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-red-500">
@@ -552,6 +687,10 @@
 </div>
 
 <script>
+    // Variables globales pour la suppression
+    let activeZoneIdToDelete = null;
+    let activeZoneNameToDelete = null;
+
     function showErrorModal(title, message, type = 'error') {
         const modal = document.getElementById('error-modal');
         if (!modal) return;
@@ -587,7 +726,8 @@
         document.getElementById('add-zone-modal').classList.remove('hidden');
         document.getElementById('step-1').classList.remove('hidden');
         document.getElementById('step-2').classList.add('hidden');
-        document.getElementById('wizard-progress').style.width = '50%';
+        document.getElementById('step-3').classList.add('hidden');
+        document.getElementById('wizard-progress').style.width = '33%';
         document.getElementById('wizard-step-num').innerText = '1';
     }
 
@@ -604,65 +744,12 @@
         document.body.style.overflow = 'auto';
     }
     
-    // APPROCHE ALTERNATIVE : Suppression simple avec confirmation native
+    // APPROCHE PREMIUM : Modale avec analyse d'impact
     async function confirmDeleteZone(id, name) {
-        console.log('[DELETE_ZONE] Simple delete called - Zone ID:', id, 'Name:', name);
-        
-        // Confirmation native plus fiable
-        const confirmed = confirm(`⚠️ Êtes-vous sûr de vouloir supprimer la zone "${name}" ?\n\nCette action est IRRÉVERSIBLE et supprimera :\n• Tous les forfaits associés\n• Tous les tickets associés\n• Toutes les transactions\n\nCliquez sur OK pour confirmer la suppression.`);
-        
-        if (!confirmed) {
-            console.log('[DELETE_ZONE] User cancelled deletion');
-            return;
-        }
-        
-        try {
-            console.log('[DELETE_ZONE] User confirmed - sending DELETE request');
-            
-            // Afficher un indicateur de chargement simple
-            const btn = event.target.closest('button');
-            const originalHTML = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin w-5 h-5"></i>';
-            
-            const response = await fetch("{{ url('/wifizones') }}/" + id, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    _method: 'DELETE'
-                })
-            });
-            
-            console.log('[DELETE_ZONE] DELETE response status:', response.status);
-            const data = await response.json();
-            console.log('[DELETE_ZONE] DELETE response data:', data);
-            
-            if (data.success) {
-                console.log('[DELETE_ZONE] Zone deleted successfully');
-                // Afficher un message de succès simple
-                alert('✅ Zone "' + name + '" supprimée avec succès !');
-                // Recharger la page pour voir les changements
-                window.location.reload();
-            } else {
-                console.error('[DELETE_ZONE] Delete failed:', data.message);
-                alert('❌ Erreur: ' + (data.message || 'Erreur lors de la suppression'));
-                // Restaurer le bouton
-                btn.disabled = false;
-                btn.innerHTML = originalHTML;
-            }
-        } catch (error) {
-            console.error('[DELETE_ZONE] Network error during delete:', error);
-            alert('❌ Erreur réseau: ' + error.message);
-            // Restaurer le bouton
-            const btn = event.target.closest('button');
-            btn.disabled = false;
-            btn.innerHTML = originalHTML;
-        }
+        console.log('[DELETE_ZONE] Premium delete requested - Zone ID:', id, 'Name:', name);
+        activeZoneIdToDelete = id;
+        activeZoneNameToDelete = name;
+        openDeleteModal(id, name);
     }
     
     // Suppression depuis la vue détaillée
@@ -673,68 +760,136 @@
         const name = nameInput ? nameInput.value : 'cette zone';
         
         if (!id) {
-            alert('❌ Erreur: ID de zone non trouvé');
+            showErrorModal("Oups !", "Impossible d'identifier la zone à supprimer.");
             return;
         }
         
-        // Utiliser la même fonction de confirmation
-        await confirmDeleteZone(id, name);
+        confirmDeleteZone(id, name);
+    }
+
+    function prevStep(step) {
+        document.getElementById('step-1').classList.add('hidden');
+        document.getElementById('step-2').classList.add('hidden');
+        document.getElementById('step-3').classList.add('hidden');
+        document.getElementById('step-' + step).classList.remove('hidden');
+        
+        document.getElementById('wizard-step-num').innerText = step;
+        document.getElementById('wizard-progress').style.width = (step * 33) + '%';
     }
 
     async function goToStep2() {
         const nom = document.getElementById('new-zone-name').value;
-        const adresse = document.getElementById('new-zone-address').value;
-        const hotspotAddress = document.getElementById('new-zone-hotspot-address').value;
-        const btn = document.getElementById('btn-next-wizard');
-        const btnText = document.getElementById('btn-next-text');
-        const btnIcon = document.getElementById('btn-next-icon');
-
+        const hotspot = document.getElementById('new-zone-hotspot-address').value;
+        
         if (!nom) {
             showErrorModal("Oups !", "Veuillez donner un nom à la zone !");
             return;
         }
+        if (!hotspot) {
+            showErrorModal("Oups !", "L'adresse hotspot est obligatoire !");
+            return;
+        }
 
-        // 1. Verrouillage & Chargement
+        document.getElementById('step-1').classList.add('hidden');
+        document.getElementById('step-2').classList.remove('hidden');
+        document.getElementById('wizard-step-num').innerText = '2';
+        document.getElementById('wizard-progress').style.width = '66%';
+    }
+
+    async function testConnectionWizard() {
+        const host = document.getElementById('new-api-host').value;
+        const user = document.getElementById('new-api-user').value;
+        const pass = document.getElementById('new-api-password').value;
+        const resultDiv = document.getElementById('wizard-test-result');
+        const btn = document.getElementById('btn-test-wizard');
+
+        if (!host || !user) {
+            showErrorModal("Champs manquants", "L'hôte et l'utilisateur sont requis pour le test.");
+            return;
+        }
+
         btn.disabled = true;
-        btn.classList.add('opacity-70', 'cursor-not-allowed');
-        btnText.innerText = "Création...";
-        btnIcon.className = "fas fa-spinner fa-spin w-4 h-4";
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Test en cours...';
+        resultDiv.classList.add('hidden');
 
         try {
-            // 2. Envoi de la commande (AJAX)
-            const response = await fetch("{{ route('wifizones.store') }}", {
+            const response = await fetch("{{ route('proprio.wifizones.test-connection') }}", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "X-CSRF-TOKEN": "{{ csrf_token() }}",
-                    "Accept": "application/json",
-                    "X-Requested-With": "XMLHttpRequest"
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({
+                    api_host: host,
+                    api_user: user,
+                    api_password: pass
+                })
+            });
+
+            const data = await response.json();
+            resultDiv.classList.remove('hidden');
+
+            if (data.success) {
+                resultDiv.innerText = "✅ Connexion réussie : " + data.identity;
+                resultDiv.className = "mt-2 p-2 rounded-lg text-[10px] font-bold bg-green-100 text-green-600 block";
+            } else {
+                resultDiv.innerText = "❌ Échec : " + data.message;
+                resultDiv.className = "mt-2 p-2 rounded-lg text-[10px] font-bold bg-red-100 text-red-600 block";
+            }
+        } catch (error) {
+            resultDiv.innerText = "❌ Erreur réseau";
+            resultDiv.className = "mt-2 p-2 rounded-lg text-[10px] font-bold bg-red-100 text-red-600 block";
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-vial mr-2"></i>TESTER LA CONNEXION';
+        }
+    }
+
+    async function createZone() {
+        const nom = document.getElementById('new-zone-name').value;
+        const adresse = document.getElementById('new-zone-address').value;
+        const hotspotAddress = document.getElementById('new-zone-hotspot-address').value;
+        const host = document.getElementById('new-api-host').value;
+        const user = document.getElementById('new-api-user').value;
+        const pass = document.getElementById('new-api-password').value;
+
+        const btn = document.getElementById('btn-create-zone');
+        const btnText = document.getElementById('btn-create-text');
+        const btnIcon = document.getElementById('btn-create-icon');
+
+        btn.disabled = true;
+        btnText.innerText = "Création...";
+        btnIcon.className = "fas fa-spinner fa-spin text-[10px]";
+
+        try {
+            const response = await fetch("{{ route('proprio.wifizones.store') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                    "Accept": "application/json"
                 },
                 body: JSON.stringify({
                     nom_zone: nom,
                     adresse: adresse,
-                    hotspot_address: hotspotAddress
+                    hotspot_address: hotspotAddress,
+                    api_host: host,
+                    api_user: user,
+                    api_password: pass
                 })
             });
 
             const data = await response.json();
 
-            // 3 & 4 (Côté Serveur) -> Réponse reçue ici
             if (data.success) {
-                // 5. Affichage du Résultat
                 document.getElementById('display-token').innerText = data.token;
                 document.getElementById('display-url').innerText = data.url;
                 
-                // Transition visuelle
-                document.getElementById('step-1').classList.add('hidden');
-                document.getElementById('step-2').classList.remove('hidden');
+                document.getElementById('step-2').classList.add('hidden');
+                document.getElementById('step-3').classList.remove('hidden');
+                document.getElementById('wizard-step-num').innerText = '3';
                 document.getElementById('wizard-progress').style.width = '100%';
-                document.getElementById('wizard-step-num').innerText = '2';
-            } else {
-                showErrorModal("Erreur", data.message || "Erreur lors de la création");
-                // Déverrouillage en cas d'erreur
-                btn.disabled = false;
-                btn.classList.remove('opacity-70', 'cursor-not-allowed');
                 btnText.innerText = "Suivant";
                 btnIcon.className = "fas fa-arrow-right w-4 h-4";
             }
@@ -769,10 +924,146 @@
     let initialZoneData = {};
     let currentZoneId = null;
 
+    let isEditingConnection = false;
+
+    function toggleConnectionEdit(force = null) {
+        isEditingConnection = force !== null ? force : !isEditingConnection;
+        
+        const inputs = ['api-host', 'api-port', 'api-user', 'api-password'];
+        inputs.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.disabled = !isEditingConnection;
+        });
+
+        document.getElementById('edit-connection-btn').classList.toggle('hidden', isEditingConnection);
+        document.getElementById('save-connection-btn').classList.toggle('hidden', !isEditingConnection);
+        document.getElementById('cancel-connection-btn').classList.toggle('hidden', !isEditingConnection);
+        document.getElementById('test-connection-btn').classList.toggle('hidden', isEditingConnection);
+    }
+
+    function cancelConnectionEdit() {
+        document.getElementById('api-host').value = initialZoneData.api_host || '';
+        document.getElementById('api-port').value = initialZoneData.api_port || '8728';
+        document.getElementById('api-user').value = initialZoneData.api_user || '';
+        document.getElementById('api-password').value = '';
+        toggleConnectionEdit(false);
+    }
+
+    async function testMikrotikConnection() {
+        const btn = document.getElementById('test-connection-btn');
+        const badge = document.getElementById('connection-status-badge');
+        const originalHTML = btn.innerHTML;
+        
+        const host = document.getElementById('api-host').value;
+        const port = document.getElementById('api-port').value;
+        const user = document.getElementById('api-user').value;
+        const pass = document.getElementById('api-password').value;
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Tentative...';
+        
+        try {
+            const response = await fetch("{{ route('proprio.wifizones.test-connection') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    zone_id: currentZoneId,
+                    api_host: host,
+                    api_port: port,
+                    api_user: user,
+                    api_password: pass
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                badge.innerText = `✅ Connecté : ${data.identity} (${data.version})`;
+                badge.className = "px-2 py-1 rounded-full text-[10px] font-bold bg-green-100 text-green-600 block";
+                badge.classList.remove('hidden');
+                showToast(`Connecté à ${data.identity}`, 'success');
+            } else {
+                badge.innerText = "❌ Échec de connexion";
+                badge.className = "px-2 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-600 block";
+                badge.classList.remove('hidden');
+                showErrorModal("Erreur de connexion", data.message);
+            }
+        } catch (error) {
+            showErrorModal("Erreur", "Impossible de contacter le serveur.");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        }
+    }
+
+    async function saveConnectionSettings() {
+        if (!currentZoneId) return;
+        
+        const host = document.getElementById('api-host').value;
+        const port = document.getElementById('api-port').value;
+        const user = document.getElementById('api-user').value;
+        const pass = document.getElementById('api-password').value;
+
+        const btn = document.getElementById('save-connection-btn');
+        const originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Enregistrement...';
+
+        try {
+            const response = await fetch("{{ url('/wifizones') }}/" + currentZoneId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    _method: 'PUT',
+                    nom_zone: (initialZoneData && initialZoneData.nom_zone) ? initialZoneData.nom_zone : document.getElementById('detail-zone-name').value,
+                    api_host: host,
+                    api_port: port,
+                    api_user: user,
+                    api_password: pass
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showToast("Paramètres de connexion enregistrés", "success");
+                // Mettre à jour les données initiales
+                initialZoneData.api_host = host;
+                initialZoneData.api_port = port;
+                initialZoneData.api_user = user;
+                toggleConnectionEdit(false);
+            } else {
+                showErrorModal("Erreur", data.message);
+            }
+        } catch (error) {
+            showErrorModal("Erreur", "Erreur réseau lors de l'enregistrement.");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        }
+    }
+
     function showDetail(zone) {
         document.getElementById('zone-list').classList.add('hidden');
         document.getElementById('zone-detail').classList.remove('hidden');
         
+        currentZoneId = zone.id;
+        initialZoneData = { ...zone };
+        isEditingZone = false;
+        isEditingConnection = false;
+        
+        // S'assurer que les champs sont désactivés
+        toggleZoneEdit(false);
+        toggleConnectionEdit(false);
+
         // Remplir les champs
         document.getElementById('display-zone-id').innerText = 'WZ-' + zone.id;
         document.getElementById('zone-title').innerText = zone.nom_zone;
@@ -782,10 +1073,28 @@
         document.getElementById('detail-zone-hotspot-address').value = zone.hotspot_address || '';
         document.getElementById('code-zone-id').innerText = zone.token;
         
-        // Remplir les champs Ticket Admin
+        // Remplir les champs API MikroTik
+        document.getElementById('api-host').value = zone.api_host || '';
+        document.getElementById('api-port').value = zone.api_port || '8728';
+        document.getElementById('api-user').value = zone.api_user || '';
+        document.getElementById('api-password').value = ''; 
+        document.getElementById('api-password').placeholder = zone.api_password ? '••••••••' : '••••••••';
+        
+        // Remplir les identifiants Ticket Admin
         document.getElementById('ticket-admin-login').value = zone.ticket_admin_username || '';
-        document.getElementById('ticket-admin-password').value = zone.ticket_admin_password || '';
+        document.getElementById('ticket-admin-password').value = '';
+        document.getElementById('ticket-admin-password').placeholder = zone.ticket_admin_password ? '••••••••' : '••••••••';
 
+        // Reset badge status
+        const badge = document.getElementById('connection-status-badge');
+        badge.classList.add('hidden');
+
+        // Reset edit states
+        cancelZoneEdit();
+        cancelConnectionEdit();
+        // Assuming cancelTicketEdit() is a new function to be defined elsewhere
+        // cancelTicketEdit(); 
+        
         // Sync Icon with stock status
         const totalStock = zone.forfaits.reduce((acc, f) => acc + (f.tickets_count || 0), 0);
         const isLowStock = totalStock < 10;
@@ -1013,7 +1322,7 @@
         await deleteZoneWithImpact(id);
     }
     
-    async function deleteZoneFromList(id, name) {
+    async function openDeleteModal(id, name) {
         console.log('[DELETE_ZONE] Button pressed - Zone ID:', id, 'Name:', name);
         
         // Stocker l'ID pour la suppression
@@ -1106,9 +1415,9 @@
         document.body.style.overflow = 'auto';
     }
 
-    async function confirmFinalDelete() {
-        const id = document.getElementById('detail-zone-id-input').value;
-        console.log('[DELETE_ZONE] User confirmed deletion - Zone ID:', id);
+    async function confirmFinalDelete(cleanMikrotik = false) {
+        const id = activeZoneIdToDelete;
+        console.log('[DELETE_ZONE] User confirmed deletion - Zone ID:', id, 'Clean MikroTik:', cleanMikrotik);
         closeDeleteModal();
         
         try {
@@ -1122,7 +1431,8 @@
                     'Accept': 'application/json'
                 },
                 body: JSON.stringify({
-                    _method: 'DELETE'
+                    _method: 'DELETE',
+                    clean_mikrotik: cleanMikrotik ? '1' : '0'
                 })
             });
             
@@ -1156,9 +1466,9 @@
         currentBulkDeleteId = id;
         
         // Build URL with parameters
-        let url = '{{ route("tickets.preview") }}?type=' + type + '&id=' + id;
+        let url = '{{ route("proprio.tickets.preview") }}?type=' + type + '&id=' + id;
         if (type === 'date') {
-            url = '{{ route("tickets.preview") }}?type=date&id=' + id + '&zone_id=' + currentZoneId;
+            url = '{{ route("proprio.tickets.preview") }}?type=date&id=' + id + '&zone_id=' + currentZoneId;
         }
         
         try {

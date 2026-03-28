@@ -39,7 +39,7 @@ class AuthProprioController extends Controller
         ]);
 
         Auth::guard('proprio')->login($proprio);
-        return redirect()->route('dashboard');
+        return redirect()->route('proprio.dashboard');
     }
 
     public function login(Request $request)
@@ -61,7 +61,7 @@ class AuthProprioController extends Controller
 
         Auth::guard('proprio')->login($proprio);
 
-        return redirect()->route('dashboard'); 
+        return redirect()->route('proprio.dashboard'); 
     }
 
     public function logout(Request $request)
@@ -70,7 +70,7 @@ class AuthProprioController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login');
+        return redirect()->route('proprio.login');
     }
 
     /**

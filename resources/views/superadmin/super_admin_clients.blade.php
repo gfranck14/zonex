@@ -196,7 +196,7 @@
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeAddClientModal()"></div>
         <div class="bg-gray-800 w-full max-w-md rounded-2xl p-6 relative z-10 shadow-2xl">
             <h3 class="text-xl font-bold text-white mb-4">Nouveau Client</h3>
-            <form action="{{ route('clients.store') }}" method="POST" class="space-y-4">
+            <form action="#" method="POST" class="space-y-4">
                 @csrf
                 <div>
                     <label class="block text-xs font-bold text-gray-400 mb-2">Nom Complet</label>

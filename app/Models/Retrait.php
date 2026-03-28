@@ -34,6 +34,7 @@ class Retrait extends Model
         'momo_number',
         'momo_name',
         'status',
+        'mobile_money_ref',
         'approved_by',
         'approved_at',
     ];
@@ -192,6 +193,59 @@ class Retrait extends Model
     public function isCancellable()
     {
         return in_array($this->status, ['pending']);
+    }
+
+    /**
+     * Annule la demande de retrait.
+     * 
+     * @return bool
+     */
+    public function cancel()
+    {
+        if ($this->isCancellable()) {
+            $this->status = 'cancelled';
+            return $this->save();
+        }
+        return false;
+    }
+
+    /**
+     * Marque la demande comme étant en cours de traitement.
+     * 
+     * @return bool
+     */
+    public function markAsProcessing()
+    {
+        $this->status = 'processing';
+        return $this->save();
+    }
+
+    /**
+     * Marque la demande comme complétée.
+     * 
+     * @param string|null $mobile_money_ref
+     * @return bool
+     */
+    public function markAsProcessed($mobile_money_ref = null)
+    {
+        $this->status = 'completed';
+        if ($mobile_money_ref !== null) {
+            $this->mobile_money_ref = $mobile_money_ref;
+        }
+        $this->approved_at = now();
+        $this->approved_by = auth('admin')->id() ?? auth('web')->id() ?? null;
+        return $this->save();
+    }
+
+    /**
+     * Marque la demande comme échouée.
+     * 
+     * @return bool
+     */
+    public function markAsFailed()
+    {
+        $this->status = 'failed';
+        return $this->save();
     }
 
     /**

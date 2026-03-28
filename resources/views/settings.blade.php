@@ -1,4 +1,5 @@
 @extends('layout')
+@section('title', 'Paramètres')
 
 @php
     /**
@@ -47,32 +48,22 @@
         </div>
         
         <div class="flex items-center gap-3">
-            @if($proprio->is_active)
-                <button onclick="openDeactivateModal()" class="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-5 py-3 rounded-xl shadow-lg transition font-bold text-sm">
-                    <i class="fas fa-user-slash"></i> Désactiver mon compte
+            <form action="{{ route('proprio.logout') }}" method="POST" class="inline">
+                @csrf
+                <button type="submit" class="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 px-5 py-3 rounded-xl shadow-sm transition font-bold text-sm hidden md:flex">
+                    <i class="fas fa-sign-out-alt"></i> Se déconnecter
                 </button>
-            @else
-                <button onclick="openDeleteModal()" class="flex items-center gap-2 bg-red-900/80 hover:bg-red-900 text-white px-5 py-3 rounded-xl shadow-lg transition font-bold text-sm">
-                    <i class="fas fa-trash-alt"></i> Supprimer mon compte
-                </button>
-                <button onclick="openActivateModal()" class="flex items-center gap-2 bg-brand-green hover:brightness-110 text-white px-5 py-3 rounded-xl shadow-lg transition font-bold text-sm">
-                    <i class="fas fa-user-check"></i> Activer mon compte
-                </button>
-            @endif
+            </form>
         </div>
     </header>
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in">
         
-        <!-- 1. MON PROFIL & SÉCURITÉ -->
-        <div class="lg:col-span-2 space-y-8">
-            
-            <!-- Informations Personnelles -->
-            <div class="bg-white dark:bg-brand-cardDark p-8 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 relative z-20">
-                <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
-                    <i class="fas fa-user w-5 h-5 text-brand-blue"></i>Informations Personnelles
-                </h3>
-                
-                <form id="profile-form" class="space-y-6">
+        <!-- 1. MON PROFIL -->
+        <div class="bg-white dark:bg-brand-cardDark p-8 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 relative z-20 flex flex-col h-full">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+                <i class="fas fa-user text-lg text-brand-blue"></i>Informations Personnelles
+            </h3>
+            <form id="profile-form" class="space-y-6 flex-1 flex flex-col">
                     @csrf
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="input-floating-group">
@@ -123,14 +114,14 @@
                                 <!-- INPUT -->
                                 <div class="relative flex-1">
                                     <input type="tel" name="numero" id="settings-phone" class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-600 rounded-r-xl text-sm font-bold focus:ring-2 focus:ring-brand-blue/20 outline-none transition" value="{{ $phoneLocal }}" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required disabled>
-                                    <i class="fas fa-mobile-alt absolute right-4 top-3.5 text-gray-400"></i>
+                                    <i class="fas fa-mobile-alt absolute right-4 top-0 bottom-0 flex items-center text-gray-400"></i>
                                 </div>
                                 <input type="hidden" name="phone_code" id="settings-phone-code" value="{{ $phoneCode }}">
                             </div>
                         </div>
                     </div>
                     
-                    <div class="mt-8 pt-6 border-t border-gray-50 dark:border-slate-700 flex justify-end gap-3">
+                    <div class="mt-auto pt-6 border-t border-gray-50 dark:border-slate-700 flex justify-end gap-3">
                         <button type="button" id="cancel-profile-btn" onclick="cancelProfileEdit()" class="hidden px-6 py-3 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 transition">
                             Annuler
                         </button>
@@ -140,98 +131,86 @@
                     </div>
                 </form>
             </div>
-        </div>
-        
-        <!-- 2. NOTIFICATIONS WHATSAPP -->
-        <div class="space-y-8">
-            <div class="bg-white dark:bg-brand-cardDark p-8 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 h-full flex flex-col">
+            
+            <!-- 2. SÉCURITÉ (Modification de Mot de Passe) -->
+            <div class="bg-white dark:bg-brand-cardDark p-8 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 relative z-20 flex flex-col h-full">
+                <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+                    <i class="fas fa-lock text-lg text-brand-blue"></i>Sécurité
+                </h3>
                 
-                <!-- Header Section -->
-                <div class="mb-8">
-                    <div class="w-12 h-12 bg-green-50 dark:bg-green-900/20 rounded-2xl flex items-center justify-center mb-4">
-                        <i class="fas fa-bell w-6 h-6 text-brand-green"></i>
-                    </div>
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2">Alertes Stock & Ventes</h3>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
-                        Soyez notifié sur WhatsApp dès qu'un stock devient critique ou qu'une anomalie est détectée.
-                    </p>
-                </div>
-
-                <form id="whatsapp-form" class="space-y-8 flex-1">
+                <form id="password-form" class="space-y-6 flex-1 flex flex-col">
                     @csrf
-                    <!-- Toggle Switch -->
-                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-slate-700">
-                        <span class="text-sm font-bold text-gray-700 dark:text-gray-300">Activer les notifications</span>
-                        <div class="relative inline-block w-10 h-6 align-middle select-none transition duration-200 ease-in">
-                            <input type="checkbox" name="wa_notifications_enabled" id="wa-toggle" value="1" {{ $proprio->wa_notifications_enabled ? 'checked' : '' }} class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-brand-green right-0 transition-all duration-300"/>
-                            <label for="wa-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-brand-green cursor-pointer transition-colors duration-300"></label>
-                        </div>
-                    </div>
-
-                    <!-- Input WhatsApp -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-wide">Numéro WhatsApp</label>
-                        <div class="flex relative group">
-                            <button type="button" onclick="toggleCountryMenu('wa')" class="flex items-center gap-2 px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 border-r-0 rounded-l-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition relative z-20">
-                                <img id="wa-flag" src="https://flagcdn.com/w40/{{ $waPhoneFlag }}.png" class="w-5 h-auto rounded-sm shadow-sm" alt="Flag">
-                                <span id="wa-code" class="text-sm font-bold text-gray-700 dark:text-gray-200">{{ $waPhoneCode }}</span>
-                                <i class="fas fa-chevron-down text-[10px] text-gray-400 ml-1"></i>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="input-floating-group md:col-span-2">
+                            <input type="password" name="current_password" id="current_password" placeholder=" " class="input-floating pr-10" required>
+                            <label class="floating-label">Mot de passe actuel</label>
+                            <button type="button" onclick="togglePasswordVisibility('current_password')" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-white transition">
+                                <i id="icon-current_password" class="far fa-eye"></i>
                             </button>
-
-                            <div id="wa-country-menu" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-brand-cardDark border border-gray-100 dark:border-slate-600 rounded-xl shadow-2xl z-50 overflow-hidden animate-fade-in ring-1 ring-black/5">
-                                <ul class="max-h-56 overflow-y-auto custom-scrollbar">
-                                    <li onclick="selectCountry('bj', '+229', 'wa')" class="flex items-center gap-4 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-50 dark:border-slate-700/50 transition-colors group">
-                                        <img src="https://flagcdn.com/w40/bj.png" class="w-8 h-auto rounded shadow-sm group-hover:scale-110 transition-transform">
-                                        <span class="text-sm font-bold text-gray-700 dark:text-gray-200">Bénin (+229)</span>
-                                    </li>
-                                    <li onclick="selectCountry('tg', '+228', 'wa')" class="flex items-center gap-4 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-50 dark:border-slate-700/50 transition-colors group">
-                                        <img src="https://flagcdn.com/w40/tg.png" class="w-8 h-auto rounded shadow-sm group-hover:scale-110 transition-transform">
-                                        <span class="text-sm font-bold text-gray-700 dark:text-gray-200">Togo (+228)</span>
-                                    </li>
-                                    <li onclick="selectCountry('ci', '+225', 'wa')" class="flex items-center gap-4 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-50 dark:border-slate-700/50 transition-colors group">
-                                        <img src="https://flagcdn.com/w40/ci.png" class="w-8 h-auto rounded shadow-sm group-hover:scale-110 transition-transform">
-                                        <span class="text-sm font-bold text-gray-700 dark:text-gray-200">Côte d'Ivoire (+225)</span>
-                                    </li>
-                                    <li onclick="selectCountry('sn', '+221', 'wa')" class="flex items-center gap-4 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition-colors group">
-                                        <img src="https://flagcdn.com/w40/sn.png" class="w-8 h-auto rounded shadow-sm group-hover:scale-110 transition-transform">
-                                        <span class="text-sm font-bold text-gray-700 dark:text-gray-200">Sénégal (+221)</span>
-                                    </li>
-                                </ul>
-                            </div>
-
-                            <div class="relative flex-1">
-                                <input type="tel" name="wa_numero" id="wa-phone" class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-600 rounded-r-xl text-sm font-bold focus:ring-2 focus:ring-brand-blue/20 outline-none transition" value="{{ $waPhoneLocal }}" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
-                                <i class="fab fa-whatsapp absolute right-4 top-3.5 text-gray-400"></i>
-                            </div>
-                            <input type="hidden" name="wa_phone_code" id="wa-phone-code" value="{{ $waPhoneCode }}">
+                        </div>
+                        <div class="input-floating-group">
+                            <input type="password" name="new_password" id="new_password" placeholder=" " class="input-floating pr-10" required minlength="8">
+                            <label class="floating-label">Nouveau mot de passe</label>
+                            <button type="button" onclick="togglePasswordVisibility('new_password')" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-white transition">
+                                <i id="icon-new_password" class="far fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="input-floating-group">
+                            <input type="password" name="new_password_confirmation" id="new_password_confirmation" placeholder=" " class="input-floating pr-10" required minlength="8">
+                            <label class="floating-label">Confirmer nouveau mot de passe</label>
+                            <button type="button" onclick="togglePasswordVisibility('new_password_confirmation')" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-white transition">
+                                <i id="icon-new_password_confirmation" class="far fa-eye"></i>
+                            </button>
                         </div>
                     </div>
-
-                    <!-- Slider Seuil Critique -->
-                    <div>
-                        <div class="flex justify-between items-center mb-4">
-                            <label class="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Seuil d'alerte Stock</label>
-                            <span class="bg-brand-blue/10 text-brand-blue px-3 py-1 rounded-lg text-xs font-bold">
-                                <span id="slider-value">{{ $proprio->wa_alert_threshold }}</span> tickets
-                            </span>
-                        </div>
-                        
-                        <input type="range" name="wa_alert_threshold" min="5" max="50" value="{{ $proprio->wa_alert_threshold }}" 
-                               class="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand-blue"
-                               oninput="document.getElementById('slider-value').innerText = this.value">
-                        
-                        <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-3 flex items-center gap-2">
-                            <i class="fas fa-info-circle w-3 h-3"></i>
-                            Une alerte sera envoyée si un forfait a moins de <span id="info-slider-value">{{ $proprio->wa_alert_threshold }}</span> tickets.
-                        </p>
-                    </div>
-
-                    <div class="mt-8 pt-6 border-t border-gray-50 dark:border-slate-700 text-right">
-                        <button type="submit" class="bg-brand-blue text-white px-8 py-3 rounded-xl text-sm font-bold hover:brightness-110 transition shadow-lg shadow-blue-500/20">
-                            Sauvegarder WhatsApp
+                    
+                    <div class="mt-auto pt-6 border-t border-gray-50 dark:border-slate-700 flex justify-end">
+                        <button type="submit" id="update-password-btn" class="bg-gray-800 dark:bg-slate-700 text-white px-8 py-3 rounded-xl text-sm font-bold hover:bg-gray-700 dark:hover:bg-slate-600 transition shadow-lg">
+                            Mettre à jour le mot de passe
                         </button>
                     </div>
                 </form>
+            </div>
+
+
+        <!-- DANGER ZONE -->
+        <div class="lg:col-span-2 mt-4 bg-red-50/50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-3xl p-8 mb-4">
+            <h3 class="text-lg font-bold text-red-600 dark:text-red-400 mb-2 flex items-center gap-2">
+                <i class="fas fa-exclamation-triangle"></i> Zone de Danger
+            </h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Ces actions sont irrémédiables ou affectent directement votre accès au système.</p>
+            
+            <div class="bg-white dark:bg-brand-cardDark rounded-2xl border border-red-100 dark:border-red-900/30 shadow-sm overflow-hidden divide-y divide-red-50 dark:divide-red-900/20">
+                @if($proprio->is_active)
+                    <div class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h4 class="font-bold text-gray-800 dark:text-gray-200">Désactiver le compte</h4>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Suspendre temporairement l'accès à ce compte. Vos données seront conservées.</p>
+                        </div>
+                        <button onclick="openDeactivateModal()" class="px-5 py-2.5 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 rounded-xl font-bold text-sm transition text-center whitespace-nowrap md:w-auto">
+                            Désactiver le compte
+                        </button>
+                    </div>
+                @else
+                    <div class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h4 class="font-bold text-gray-800 dark:text-gray-200">Activer le compte</h4>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Restaurer l'accès à ce compte pour recommencer à gérer vos zones.</p>
+                        </div>
+                        <button onclick="openActivateModal()" class="px-5 py-2.5 bg-brand-green/10 hover:bg-brand-green/20 text-brand-green rounded-xl font-bold text-sm transition text-center whitespace-nowrap md:w-auto">
+                            Activer le compte
+                        </button>
+                    </div>
+                    <div class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h4 class="font-bold text-red-600 dark:text-red-400">Supprimer définitivement le compte</h4>
+                            <p class="text-xs text-red-500 dark:text-red-500 mt-1">Vos données seront effacées. Cette action est irréversible.</p>
+                        </div>
+                        <button onclick="openDeleteModal()" class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-red-500/20 transition text-center whitespace-nowrap md:w-auto">
+                            Supprimer le compte
+                        </button>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -393,7 +372,7 @@
         const formData = new FormData(form);
         
         try {
-            const response = await fetch("{{ route('settings.profile.update') }}", {
+            const response = await fetch("{{ route('proprio.settings.profile.update') }}", {
                 method: 'POST',
                 body: formData,
                 headers: {
@@ -434,38 +413,7 @@
         }
     });
 
-    // 3. Mise à jour WhatsApp
-    document.getElementById('whatsapp-form').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const btn = this.querySelector('button[type="submit"]');
-        btn.disabled = true;
 
-        const formData = new FormData(this);
-        // Gérer le cas du checkbox non coché (non présent dans FormData)
-        if (!formData.has('wa_notifications_enabled')) {
-            formData.append('wa_notifications_enabled', '0');
-        }
-
-        try {
-            const response = await fetch("{{ route('settings.whatsapp.update') }}", {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-            const data = await response.json();
-            if (data.success) {
-                showToast(data.message, 'success');
-            } else {
-                showToast(data.message || 'Erreur', 'error');
-            }
-        } catch (error) {
-            showToast('Erreur WhatsApp', 'error');
-        } finally {
-            btn.disabled = false;
-        }
-    });
 
     // --- GESTION DU COMPTE (DÉSACTIVATION / SUPPRESSION) ---
     
@@ -496,7 +444,7 @@
         btn.innerText = 'Désactivation...';
 
         try {
-            const response = await fetch("{{ route('settings.deactivate') }}", {
+            const response = await fetch("{{ route('proprio.settings.deactivate') }}", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -535,7 +483,7 @@
         btn.innerText = 'Activation...';
 
         try {
-            const response = await fetch("{{ route('settings.activate') }}", {
+            const response = await fetch("{{ route('proprio.settings.activate') }}", {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -572,7 +520,7 @@
         btn.innerText = 'Suppression en cours...';
 
         try {
-            const response = await fetch("{{ route('settings.delete') }}", {
+            const response = await fetch("{{ route('proprio.settings.delete') }}", {
                 method: 'DELETE',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -582,7 +530,7 @@
             const data = await response.json();
             if (data.success) {
                 showToast(data.message, 'success');
-                setTimeout(() => window.location.href = "{{ route('login') }}", 1500);
+                setTimeout(() => window.location.href = "{{ route('proprio.login') }}", 1500);
             } else {
                 showToast(data.message || 'Erreur', 'error');
                 btn.disabled = false;
@@ -608,6 +556,41 @@
             icon.classList.add('fa-eye');
         }
     }
+
+    // --- GESTION MISE À JOUR MOT DE PASSE ---
+    document.getElementById('password-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('update-password-btn');
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = 'Mise à jour...';
+
+        const formData = new FormData(this);
+
+        try {
+            const response = await fetch("{{ route('proprio.settings.password.update') }}", {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
+                }
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast(data.message, 'success');
+                this.reset();
+            } else {
+                showToast(data.message || 'Erreur lors de la mise à jour', 'error');
+            }
+        } catch (error) {
+            showToast('Erreur réseau', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
+    });
 </script>
 
 <!-- MODAL DÉSACTIVATION -->

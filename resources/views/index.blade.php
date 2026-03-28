@@ -14,7 +14,6 @@
 <!-- BODY : Fond sombre auto en dark mode -->
 <body class="bg-brand-sidebarLight dark:bg-brand-sidebarDark text-slate-800 dark:text-slate-100 h-screen w-screen overflow-hidden flex transition-colors duration-300">
 
-    <div id="sidebar-container"></div>
 
     <!-- MAIN CONTENT -->
     <main class="flex-1 py-4 pr-4 pl-0 h-full relative">
@@ -30,7 +29,7 @@
                 <div class="bg-brand-cardLight dark:bg-brand-cardDark p-5 rounded-3xl shadow-sm border border-white dark:border-slate-700 hover:border-brand-blue/30 transition-all cursor-pointer">
                     <div class="flex justify-between items-start mb-4">
                         <div class="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-900/30 flex items-center justify-center text-brand-green">
-                            <i class="fas fa-ticket-alt w-5 h-5"></i>
+                            <i class="fas fa-ticket-alt text-lg"></i>
                         </div>
                         <span class="flex items-center gap-1 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 px-2 py-1 rounded-lg text-[10px] font-bold">ACTIFS</span>
                     </div>
@@ -42,7 +41,7 @@
                 <div class="bg-brand-sidebarLight dark:bg-brand-blue p-5 rounded-3xl shadow-lg text-white relative overflow-hidden group">
                     <div class="absolute -right-4 -top-4 w-24 h-24 bg-brand-green opacity-20 rounded-full blur-2xl group-hover:opacity-30 transition"></div>
                     <div class="flex justify-between items-start mb-4 relative z-10">
-                        <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                        <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white"><i class="fas fa-money-bill-wave text-lg"></i></div>
                         <span class="text-brand-green dark:text-white text-xs font-bold">+12% vs hier</span>
                     </div>
                     <h3 class="text-3xl font-bold text-white relative z-10">24.500 <span class="text-sm text-blue-200 font-normal">F</span></h3>
@@ -53,7 +52,7 @@
                 <div class="bg-brand-cardLight dark:bg-brand-cardDark p-5 rounded-3xl shadow-sm border border-white dark:border-slate-700 hover:border-gray-200 transition-all">
                     <div class="flex justify-between items-start mb-4">
                         <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
-                            <i class="fas fa-ticket-alt w-5 h-5"></i>
+                            <i class="fas fa-ticket-alt text-lg"></i>
                         </div>
                         <button class="text-[10px] font-bold text-gray-400 hover:text-brand-blue">IMPORT CSV</button>
                     </div>
@@ -65,7 +64,7 @@
                 <div class="bg-brand-cardLight dark:bg-brand-cardDark p-5 rounded-3xl shadow-sm border border-white dark:border-slate-700 hover:border-gray-200 transition-all">
                     <div class="flex justify-between items-start mb-4">
                         <div class="w-10 h-10 rounded-xl bg-yellow-50 dark:bg-yellow-900/30 flex items-center justify-center text-yellow-600 dark:text-yellow-400">
-                            <i class="fas fa-star w-5 h-5"></i>
+                            <i class="fas fa-star text-lg"></i>
                         </div>
                         <span class="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400 px-2 py-1 rounded-lg text-[10px] font-bold">TOP VENTE</span>
                     </div>
@@ -128,7 +127,7 @@
                         <div class="flex items-center justify-between p-3 rounded-2xl bg-gray-50 dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 transition cursor-pointer">
                             <div class="flex items-center gap-3">
                                 <div class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm text-gray-400">
-                                    <i class="fas fa-wifi w-4 h-4"></i>
+                                    <i class="fas fa-wifi text-sm"></i>
                                 </div>
                                 <div>
                                     <p class="text-sm font-bold text-gray-800 dark:text-white">Bar Central</p>
@@ -147,7 +146,7 @@
                         <div class="flex items-center justify-between p-3 rounded-2xl bg-gray-50 dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 transition cursor-pointer">
                             <div class="flex items-center gap-3">
                                 <div class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm text-gray-400">
-                                    <i class="fas fa-wifi w-4 h-4"></i>
+                                    <i class="fas fa-wifi text-sm"></i>
                                 </div>
                                 <div>
                                     <p class="text-sm font-bold text-gray-800 dark:text-white">Campus Nord</p>

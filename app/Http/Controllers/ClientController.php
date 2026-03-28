@@ -24,29 +24,25 @@ class ClientController extends Controller
     {
         $search = $request->input('search');
         $filterType = $request->input('filter_type');
+        $filterZone = $request->input('filter_zone');
         $perPage = $request->input('per_page', 10);
 
         // Récupérer le propriétaire connecté
         $proprio = auth('proprio')->user();
 
         // 1. Récupérer les clients (Recherche + Filtres + Pagination)
-        // On filtre pour n'afficher que les clients qui ont un ticket acheté dans une zone WiFi du proprio connecté
         $clientsQuery = Client::query()
-            // Filtrer par proprio connecté (via tickets -> forfaits -> wifizones -> proprio)
+            // Filtrer par proprio connecté (Refactorisé via scope)
             ->when($proprio, function($q) use ($proprio) {
-                $q->whereHas('tickets', function($ticketQuery) use ($proprio) {
-                    $ticketQuery->whereHas('forfait', function($forfaitQuery) use ($proprio) {
-                        $forfaitQuery->whereHas('wifizone', function($zoneQuery) use ($proprio) {
-                            $zoneQuery->where('proprio_id', $proprio->id);
-                        });
-                    });
-                });
+                $q->forProprio($proprio->id);
             })
-            // Filtre de recherche (nom, téléphone, MAC address)
+            // Filtre de recherche regroupé (IMPORTANT : évite le bypass IDOR)
             ->when($search, function($q) use ($search) {
-                $q->where('nom_complet', 'like', "%{$search}%")
-                  ->orWhere('telephone', 'like', "%{$search}%")
-                  ->orWhere('mac_address', 'like', "%{$search}%");
+                $q->where(function($subQ) use ($search) {
+                    $subQ->where('nom_complet', 'like', "%{$search}%")
+                         ->orWhere('telephone', 'like', "%{$search}%")
+                         ->orWhere('mac_address', 'like', "%{$search}%");
+                });
             })
             // Filtre nouveaux clients (moins de 30 jours)
             ->when($filterType === 'new', function($q) {
@@ -94,7 +90,18 @@ class ClientController extends Controller
                     $client->is_blocked = $proprio ? $client->isBlockedBy($proprio->id) : false;
                     return $client;
                 })
-                ->filter(fn($c) => $c->total_depense_calculated > 10000);
+                ->filter(function($client) use ($filterType, $filterZone) {
+                    $keep = true;
+                    // Filtre VIP
+                    if ($filterType === 'vip') {
+                        $keep = $keep && ($client->total_depense_calculated > 10000);
+                    }
+                    // Filtre Zone
+                    if ($filterZone) {
+                        $keep = $keep && ($client->derniere_zone === $filterZone);
+                    }
+                    return $keep;
+                });
             
             // Paginer manuellement
             $total = $clients->count();
@@ -139,6 +146,12 @@ class ClientController extends Controller
                     $client->is_blocked = $proprio ? $client->isBlockedBy($proprio->id) : false;
                     return $client;
                 })
+                ->filter(function($client) use ($filterZone) {
+                    if ($filterZone) {
+                        return $client->derniere_zone === $filterZone;
+                    }
+                    return true;
+                })
                 ->sortByDesc('created_at');
             
             // Paginer manuellement
@@ -156,38 +169,20 @@ class ClientController extends Controller
         // 2. Calculer les KPIs pour le dashboard clients (uniquement pour le proprio connecté)
         $totalClients = Client::query()
             ->when($proprio, function($q) use ($proprio) {
-                $q->whereHas('tickets', function($ticketQuery) use ($proprio) {
-                    $ticketQuery->whereHas('forfait', function($forfaitQuery) use ($proprio) {
-                        $forfaitQuery->whereHas('wifizone', function($zoneQuery) use ($proprio) {
-                            $zoneQuery->where('proprio_id', $proprio->id);
-                        });
-                    });
-                });
+                $q->forProprio($proprio->id);
             })
             ->count();
         
         $nouveauxClients = Client::query()
             ->when($proprio, function($q) use ($proprio) {
-                $q->whereHas('tickets', function($ticketQuery) use ($proprio) {
-                    $ticketQuery->whereHas('forfait', function($forfaitQuery) use ($proprio) {
-                        $forfaitQuery->whereHas('wifizone', function($zoneQuery) use ($proprio) {
-                            $zoneQuery->where('proprio_id', $proprio->id);
-                        });
-                    });
-                });
+                $q->forProprio($proprio->id);
             })
             ->where('created_at', '>=', now()->subDays(30))
             ->count();
         
         $clientsVIP = Client::query()
             ->when($proprio, function($q) use ($proprio) {
-                $q->whereHas('tickets', function($ticketQuery) use ($proprio) {
-                    $ticketQuery->whereHas('forfait', function($forfaitQuery) use ($proprio) {
-                        $forfaitQuery->whereHas('wifizone', function($zoneQuery) use ($proprio) {
-                            $zoneQuery->where('proprio_id', $proprio->id);
-                        });
-                    });
-                });
+                $q->forProprio($proprio->id);
             })
             ->with('tickets.forfait.wifizone')
             ->get()
@@ -204,8 +199,11 @@ class ClientController extends Controller
             })
             ->count();
 
+        // 2.2 Liste des zones disponibles pour le filtre
+        $availableZones = $proprio ? $proprio->wifizones()->pluck('nom_zone') : collect([]);
+
         // 3. Envoyer les données à la vue
-        return view('clients', compact('clients', 'totalClients', 'nouveauxClients', 'clientsVIP'));
+        return view('clients', compact('clients', 'totalClients', 'nouveauxClients', 'clientsVIP', 'availableZones'));
     }
 
     /**
@@ -228,20 +226,22 @@ class ClientController extends Controller
         $request->validate([
             'nom_complet' => 'required|string|max:255',
             'telephone' => 'required|string|unique:clients,telephone|max:20',
-            'total_depense' => 'nullable|integer'
+            'password' => 'required|string|min:4',
         ]);
 
-        // 3. Création du client dans la base de données
+        // 3. Création du client dans la base de données (avec attribution au proprio)
         Client::create([
+            'proprio_id' => auth('proprio')->id(),
             'nom_complet' => $request->nom_complet,
             'telephone' => $fullPhone,
-            'total_depense' => $request->total_depense ?? 0,
-            'derniere_zone' => 'Manuel', // Indique que le client a été ajouté manuellement
-            'is_blocked' => false // Client non bloqué par défaut
+            'password' => \Illuminate\Support\Facades\Hash::make($request->password),
+            'total_depense' => 0,
+            'derniere_zone' => 'Manuel',
+            'is_blocked' => false
         ]);
 
         // 4. Redirection avec message de succès
-        return redirect()->route('clients')->with('success', 'Client ajouté avec succès !');
+        return redirect()->route('proprio.clients')->with('success', 'Client ajouté avec succès !');
     }
 
     /**
@@ -253,7 +253,8 @@ class ClientController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $client = Client::findOrFail($id);
+        $proprio = auth('proprio')->user();
+        $client = Client::forProprio($proprio->id)->findOrFail($id);
         
         // Validation des données
         $request->validate([
@@ -278,8 +279,8 @@ class ClientController extends Controller
      */
     public function toggleBlock(Request $request, $id)
     {
-        $client = Client::findOrFail($id);
         $proprio = auth('proprio')->user();
+        $client = Client::forProprio($proprio->id)->findOrFail($id);
         
         // Vérifier si le client est déjà bloqué par ce propriétaire
         $blocked = BlockedClient::where('client_id', $client->id)
@@ -329,10 +330,8 @@ class ClientController extends Controller
      */
     public function history($id)
     {
-        $client = Client::findOrFail($id);
-        
-        // Récupérer le propriétaire connecté
         $proprio = auth('proprio')->user();
+        $client = Client::forProprio($proprio->id)->findOrFail($id);
         
         // Récupérer les IDs des wifizones du propriétaire
         $zoneIds = $proprio->wifizones()->pluck('id');
@@ -347,25 +346,38 @@ class ClientController extends Controller
             ->latest()
             ->take(50)
             ->get();
-        
-        // Transformation des données pour la réponse JSON
         // Calculer le total dépensé dans les zones du proprio
-        // Utiliser uniquement prix_achat pour éviter les erreurs si forfait supprimé
         $totalSpent = $tickets->sum(function($t) {
             return $t->prix_achat ?? 0;
         });
+
+        // Récupérer la raison du blocage éventuel
+        $blockInfo = \App\Models\BlockedClient::where('client_id', $client->id)
+            ->where('proprio_id', $proprio->id)
+            ->latest()
+            ->first();
+        
+        $lastTicket = $tickets->first();
         
         return response()->json([
             'success' => true, 
-            'total_spent' => $totalSpent,
-            'tickets' => $tickets->map(function($t) {
+            'summary' => [
+                'total_spent' => number_format($totalSpent, 0, ',', ' ') . ' F',
+                'ticket_count' => $tickets->count(),
+                'last_visit' => $lastTicket ? ($lastTicket->date_vente ?? $lastTicket->created_at)->format('d M Y H:i') : '-',
+                'last_zone' => $lastTicket ? ($lastTicket->forfait->wifizone->nom_zone ?? '-') : '-',
+                'is_blocked' => $client->isBlockedBy($proprio->id),
+                'block_reason' => $blockInfo->reason ?? 'Aucune raison spécifiée'
+            ],
+            'tickets' => $tickets->map(function($t) use ($client) {
                 return [
                     'date' => ($t->date_vente ?? $t->created_at)->format('d M Y H:i'),
                     'forfait' => $t->forfait->nom ?? 'Inconnu',
                     'zone' => $t->forfait->wifizone->nom_zone ?? '-',
                     'prix' => number_format($t->prix_achat ?? 0, 0, ',', ' ') . ' F',
                     'login' => $t->username,
-                    'password' => $t->password
+                    'password' => $t->password,
+                    'mac' => $t->mac_address ?? $client->mac_address ?? '-'
                 ];
             })
         ]);
@@ -379,7 +391,8 @@ class ClientController extends Controller
      */
     public function destroy($id)
     {
-        $client = Client::findOrFail($id);
+        $proprio = auth('proprio')->user();
+        $client = Client::forProprio($proprio->id)->findOrFail($id);
         $client->delete();
 
         return response()->json(['success' => true, 'message' => 'Client supprimé avec succès']);
@@ -394,7 +407,8 @@ class ClientController extends Controller
      */
     public function resetPassword($id, Request $request)
     {
-        $client = Client::findOrFail($id);
+        $proprio = auth('proprio')->user();
+        $client = Client::forProprio($proprio->id)->findOrFail($id);
         
         // Hasher le nouveau mot de passe
         $newPassword = '12345';
@@ -427,7 +441,8 @@ class ClientController extends Controller
      */
     public function generateResetPasswordLink($id)
     {
-        $client = Client::findOrFail($id);
+        $proprio = auth('proprio')->user();
+        $client = Client::forProprio($proprio->id)->findOrFail($id);
         
         // Générer un token unique
         $token = \Illuminate\Support\Str::random(64);
@@ -450,5 +465,34 @@ class ClientController extends Controller
             'message' => 'Lien de réinitialisation généré avec succès',
             'reset_url' => $resetUrl
         ]);
+    }
+
+    /**
+     * Exporte la liste des clients en CSV.
+     * 
+     * @return \Illuminate\Http\Response
+     */
+    public function export(Request $request)
+    {
+        $proprio = auth('proprio')->user();
+        
+        // Appliquer les mêmes filtres que l'index (simplifié ici pour récupérer tous les clients du proprio)
+        $clients = Client::forProprio($proprio->id)->get();
+
+        $csvData = "Nom Complet,Telephone,MAC Address,Total Depense,Derniere Zone,Date Creation,Statut\n";
+        
+        foreach ($clients as $client) {
+            $totalDepense = $client->total_depense_calculated ?? $client->total_depense;
+            $statut = $client->is_blocked ? 'Bloque' : 'Actif';
+            
+            // Échapper les guillemets et séparateurs
+            $nom = '"' . str_replace('"', '""', $client->nom_complet) . '"';
+            
+            $csvData .= "{$nom},{$client->telephone},{$client->mac_address},{$totalDepense},{$client->derniere_zone},{$client->created_at},{$statut}\n";
+        }
+
+        return response($csvData)
+            ->header('Content-Type', 'text/csv; charset=UTF-8')
+            ->header('Content-Disposition', 'attachment; filename="export_clients_' . date('Y_m_d_H_i') . '.csv"');
     }
 }

@@ -101,9 +101,18 @@ class TicketController extends Controller
             return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
         }
 
-        // Only delete unsold tickets (statut = 'libre')
-        $count = Ticket::where('forfaits_id', $forfaitId)->where('statut', 'libre')->count();
-        
+        // --- 🔴 SUPPRESSION SUR MIKROTIK (Synchronisée) ---
+        $usernames = Ticket::where('forfaits_id', $forfaitId)->where('statut', 'libre')->pluck('username')->toArray();
+        if (!empty($usernames)) {
+            try {
+                $mikrotikService = app(\App\Services\MikrotikSyncService::class);
+                $mikrotikService->removeUsersByUsernames($forfait->wifizone, $usernames);
+            } catch (\Exception $e) {
+                \Log::warning("⚠️ Échec suppression MikroTik lors de deleteByForfait: " . $e->getMessage());
+            }
+        }
+
+        $count = count($usernames);
         Ticket::where('forfaits_id', $forfaitId)->where('statut', 'libre')->delete();
 
         return response()->json([
@@ -124,9 +133,20 @@ class TicketController extends Controller
             return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
         }
 
-        $forfaits = Forfait::where('wifizones_id', $zoneId)->pluck('id');
-        $count = Ticket::whereIn('forfaits_id', $forfaits)->count();
-        $venduCount = Ticket::whereIn('forfaits_id', $forfaits)->where('statut', 'vendu')->count();
+        $ticketsToDelete = Ticket::whereIn('forfaits_id', $forfaits);
+        $usernames = $ticketsToDelete->pluck('username')->toArray();
+        $count = count($usernames);
+        $venduCount = $ticketsToDelete->clone()->where('statut', 'vendu')->count();
+
+        // --- 🔴 SUPPRESSION SUR MIKROTIK (Synchronisée) ---
+        if (!empty($usernames)) {
+            try {
+                $mikrotikService = app(\App\Services\MikrotikSyncService::class);
+                $mikrotikService->removeUsersByUsernames($zone, $usernames);
+            } catch (\Exception $e) {
+                \Log::warning("⚠️ Échec suppression MikroTik lors de deleteByZone: " . $e->getMessage());
+            }
+        }
 
         Ticket::whereIn('forfaits_id', $forfaits)->delete();
 
@@ -149,16 +169,41 @@ class TicketController extends Controller
             if (!$this->verifyOwnership($zoneId)) {
                 return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
             }
+            $zone = WifiZone::find($zoneId);
             $forfaits = Forfait::where('wifizones_id', $zoneId)->pluck('id');
-            $count = Ticket::whereIn('forfaits_id', $forfaits)->whereDate('created_at', $date)->count();
-            $venduCount = Ticket::whereIn('forfaits_id', $forfaits)->whereDate('created_at', $date)->where('statut', 'vendu')->count();
+            $ticketsToDelete = Ticket::whereIn('forfaits_id', $forfaits)->whereDate('created_at', $date);
+            
+            $usernames = $ticketsToDelete->pluck('username')->toArray();
+            $count = count($usernames);
+            $venduCount = $ticketsToDelete->clone()->where('statut', 'vendu')->count();
+
+            // --- 🔴 SUPPRESSION SUR MIKROTIK (Synchronisée) ---
+            if ($zone && !empty($usernames)) {
+                try {
+                    $mikrotikService = app(\App\Services\MikrotikSyncService::class);
+                    $mikrotikService->removeUsersByUsernames($zone, $usernames);
+                } catch (\Exception $e) {
+                    \Log::warning("⚠️ Échec suppression MikroTik lors de deleteByDate: " . $e->getMessage());
+                }
+            }
 
             Ticket::whereIn('forfaits_id', $forfaits)->whereDate('created_at', $date)->delete();
         } else {
-            $count = Ticket::whereDate('created_at', $date)->count();
-            $venduCount = Ticket::whereDate('created_at', $date)->where('statut', 'vendu')->count();
-
-            Ticket::whereDate('created_at', $date)->delete();
+            // Suppression globale restreinte au propriétaire (Audit Point)
+            $proprioId = Auth::guard('proprio')->id();
+            $ticketsToDelete = Ticket::whereDate('created_at', $date)
+                ->whereHas('forfait.wifizone', function($q) use ($proprioId) {
+                    $q->where('proprio_id', $proprioId);
+                });
+            
+            $usernames = $ticketsToDelete->pluck('username')->toArray();
+            $count = count($usernames);
+            $venduCount = $ticketsToDelete->clone()->where('statut', 'vendu')->count();
+            
+            // Note: Une suppression globale nécessiterait d'itérer sur chaque zone concernée pour MikroTik.
+            // Pour l'instant, on se contente de sécuriser la suppression locale.
+            
+            $ticketsToDelete->delete();
         }
 
         return response()->json([
@@ -180,12 +225,24 @@ class TicketController extends Controller
         }
 
         $forfait = Forfait::find($ticket->forfaits_id);
-        if ($forfait && !$this->verifyOwnership($forfait->wifizones_id)) {
+        if ($forfait && !$this->verifyOwnership($forfait->wifizone->id)) {
             return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
         }
 
-        $count = Ticket::where('import_batch_id', $batchId)->count();
-        $venduCount = Ticket::where('import_batch_id', $batchId)->where('statut', 'vendu')->count();
+        $ticketsToDelete = Ticket::where('import_batch_id', $batchId);
+        $usernames = $ticketsToDelete->pluck('username')->toArray();
+        $count = count($usernames);
+        $venduCount = $ticketsToDelete->clone()->where('statut', 'vendu')->count();
+
+        // --- 🔴 SUPPRESSION SUR MIKROTIK (Synchronisée) ---
+        if ($forfait && !empty($usernames)) {
+            try {
+                $mikrotikService = app(\App\Services\MikrotikSyncService::class);
+                $mikrotikService->removeUsersByUsernames($forfait->wifizone, $usernames);
+            } catch (\Exception $e) {
+                \Log::warning("⚠️ Échec suppression MikroTik lors de deleteByBatch: " . $e->getMessage());
+            }
+        }
 
         Ticket::where('import_batch_id', $batchId)->delete();
 

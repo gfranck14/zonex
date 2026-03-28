@@ -1,4 +1,5 @@
 @extends('layout')
+@section('title', 'Paiements')
 
 @section('content')
         <div class="bg-brand-bgLight dark:bg-brand-bgDark w-full h-full rounded-2xl shadow-2xl overflow-y-auto no-scrollbar relative p-4 md:p-6 pb-24 md:pb-10 transition-colors duration-300">

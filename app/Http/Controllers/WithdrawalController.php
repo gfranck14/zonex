@@ -9,12 +9,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 /**
- * Contrôleur de compatibilité pour les retraits.
+ * Contrôleur pour la gestion des retraits (Propriétaires).
  * 
- * Ce contrôleur utilise désormais le modèle Retrait avec la table 'retraits'.
- * Les anciennes routes API continuent de fonctionner pour la compatibilité.
- * 
- * @deprecated Utiliser PayoutController pour les nouvelles fonctionnalités
+ * Ce contrôleur gère les demandes de retrait initiées par les propriétaires,
+ * leur historique et les annulations via l'API utilisée par le Wizard.
  */
 class WithdrawalController extends Controller
 {
@@ -70,6 +68,25 @@ class WithdrawalController extends Controller
             ], 422);
         }
 
+        // Vérification de sécurité: le montant demandé ne doit pas dépasser le solde
+        if ($request->amount > $proprio->getBalance()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Solde insuffisant pour effectuer ce retrait',
+            ], 400);
+        }
+
+        // Calcul sécurisé des frais côté serveur (ignorer les envois du client)
+        $amount = (float) $request->amount;
+        
+        $fedapay_fee = 2500;
+        if ($amount <= 10000) $fedapay_fee = 150;
+        elseif ($amount <= 50000) $fedapay_fee = 300;
+        elseif ($amount <= 150000) $fedapay_fee = 800;
+        elseif ($amount <= 500000) $fedapay_fee = 2000;
+
+        $ccorp_fee = round($amount * 0.10);
+
         // Créer le retrait avec le modèle Retrait (nouveaux noms de champs)
         $retrait = Retrait::create([
             'reference' => Retrait::generateReference(),
@@ -77,8 +94,8 @@ class WithdrawalController extends Controller
             'amount' => $request->amount,
             'momo_number' => $request->phone_number,
             'momo_name' => $request->beneficiary_name,
-            'fedapay_fee' => $request->fedapay_fee ?? 0,
-            'ccorp_fee' => $request->ccorp_fee ?? 0,
+            'fedapay_fee' => $fedapay_fee,
+            'ccorp_fee' => $ccorp_fee,
             'status' => 'pending',
         ]);
 

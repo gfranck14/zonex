@@ -45,40 +45,70 @@ class DashboardController extends Controller
         }
 
         // =====================================================================
-        // 3. CALCUL DES KPI (Key Performance Indicators)
+        // 3. CALCUL DES KPI MULTI-PÉRIODES (Année, Mois, Jour)
         // =====================================================================
-
-        // --- Tickets actifs vendus aujourd'hui ---
-        $ticketsActifsQuery = Ticket::where('statut', 'vendu')
-            ->whereDate('date_vente', Carbon::today());
+        
+        // Base query pour les paiements réussis du propriétaire
+        $basePaiementQuery = \App\Models\Paiement::where('paiements.statut', 'reussi');
         
         if ($currentZone) {
-            $ticketsActifsQuery->whereHas('forfait', function($q) use ($currentZone) {
+            $basePaiementQuery->whereHas('forfait', function($q) use ($currentZone) {
                 $q->where('wifizones_id', $currentZone->id);
             });
         } else {
-            $ticketsActifsQuery->whereHas('forfait', function($q) use ($proprioId) {
+            $basePaiementQuery->whereHas('forfait', function($q) use ($proprioId) {
                 $q->whereHas('wifizone', function($qz) use ($proprioId) {
                     $qz->where('proprio_id', $proprioId);
                 });
             });
         }
-        $ticketsActifsCount = $ticketsActifsQuery->count();
 
-        // --- Revenu total du jour ---
-        $revenuJourQuery = Transaction::successful()
-            ->whereDate('created_at', Carbon::today());
-        
-        if ($currentZone) {
-            $revenuJourQuery->where('wifizone_id', $currentZone->id);
-        } else {
-            $revenuJourQuery->whereHas('wifizone', function($q) use ($proprioId) {
-                $q->where('proprio_id', $proprioId);
-            });
+        // --- Définition des périodes ---
+        $now = Carbon::now();
+        $periods = [
+            'day'   => $now->copy()->startOfDay(),
+            'month' => $now->copy()->startOfMonth(),
+            'year'  => $now->copy()->startOfYear(),
+        ];
+
+        $kpiData = [
+            'sales' => [],
+            'revenue' => [],
+            'top' => [],
+            'meta' => [
+                'day'   => 'Aujourd\'hui',
+                'month' => $now->translatedFormat('F'),
+                'year'  => $now->year,
+            ]
+        ];
+
+        foreach ($periods as $key => $startDate) {
+            $periodQuery = (clone $basePaiementQuery)->where('paiements.created_at', '>=', $startDate);
+            
+            // 1. Ventes (Count)
+            $kpiData['sales'][$key] = $periodQuery->count();
+            
+            // 2. Revenu (Sum)
+            $kpiData['revenue'][$key] = $periodQuery->sum('montant');
+            
+            // 3. Top Forfait
+            $top = (clone $periodQuery)
+                ->join('forfaits', 'paiements.forfait_id', '=', 'forfaits.id')
+                ->select('forfaits.nom', DB::raw('count(*) as total'))
+                ->groupBy('forfaits.id', 'forfaits.nom')
+                ->orderBy('total', 'desc')
+                ->first();
+            
+            $kpiData['top'][$key] = $top ? [
+                'nom' => $top->nom,
+                'total' => $top->total
+            ] : [
+                'nom' => 'Aucun',
+                'total' => 0
+            ];
         }
-        $revenuJour = $revenuJourQuery->sum('amount');
 
-        // --- Stock total disponible (tickets libres) ---
+        // --- Stock total disponible (KPI statique) ---
         $stockTotalQuery = Ticket::where('statut', 'libre');
         if ($currentZone) {
             $stockTotalQuery->whereHas('forfait', function($q) use ($currentZone) {
@@ -93,42 +123,56 @@ class DashboardController extends Controller
         }
         $stockTotal = $stockTotalQuery->count();
 
-        // --- Forfait le plus vendu aujourd'hui ---
-        $topForfaitQuery = DB::table('tickets')
-            ->join('forfaits', 'tickets.forfaits_id', '=', 'forfaits.id')
-            ->select('forfaits.nom', DB::raw('count(*) as total'))
-            ->where('tickets.statut', 'vendu')
-            ->whereDate('tickets.date_vente', Carbon::today());
+        // =====================================================================
+        // 4. DONNÉES POUR LES GRAPHIQUES (Multi-Périodes & Multi-Métriques)
+        // =====================================================================
+        $kpiData['charts'] = [
+            'year' => [
+                'labels'  => ['Janv', 'Févr', 'Mars', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'],
+                'volume'  => array_fill(0, 12, 0),
+                'revenue' => array_fill(0, 12, 0),
+            ],
+            'month' => [
+                'labels'  => range(1, $now->daysInMonth),
+                'volume'  => array_fill(0, $now->daysInMonth, 0),
+                'revenue' => array_fill(0, $now->daysInMonth, 0),
+            ],
+            'day' => [
+                'labels'  => array_map(fn($h) => $h.'h', range(0, 23)),
+                'volume'  => array_fill(0, 24, 0),
+                'revenue' => array_fill(0, 24, 0),
+            ]
+        ];
 
-        if ($currentZone) {
-            $topForfaitQuery->where('forfaits.wifizones_id', $currentZone->id);
-        } else {
-            $topForfaitQuery->join('wifizones', 'forfaits.wifizones_id', '=', 'wifizones.id')
-                ->where('wifizones.proprio_id', $proprioId);
+        // --- Remplissage Année (12 mois) ---
+        $yearStats = (clone $basePaiementQuery)
+            ->whereYear('paiements.created_at', $now->year)
+            ->selectRaw('MONTH(paiements.created_at) as m, COUNT(*) as v, SUM(montant) as r')
+            ->groupBy('m')->get();
+        foreach ($yearStats as $s) {
+            $kpiData['charts']['year']['volume'][$s->m - 1] = (int)$s->v;
+            $kpiData['charts']['year']['revenue'][$s->m - 1] = (float)$s->r;
         }
 
-        $topForfait = $topForfaitQuery->groupBy('forfaits.id', 'forfaits.nom')
-            ->orderBy('total', 'desc')
-            ->first();
+        // --- Remplissage Mois (jours du mois) ---
+        $monthStats = (clone $basePaiementQuery)
+            ->whereYear('paiements.created_at', $now->year)
+            ->whereMonth('paiements.created_at', $now->month)
+            ->selectRaw('DAY(paiements.created_at) as d, COUNT(*) as v, SUM(montant) as r')
+            ->groupBy('d')->get();
+        foreach ($monthStats as $s) {
+            $kpiData['charts']['month']['volume'][$s->d - 1] = (int)$s->v;
+            $kpiData['charts']['month']['revenue'][$s->d - 1] = (float)$s->r;
+        }
 
-        // =====================================================================
-        // 4. DONNÉES POUR LE GRAPHIQUE DES 7 DERNIERS JOURS
-        // =====================================================================
-        $salesData = [];
-        for ($i = 6; $i >= 0; $i--) {
-            $date = Carbon::today()->subDays($i);
-            $query = Transaction::successful()->whereDate('created_at', $date);
-            if ($currentZone) {
-                $query->where('wifizone_id', $currentZone->id);
-            } else {
-                $query->whereHas('wifizone', function($q) use ($proprioId) {
-                    $q->where('proprio_id', $proprioId);
-                });
-            }
-            $salesData[] = [
-                'day' => $date->translatedFormat('D'),
-                'amount' => $query->sum('amount')
-            ];
+        // --- Remplissage Jour (24 heures) ---
+        $dayStats = (clone $basePaiementQuery)
+            ->whereDate('paiements.created_at', $now->toDateString())
+            ->selectRaw('HOUR(paiements.created_at) as h, COUNT(*) as v, SUM(montant) as r')
+            ->groupBy('h')->get();
+        foreach ($dayStats as $s) {
+            $kpiData['charts']['day']['volume'][$s->h] = (int)$s->v;
+            $kpiData['charts']['day']['revenue'][$s->h] = (float)$s->r;
         }
 
         // =====================================================================
@@ -177,11 +221,8 @@ class DashboardController extends Controller
         return view('proprio.index_proprio', compact(
             'zones', 
             'currentZone', 
-            'ticketsActifsCount',
-            'revenuJour',
+            'kpiData',
             'stockTotal',
-            'topForfait',
-            'salesData',
             'zonesStocks',
             'zoneStockStatus'
         ));

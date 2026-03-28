@@ -1012,6 +1012,19 @@ class FedapayController extends Controller
                     $client = Client::find($paiement->client_id);
                     $client->increment('total_depense', $paiement->montant);
                     
+                    // Déclenchement Auto-Replenish (via Queue, non-bloquant)
+                    if ($paiement->forfait_id) {
+                        $forfait = Forfait::find($paiement->forfait_id);
+                        if ($forfait && $forfait->auto_replenish && $forfait->stock_max) {
+                            $currentStock = Ticket::where('forfaits_id', $forfait->id)->where('statut', 'libre')->count();
+                            $seuil = ceil($forfait->stock_max * ($forfait->seuil_alerte / 100));
+                            if ($currentStock <= $seuil) {
+                                \App\Jobs\GenerateMikrotikTicketsJob::dispatch($forfait->id);
+                                Log::info("🚀 Auto-Replenish dispatché (Fedapay Callback) pour {$forfait->nom}");
+                            }
+                        }
+                    }
+                    
                     // Récupérer les infos du ticket pour la redirection
                     $ticket = Ticket::with('forfait')->find($paiement->ticket_id);
                     
@@ -1208,6 +1221,19 @@ class FedapayController extends Controller
                     // Mettre à jour les dépenses du client
                     $client = Client::find($paiement->client_id);
                     $client->increment('total_depense', $paiement->montant);
+
+                    // Déclenchement Auto-Replenish (via Queue, non-bloquant)
+                    if ($paiement->forfait_id) {
+                        $forfait = Forfait::find($paiement->forfait_id);
+                        if ($forfait && $forfait->auto_replenish && $forfait->stock_max) {
+                            $currentStock = Ticket::where('forfaits_id', $forfait->id)->where('statut', 'libre')->count();
+                            $seuil = ceil($forfait->stock_max * ($forfait->seuil_alerte / 100));
+                            if ($currentStock <= $seuil) {
+                                \App\Jobs\GenerateMikrotikTicketsJob::dispatch($forfait->id);
+                                Log::info("🚀 Auto-Replenish dispatché (Fedapay Webhook) pour {$forfait->nom}");
+                            }
+                        }
+                    }
                 }
                 break;
                 

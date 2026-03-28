@@ -106,9 +106,10 @@ class Proprio extends Authenticatable
             ->where('statut', 'reussi')
             ->sum('montant');
         
-        // Total des retraits (status='completed' ou 'processing')
+        // Total des retraits (status='completed', 'processing' ou 'pending')
+        // On inclut 'pending' pour bloquer le solde dès la demande et éviter le double-retrait
         $totalRetraits = Retrait::where('proprio_id', $this->id)
-            ->whereIn('status', ['completed', 'processing'])
+            ->whereIn('status', ['pending', 'processing', 'completed'])
             ->sum('amount');
         
         return (int) ($totalPaiements - $totalRetraits);

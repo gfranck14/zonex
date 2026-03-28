@@ -50,7 +50,7 @@
                 <!-- Décoration fond -->
                 <div class="absolute top-0 left-0 w-80 h-80 bg-white opacity-5 rounded-full blur-3xl -translate-x-10 -translate-y-10"></div>
                 <div class="absolute bottom-0 right-0 w-80 h-80 bg-[#84CC16] opacity-20 rounded-full blur-3xl translate-x-10 translate-y-10"></div>
-                <div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-soft-light"></div>
+                <div class="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E')] opacity-20 mix-blend-soft-light"></div>
 
                 <!-- 1. Logo (Fixe en haut) -->
                 <div class="relative z-10 flex items-center gap-3 flex-none">
@@ -270,7 +270,7 @@
                 <!-- VUE 1b : FORGOT PASSWORD - Enter Phone -->
                 <div id="view-forgot-phone" class="{{ isset($forgot_password_step) && $forgot_password_step == 'enter_phone' ? '' : 'hidden' }} animate-fade-in">
                     <div class="mb-8">
-                        <button onclick="window.location.href='{{ route('login') }}'" class="mb-4 text-xs font-bold text-gray-400 hover:text-custom-blue flex items-center gap-1">
+                        <button onclick="window.location.href='{{ route('proprio.login') }}'" class="mb-4 text-xs font-bold text-gray-400 hover:text-custom-blue flex items-center gap-1">
                             <i class="fas fa-arrow-left"></i> Retour
                         </button>
                         <div class="w-16 h-16 bg-blue-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-custom-blue mx-auto mb-4">
@@ -532,7 +532,7 @@
                 <!-- VUE 4b : FORGOT PASSWORD - Enter Email -->
                 <div id="view-forgot-email" class="{{ isset($forgot_password_step) && $forgot_password_step == 'enter_email' ? '' : 'hidden' }} animate-fade-in">
                     <div class="mb-8">
-                        <button onclick="window.location.href='{{ route('login') }}'" class="mb-4 text-xs font-bold text-gray-400 hover:text-custom-blue flex items-center gap-1">
+                        <button onclick="window.location.href='{{ route('proprio.login') }}'" class="mb-4 text-xs font-bold text-gray-400 hover:text-custom-blue flex items-center gap-1">
                             <i class="fas fa-arrow-left"></i> Retour
                         </button>
                         <div class="w-16 h-16 bg-blue-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-custom-blue mx-auto mb-4">
@@ -793,7 +793,7 @@
                 <!-- VUE 6 : FORGOT PASSWORD - Reset Password (via link) -->
                 <div id="view-forgot-reset" class="{{ isset($forgot_password_step) && $forgot_password_step == 'reset_password' ? '' : 'hidden' }} animate-fade-in">
                     <div class="mb-8">
-                        <button onclick="window.location.href='{{ route('login') }}'" class="mb-4 text-xs font-bold text-gray-400 hover:text-custom-blue flex items-center gap-1">
+                        <button onclick="window.location.href='{{ route('proprio.login') }}'" class="mb-4 text-xs font-bold text-gray-400 hover:text-custom-blue flex items-center gap-1">
                             <i class="fas fa-arrow-left"></i> Retour
                         </button>
                         <div class="w-16 h-16 bg-green-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-green-600 mx-auto mb-4">

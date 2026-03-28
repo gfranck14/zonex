@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Modèle représentant une zone WiFi.
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class WifiZone extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     /**
      * Nom de la table dans la base de données.
@@ -39,6 +40,10 @@ class WifiZone extends Model
         'primary_color',
         'ticket_admin_username',
         'ticket_admin_password',
+        'api_host',
+        'api_port',
+        'api_user',
+        'api_password',
     ];
 
     /**

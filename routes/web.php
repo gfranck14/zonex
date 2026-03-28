@@ -53,7 +53,7 @@ Route::post('/hotspot/logout', [HotspotController::class, 'logout']);
 
 // Route racine : redirige vers le portail client pour la démo
 Route::get('/', function () {
-    return redirect()->route('dashboard');
+    return redirect()->route('proprio.dashboard');
 });
 
 // Page d'accueil centre de soins (démonstration)
@@ -120,23 +120,23 @@ Route::prefix('portal')->name('client.')->group(function () {
 // =============================================================================
 // 1. ROUTES POUR LES VISITEURS (Non connectés)
 // =============================================================================
-Route::middleware('guest:proprio')->group(function () {
+Route::middleware('guest:proprio')->name('proprio.')->group(function () {
     Route::get('/login', function () { 
         return view('proprio.login_proprio');
     })->name('login');
 
     Route::get('/signup', function () {
         return view('proprio.login_proprio');
-    })->name('proprio.signup.form');
+    })->name('signup.form');
 
-    Route::post('/login', [AuthProprioController::class, 'login'])->name('proprio.login');
-    Route::post('/signup', [AuthProprioController::class, 'signup'])->name('proprio.signup');
+    Route::post('/login', [AuthProprioController::class, 'login'])->name('login.submit');
+    Route::post('/signup', [AuthProprioController::class, 'signup'])->name('signup');
     
     // Routes Mot de passe oublié
-    Route::get('/forgot-password', [AuthProprioController::class, 'showForgotPassword'])->name('proprio.forgot_password');
-    Route::post('/forgot-password/verify-phone', [AuthProprioController::class, 'verifyPhone'])->name('proprio.forgot_password.verify_phone');
-    Route::post('/forgot-password/verify-email', [AuthProprioController::class, 'verifyEmail'])->name('proprio.forgot_password.verify_email');
-    Route::post('/forgot-password/send-link', [AuthProprioController::class, 'sendResetLink'])->name('proprio.forgot_password.send_link');
+    Route::get('/forgot-password', [AuthProprioController::class, 'showForgotPassword'])->name('forgot_password');
+    Route::post('/forgot-password/verify-phone', [AuthProprioController::class, 'verifyPhone'])->name('forgot_password.verify_phone');
+    Route::post('/forgot-password/verify-email', [AuthProprioController::class, 'verifyEmail'])->name('forgot_password.verify_email');
+    Route::post('/forgot-password/send-link', [AuthProprioController::class, 'sendResetLink'])->name('forgot_password.send_link');
 });
 
 // Routes publiques pour réinitialisation de mot de passe (accessible même si connecté)
@@ -147,7 +147,7 @@ Route::post('/reset-password', [AuthProprioController::class, 'resetPassword'])-
 // =============================================================================
 // 2. ROUTES PROTÉGÉES (Connecté en tant que propriétaire)
 // =============================================================================
-Route::middleware('auth:proprio')->group(function () {
+Route::middleware('auth:proprio')->name('proprio.')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -157,17 +157,25 @@ Route::middleware('auth:proprio')->group(function () {
     Route::get('/wifizones/{id}/impact', [WifizoneController::class, 'getImpact'])->name('wifizones.impact');
     Route::put('/wifizones/{id}', [WifizoneController::class, 'update'])->name('wifizones.update');
     Route::delete('/wifizones/{id}', [WifizoneController::class, 'destroy'])->name('wifizones.destroy');
+    Route::post('/wifizones/test-connection', [WifizoneController::class, 'testConnection'])->name('wifizones.test-connection');
     Route::post('/wifizones/{id}/ticket-credentials', [WifizoneController::class, 'saveTicketCredentials'])->name('wifizones.ticket-credentials');
 
     // Forfaits et Tickets
     Route::get('/forfait-ticket', [ForfaitController::class, 'index'])->name('forfait_ticket');
     Route::get('/tickets', [ForfaitController::class, 'index'])->name('tickets.index');
     Route::post('/forfaits', [ForfaitController::class, 'store'])->name('forfaits.store');
+    Route::get('/forfaits/{id}/edit', [ForfaitController::class, 'edit'])->name('forfaits.edit');
+    Route::get('/forfaits/{id}/check-active', [ForfaitController::class, 'checkActiveSessions'])->name('forfaits.check-active');
     Route::put('/forfaits/{id}', [ForfaitController::class, 'update'])->name('forfaits.update');
+    Route::post('/forfaits/{id}/toggle-active', [ForfaitController::class, 'toggleActive'])->name('forfaits.toggle-active');
+    Route::post('/forfaits/sync-profiles/{zoneId}', [ForfaitController::class, 'importMikrotikProfiles'])->name('forfaits.sync-profiles');
+    Route::post('/forfaits/sync-tickets/{zoneId}', [ForfaitController::class, 'syncMikrotikTickets'])->name('forfaits.sync-tickets');
     Route::delete('/forfaits/{id}', [ForfaitController::class, 'destroy'])->name('forfaits.destroy');
     Route::get('/forfaits/{id}/edit', [ForfaitController::class, 'edit'])->name('forfaits.edit');
+    Route::post('/forfaits/set-active-zone', [ForfaitController::class, 'setActiveZone'])->name('forfaits.set-active-zone');
     Route::post('/tickets/import', [ForfaitController::class, 'import'])->name('tickets.import');
     Route::delete('/tickets/{id}', [ForfaitController::class, 'destroyTicket'])->name('tickets.destroy');
+    Route::post('/generate-tickets', [ForfaitController::class, 'generateTickets'])->name('generate.tickets');
 
     // Suppression tickets
     Route::get('/tickets/preview', [TicketController::class, 'previewDelete'])->name('tickets.preview');
@@ -178,6 +186,7 @@ Route::middleware('auth:proprio')->group(function () {
 
     // Clients
     Route::get('/clients', [ClientController::class, 'index'])->name('clients');
+    Route::get('/clients/export', [ClientController::class, 'export'])->name('clients.export');
     Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
     Route::put('/clients/{id}', [ClientController::class, 'update'])->name('clients.update');
     Route::delete('/clients/{id}', [ClientController::class, 'destroy'])->name('clients.destroy');
@@ -186,22 +195,17 @@ Route::middleware('auth:proprio')->group(function () {
     Route::post('/clients/{id}/reset-password-link', [ClientController::class, 'generateResetPasswordLink'])->name('clients.reset-password-link');
     Route::get('/clients/{id}/history', [ClientController::class, 'history'])->name('clients.history');
     
-    // Paiements et Retraits
+    // Paiements et Retraits (Wizard & API)
     Route::get('/paiements', [PaiementController::class, 'index'])->name('paiements');
     Route::get('/api/balance', [PaiementController::class, 'getBalance'])->name('api.balance');
     Route::get('/api/transactions', [PaiementController::class, 'getTransactions'])->name('api.transactions');
-    Route::post('/api/withdrawals', [WithdrawalController::class, 'store'])->name('api.withdrawals.store');
-    Route::get('/api/withdrawals', [WithdrawalController::class, 'index'])->name('api.withdrawals.index');
-    Route::post('/api/withdrawals/{id}/cancel', [WithdrawalController::class, 'cancel'])->name('api.withdrawals.cancel');
     
-    // Retraits Payout FedaPay
-    Route::get('/retraits', [PayoutController::class, 'index'])->name('retraits');
-    Route::post('/api/retraits', [PayoutController::class, 'store'])->name('api.retraits.store');
-    Route::post('/api/retraits/{id}/send-now', [PayoutController::class, 'sendNow'])->name('api.retraits.send-now');
-    Route::post('/api/retraits/{id}/schedule', [PayoutController::class, 'schedule'])->name('api.retraits.schedule');
-    Route::get('/api/retraits/{id}', [PayoutController::class, 'show'])->name('api.retraits.show');
-    Route::post('/api/retraits/{id}/cancel', [PayoutController::class, 'cancel'])->name('api.retraits.cancel');
-    Route::get('/api/retraits', [PayoutController::class, 'apiIndex'])->name('api.retraits.index');
+    // API Retraits (Consolidée)
+    Route::prefix('api/withdrawals')->name('api.withdrawals.')->group(function () {
+        Route::get('/', [WithdrawalController::class, 'index'])->name('index');
+        Route::post('/', [WithdrawalController::class, 'store'])->name('store');
+        Route::post('/{id}/cancel', [WithdrawalController::class, 'cancel'])->name('cancel');
+    });
     
     // Paramètres
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
@@ -213,7 +217,7 @@ Route::middleware('auth:proprio')->group(function () {
     Route::delete('/settings/delete', [SettingsController::class, 'deleteAccount'])->name('settings.delete');
 
     // Déconnexion
-    Route::post('/logout', [AuthProprioController::class, 'logout'])->name('proprio.logout');
+    Route::post('/logout', [AuthProprioController::class, 'logout'])->name('logout');
  });
 
 

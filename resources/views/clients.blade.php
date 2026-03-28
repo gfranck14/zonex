@@ -1,5 +1,4 @@
 @extends('layout')
-
 @section('title', 'Clients')
 
 @section('page-title', 'Gestion des Clients')
@@ -37,9 +36,9 @@
             
             <div class="flex gap-3">
                 <!-- Bouton Export (Existant) -->
-                <button class="bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50 dark:hover:bg-slate-700 transition flex items-center gap-2">
+                <a href="{{ route('proprio.clients.export') }}" class="bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50 dark:hover:bg-slate-700 transition flex items-center gap-2">
                     <i class="fas fa-download"></i> Exporter
-                </button>
+                </a>
                 
                 <!-- NOUVEAU : Bouton Ajouter Client -->
                 <button onclick="openAddClientModal()" class="bg-brand-sidebarLight hover:bg-opacity-90 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2">
@@ -54,12 +53,12 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div class="bg-white dark:bg-brand-cardDark p-5 rounded-3xl shadow-sm flex items-center gap-4"><div class="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-400 font-bold text-xl">{{ $totalClients }}</div><div><p class="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Total Clients</p><p class="text-sm font-medium text-gray-600 dark:text-gray-300">Base active</p></div></div>
                     <div class="bg-white dark:bg-brand-cardDark p-5 rounded-3xl shadow-sm flex items-center gap-4"><div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-xl">+{{ $nouveauxClients }}</div><div><p class="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Nouveaux (30j)</p><p class="text-sm font-medium text-gray-600 dark:text-gray-300">Croissance</p></div></div>
-                    <div class="bg-white dark:bg-brand-cardDark p-5 rounded-3xl shadow-sm flex items-center gap-4"><div class="w-12 h-12 rounded-xl bg-yellow-100 dark:bg-yellow-900/50 flex items-center justify-center text-yellow-600 dark:text-yellow-400 font-bold text-xl"><i class="fas fa-gem"></i></div><div><p class="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Clients VIP</p><p class="text-sm font-medium text-gray-600 dark:text-gray-300">Dépensent > 10k</p></div></div>
+                    <div class="bg-white dark:bg-brand-cardDark p-5 rounded-3xl shadow-sm flex items-center gap-4"><div class="w-12 h-12 rounded-xl bg-yellow-100 dark:bg-yellow-900/50 flex items-center justify-center text-yellow-600 dark:text-yellow-400 font-bold text-xl">{{ $clientsVIP }}</div><div><p class="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Clients VIP <i class="fas fa-gem text-yellow-500 ml-1"></i></p><p class="text-sm font-medium text-gray-600 dark:text-gray-300">Dépensent > 10k</p></div></div>
                 </div>
                 <!-- Tableau Clients -->
                 <div class="bg-white rounded-3xl shadow-sm overflow-hidden">
                     <div class="p-5 border-b border-gray-100 dark:border-slate-700">
-                        <form method="GET" action="{{ route('clients') }}" class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                        <form method="GET" action="{{ route('proprio.clients') }}" class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                             <!-- Titre à gauche -->
                             <h3 class="font-bold text-lg text-gray-800 dark:text-white">Liste des Clients</h3>
                             
@@ -69,20 +68,30 @@
                                     <input type="text" name="search" value="{{ request('search') }}" 
                                            placeholder="Nom, Téléphone..." 
                                            class="pl-9 pr-4 py-2 bg-gray-50 dark:bg-slate-800 dark:text-white border-none rounded-xl text-xs font-medium w-full lg:w-48 focus:ring-2 focus:ring-brand-blue/20 outline-none transition-all">
-                                    <i class="fas fa-search w-4 h-4 text-gray-400 absolute left-3 top-2.5"></i>
+                                    <i class="fas fa-search text-xs text-gray-400 absolute left-3 top-0 bottom-0 flex items-center"></i>
                                 </div>
 
                                 <!-- Filtre Statut -->
                                 <select name="filter_type" onchange="this.form.submit()" class="px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border-none rounded-xl text-gray-600 dark:text-gray-300 font-bold cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 transition">
-                                    <option value="">Tous les clients</option>
+                                    <option value="">Tous les statuts</option>
                                     <option value="vip" {{ request('filter_type') == 'vip' ? 'selected' : '' }}>💎 VIP (>10k)</option>
                                     <option value="new" {{ request('filter_type') == 'new' ? 'selected' : '' }}>✨ Nouveaux (30j)</option>
                                     <option value="blocked" {{ request('filter_type') == 'blocked' ? 'selected' : '' }}>🚫 Bloqués</option>
                                 </select>
 
+                                <!-- Filtre Zone -->
+                                <select name="filter_zone" onchange="this.form.submit()" class="px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border-none rounded-xl text-brand-blue dark:text-blue-400 font-bold cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 transition max-w-[150px]">
+                                    <option value="">Toutes les zones</option>
+                                    @foreach($availableZones as $zone)
+                                        <option value="{{ $zone }}" {{ request('filter_zone') == $zone ? 'selected' : '' }}>
+                                            📍 {{ $zone }}
+                                        </option>
+                                    @endforeach
+                                </select>
+
                                 <!-- Bouton Reset (si filtres actifs) -->
-                                @if(request('search') || request('filter_type'))
-                                    <a href="{{ route('clients') }}" class="p-2 text-red-400 hover:text-red-600 transition" title="Réinitialiser">
+                                @if(request('search') || request('filter_type') || request('filter_zone'))
+                                    <a href="{{ route('proprio.clients') }}" class="p-2 text-red-400 hover:text-red-600 transition" title="Réinitialiser">
                                         <i class="fas fa-times"></i>
                                     </a>
                                 @endif
@@ -93,12 +102,24 @@
                         <table id="client-table" class="w-full text-left border-collapse">
                             <thead class="bg-gray-50/50 dark:bg-slate-700/50 text-gray-400 dark:text-gray-300 text-[10px] uppercase font-bold tracking-wider">
                                 <tr>
-                                    <th class="p-5">Nom</th>
-                                    <th class="p-5">Téléphone</th>
-                                    <th class="p-5">Dernière Zone</th>
-                                    <th class="p-5">Total Dépensé</th>
-                                    <th class="p-5">Date Création</th>
-                                    <th class="p-5">Statut</th>
+                                    <th class="p-5 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition group" onclick="sortTable(0, 'client-table')">
+                                        <div class="flex items-center justify-start gap-2">Nom <i class="fas fa-sort text-gray-300 group-hover:text-brand-blue opacity-50 transition"></i></div>
+                                    </th>
+                                    <th class="p-5 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition group" onclick="sortTable(1, 'client-table')">
+                                        <div class="flex items-center justify-start gap-2">Téléphone <i class="fas fa-sort text-gray-300 group-hover:text-brand-blue opacity-50 transition"></i></div>
+                                    </th>
+                                    <th class="p-5 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition group" onclick="sortTable(2, 'client-table')">
+                                        <div class="flex items-center justify-start gap-2">Dernière Zone <i class="fas fa-sort text-gray-300 group-hover:text-brand-blue opacity-50 transition"></i></div>
+                                    </th>
+                                    <th class="p-5 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition group" onclick="sortTable(3, 'client-table')">
+                                        <div class="flex items-center justify-start gap-2">Total Dépensé <i class="fas fa-sort text-gray-300 group-hover:text-brand-blue opacity-50 transition"></i></div>
+                                    </th>
+                                    <th class="p-5 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition group" onclick="sortTable(4, 'client-table')">
+                                        <div class="flex items-center justify-start gap-2">Date Création <i class="fas fa-sort text-gray-300 group-hover:text-brand-blue opacity-50 transition"></i></div>
+                                    </th>
+                                    <th class="p-5 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition group" onclick="sortTable(5, 'client-table')">
+                                        <div class="flex items-center justify-start gap-2">Statut <i class="fas fa-sort text-gray-300 group-hover:text-brand-blue opacity-50 transition"></i></div>
+                                    </th>
                                     <th class="p-5 text-right">Action</th>
                                 </tr>
                             </thead>
@@ -179,9 +200,10 @@
                             <!-- MILIEU : Sélecteur lignes -->
                             <div class="flex items-center gap-2 order-3 md:order-2">
                                 <span class="text-xs text-gray-400">Afficher</span>
-                                <form method="GET" action="{{ route('clients') }}" class="inline-block">
+                                <form method="GET" action="{{ route('proprio.clients') }}" class="inline-block">
                                     @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
                                     @if(request('filter_type')) <input type="hidden" name="filter_type" value="{{ request('filter_type') }}"> @endif
+                                    @if(request('filter_zone')) <input type="hidden" name="filter_zone" value="{{ request('filter_zone') }}"> @endif
 
                                     <select name="per_page" onchange="this.form.submit()" class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg text-xs font-bold p-1 px-2 focus:ring-2 focus:ring-brand-blue outline-none cursor-pointer">
                                         <option value="5" {{ request('per_page') == 5 ? 'selected' : '' }}>5 lignes</option>
@@ -202,7 +224,13 @@
             </div>
             <!-- VUE 2 : DÉTAIL CLIENT -->
             <div id="client-detail" class="hidden animate-fade-in">
-                <div class="mb-6"><button onclick="showClientList()" class="flex items-center gap-2 text-gray-500 hover:text-brand-dark transition text-sm font-bold"><i class="fas fa-arrow-left w-4 h-4"></i>Retour à la liste</button></div>
+                <div class="mb-6">
+                    <button onclick="showClientList()" class="flex items-center gap-2 text-gray-500 hover:text-brand-dark transition text-sm font-bold">
+                        <i class="fas fa-arrow-left w-4 h-4"></i>Retour à la liste
+                    </button>
+                </div>
+
+
                 <div class="bg-white dark:bg-brand-cardDark p-8 rounded-3xl shadow-sm mb-8">
                     <div class="flex justify-between items-start mb-6">
                         <div class="flex items-center gap-6">
@@ -227,15 +255,15 @@
                         </div>
                         <div class="text-right">
                             <div class="mb-4">
-                                <p class="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">Total Dépensé</p>
+                                <p class="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">Dépense Totale</p>
                                 <p class="text-4xl font-bold text-brand-blue" id="detail-spent">-</p>
                             </div>
-                            <button id="block-btn" onclick="toggleBlock()" class="px-4 py-2 bg-red-500 text-white rounded-xl text-xs font-bold transition">
+                            <button id="block-btn" onclick="toggleBlock()" class="px-4 py-2 bg-red-500 text-white rounded-xl text-xs font-bold transition shadow-lg hover:brightness-110">
                                 BLOQUER CE CLIENT
                             </button>
-                            <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-2">Ce client ne pourra plus acheter de tickets sur vos zones.</p>
                         </div>
                     </div>
+
                     
                     <!-- FORMULAIRE D'ÉDITION (caché par défaut) -->
                     <div id="edit-form" class="hidden border-t border-gray-100 dark:border-slate-700 pt-6">
@@ -298,13 +326,110 @@
                         </div>
                     </div>
                 </div>
-                <div class="bg-white rounded-3xl shadow-sm overflow-hidden">
-                    <div class="p-6 border-b border-gray-100"><h3 class="font-bold text-lg text-gray-800">Historique d'achat <i class="fas fa-receipt text-gray-400"></i></h3></div>
-                    <table class="w-full text-left"><thead class="bg-gray-50 text-[10px] uppercase text-gray-400 font-bold"><tr><th class="p-5">Date</th><th class="p-5">Forfait / Ticket</th><th class="p-5">Zone</th><th class="p-5">Adresse MAC</th><th class="h-max p-5">Prix</th><th class="p-5">Ticket</th></tr></thead><tbody id="history-table-body" class="text-sm divide-y divide-gray-50 dark:divide-slate-700"><tr><td colspan="6" class="p-8 text-center text-gray-400">Chargement...</td></tr></tbody></table>
+
+                <!-- NOUVEAU : Grille de Résumé Stats (Style KPIs Page Principale) -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <!-- Carte Visite -->
+                    <div class="bg-white dark:bg-brand-cardDark p-5 rounded-3xl shadow-sm flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-xl">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Dernière Activité</p>
+                            <p class="text-sm font-bold text-gray-700 dark:text-white" id="summary-last-visit">Chargement...</p>
+                            <p class="text-[10px] text-gray-500" id="summary-last-zone">Zone: -</p>
+                        </div>
+                    </div>
+
+                    <!-- Carte Volume -->
+                    <div class="bg-white dark:bg-brand-cardDark p-5 rounded-3xl shadow-sm flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-400 font-bold text-xl">
+                            <i class="fas fa-ticket-alt"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Volume d'Achat</p>
+                            <p class="text-sm font-bold text-gray-700 dark:text-white" id="summary-ticket-count">0 tickets</p>
+                            <p class="text-[10px] text-gray-500">Tickets consommés</p>
+                        </div>
+                    </div>
+
+                    <!-- Carte Statut/Raison -->
+                    <div class="bg-white dark:bg-brand-cardDark p-5 rounded-3xl shadow-sm flex items-center gap-4">
+                        <div id="summary-status-icon" class="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/50 flex items-center justify-center text-green-600 dark:text-green-400 font-bold text-xl">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Statut & Notes</p>
+                            <p class="text-sm font-bold text-gray-700 dark:text-white" id="summary-status-text">Client Actif</p>
+                            <p class="text-[10px] text-gray-500 truncate max-w-[150px]" id="summary-block-reason" title="Aucune raison">Raison: -</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-3xl shadow-sm overflow-hidden mt-8">
+                    <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                        <h3 class="font-bold text-lg text-gray-800">Historique d'achat</h3>
+                        <div>
+                            <select id="history-price-filter" onchange="filterHistoryTable()" class="px-3 py-1 bg-gray-50 dark:bg-slate-800 border-none rounded-xl text-xs font-bold text-gray-600 dark:text-gray-300 outline-none cursor-pointer">
+                                <option value="">Tous les prix</option>
+                                <option value="0-500">Moins de 500 F</option>
+                                <option value="500-1000">500 F - 1 000 F</option>
+                                <option value="1000-5000">1 000 F - 5 000 F</option>
+                                <option value="5000+">Plus de 5 000 F</option>
+                            </select>
+                        </div>
+                    </div>
+                    <table id="client-history-table" class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50/50 dark:bg-slate-700/50 text-gray-400 dark:text-gray-300 text-[10px] uppercase font-bold tracking-wider">
+                            <tr>
+                                <th class="p-5 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition group" onclick="sortTable(0, 'client-history-table')">
+                                    <div class="flex items-center justify-start gap-2">Date <i class="fas fa-sort text-gray-300 group-hover:text-brand-blue opacity-50 transition"></i></div>
+                                </th>
+                                <th class="p-5 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition group" onclick="sortTable(1, 'client-history-table')">
+                                    <div class="flex items-center justify-start gap-2">Forfait / Ticket <i class="fas fa-sort text-gray-300 group-hover:text-brand-blue opacity-50 transition"></i></div>
+                                </th>
+                                <th class="p-5 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition group" onclick="sortTable(2, 'client-history-table')">
+                                    <div class="flex items-center justify-start gap-2">Zone <i class="fas fa-sort text-gray-300 group-hover:text-brand-blue opacity-50 transition"></i></div>
+                                </th>
+                                <th class="p-5 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition group" onclick="sortTable(3, 'client-history-table')">
+                                    <div class="flex items-center justify-start gap-2">Adresse MAC <i class="fas fa-sort text-gray-300 group-hover:text-brand-blue opacity-50 transition"></i></div>
+                                </th>
+                                <th class="p-5 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition group" onclick="sortTable(4, 'client-history-table')">
+                                    <div class="flex items-center justify-start gap-2">Prix <i class="fas fa-sort text-gray-300 group-hover:text-brand-blue opacity-50 transition"></i></div>
+                                </th>
+                                <th class="p-5 text-right">Ticket</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body" class="text-sm divide-y divide-gray-50 dark:divide-slate-700">
+                            <tr><td colspan="6" class="p-8 text-center text-gray-400">Chargement...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </main>
+
+    <!-- MODALE RAISON BLOCAGE -->
+    <div id="block-client-modal" class="hidden fixed inset-0 z-[110] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeBlockClientModal()"></div>
+        <div class="bg-white dark:bg-brand-cardDark w-full max-w-sm rounded-3xl p-6 relative z-10 text-center shadow-2xl border border-gray-100 dark:border-slate-700 animate-scale-in">
+            <div class="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                <i class="fas fa-ban"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Bloquer le client</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Souhaitez-vous préciser une raison pour ce blocage ? (Facultatif)</p>
+            
+            <div class="mb-4 text-left">
+                <input type="text" id="block-reason-input" placeholder="Ex: Fraude constatée, refus de paiement..." class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500/20 text-gray-700 dark:text-gray-200">
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeBlockClientModal()" class="flex-1 py-3 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-slate-700 transition">Annuler</button>
+                <button onclick="executeToggleBlock()" class="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition shadow-lg">Bloquer</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODALE SUPPRESSION CLIENT -->
     <div id="delete-client-modal" class="hidden fixed inset-0 z-[110] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeDeleteClientModal()"></div>
@@ -395,7 +520,7 @@
             </div>
 
             <!-- Formulaire -->
-            <form action="{{ route('clients.store') }}" method="POST" class="p-6 space-y-5">
+            <form action="{{ route('proprio.clients.store') }}" method="POST" class="p-6 space-y-5">
                 @csrf
                 
                 <!-- Nom Complet -->
@@ -455,10 +580,13 @@
                     </div>
                 </div>
 
-                <!-- Solde Initial (Optionnel) -->
+                <!-- Mot de passe -->
                 <div class="input-floating-group">
-                    <input type="number" name="total_depense" placeholder=" " class="input-floating" value="0">
-                    <label class="floating-label">Dépense Initiale (FCFA)</label>
+                    <input type="password" name="password" id="add-client-password" placeholder=" " class="input-floating" required minlength="4">
+                    <label class="floating-label">Mot de passe (Min 4 car.)</label>
+                    <button type="button" onclick="togglePasswordVisibility('add-client-password')" class="absolute right-4 top-3.5 text-gray-400 hover:text-brand-blue transition">
+                        <i class="fas fa-eye" id="add-client-password-eye"></i>
+                    </button>
                 </div>
 
                 <!-- Boutons -->
@@ -473,16 +601,45 @@
     <!-- Script pour ouvrir/fermer la modale -->
     <script>
         function openAddClientModal() {
+            // Réinitialiser le formulaire avant d'ouvrir
+            const form = document.querySelector('#add-client-modal form');
+            if (form) form.reset();
+            
+            // Remettre le type password par défaut si l'œil a été utilisé
+            const passInput = document.getElementById('add-client-password');
+            const passEye = document.getElementById('add-client-password-eye');
+            if (passInput && passEye) {
+                passInput.type = 'password';
+                passEye.classList.remove('fa-eye-slash');
+                passEye.classList.add('fa-eye');
+            }
+            
             document.getElementById('add-client-modal').classList.remove('hidden');
         }
         function closeAddClientModal() {
             document.getElementById('add-client-modal').classList.add('hidden');
         }
 
+        // Bascule la visibilité du mot de passe
+        function togglePasswordVisibility(id) {
+            const input = document.getElementById(id);
+            const eye = document.getElementById(id + '-eye');
+            if (input.type === 'password') {
+                input.type = 'text';
+                eye.classList.remove('fa-eye');
+                eye.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                eye.classList.remove('fa-eye-slash');
+                eye.classList.add('fa-eye');
+            }
+        }
+
 
 
         // --- NOUVELLE LOGIQUE GESTION CLIENTS ---
         let currentClientId = null;
+        let currentClientIsBlocked = false;
 
         function showClientDetail(id, name, phone, spent, isBlocked) {
             currentClientId = id;
@@ -534,40 +691,78 @@
 
         async function loadClientHistory(clientId) {
             const tbody = document.getElementById('history-table-body');
-            tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">Chargement...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>Chargement...</td></tr>';
+            
+            // Reset des champs résumé
+            document.getElementById('summary-last-visit').textContent = 'Chargement...';
+            document.getElementById('summary-last-zone').textContent = 'Zone: -';
+            document.getElementById('summary-ticket-count').textContent = '... tickets';
+            document.getElementById('summary-block-reason').textContent = 'Raison: -';
 
             try {
                 const response = await fetch(`/clients/${clientId}/history`);
                 const data = await response.json();
 
                 if (data.success) {
-                    // Mettre à jour le total dépensé
-                    if (data.total_spent !== undefined) {
-                        document.getElementById('detail-spent').textContent = data.total_spent.toLocaleString('fr-FR') + ' F';
+                    // 1. Mettre à jour le résumé
+                    if (data.summary) {
+                        document.getElementById('summary-last-visit').textContent = data.summary.last_visit;
+                        document.getElementById('summary-last-zone').textContent = 'Zone: ' + data.summary.last_zone;
+                        document.getElementById('summary-ticket-count').textContent = data.summary.ticket_count + ' tickets';
+                        document.getElementById('detail-spent').textContent = data.summary.total_spent;
+                        
+                        // Statut de blocage
+                        currentClientIsBlocked = data.summary.is_blocked;
+                        const statusIcon = document.getElementById('summary-status-icon');
+                        const statusText = document.getElementById('summary-status-text');
+                        const blockReason = document.getElementById('summary-block-reason');
+                        
+                        if (data.summary.is_blocked) {
+                            statusIcon.className = 'w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600';
+                            statusIcon.innerHTML = '<i class="fas fa-ban"></i>';
+                            statusText.textContent = 'Client Bloqué';
+                            statusText.className = 'text-sm font-bold text-red-600';
+                            blockReason.textContent = 'Raison: ' + data.summary.block_reason;
+                            blockReason.title = data.summary.block_reason;
+                        } else {
+                            statusIcon.className = 'w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600';
+                            statusIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+                            statusText.textContent = 'Client Actif';
+                            statusText.className = 'text-sm font-bold text-green-600';
+                            blockReason.textContent = 'Prêt à l\'achat';
+                        }
+                        
+                        // Mettre à jour le bouton de blocage principal
+                        updateBlockButtonUI(data.summary.is_blocked);
                     }
-                    
-                    if (data.tickets && data.tickets.length > 0) {
-                        tbody.innerHTML = data.tickets.map(t => `
-                            <tr>
-                                <td class="p-5 text-gray-500">${t.date}</td>
-                                <td class="p-5 font-bold text-gray-800">${t.forfait}</td>
-                                <td class="p-5 text-gray-500">${t.zone}</td>
-                                <td class="p-5 font-mono text-gray-400 text-xs">${t.mac || '-'}</td>
-                                <td class="p-5 font-bold text-brand-blue">${t.prix}</td>
-                                <td class="p-5">
-                                    <button onclick="viewTicket('${t.login}', '${t.password}')" class="px-3 py-1 bg-brand-blue text-white rounded-lg text-[10px] font-bold hover:bg-blue-600 transition">
-                                        Voir Ticket
-                                    </button>
-                                </td>
-                            </tr>
-                        `).join('');
+
+                    // 2. Remplir le tableau
+                    tbody.innerHTML = '';
+                    if (!data.tickets || data.tickets.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">Aucun achat enregistré.</td></tr>';
                     } else {
-                        tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">Aucun historique d\'achat trouvé.</td></tr>';
+                        data.tickets.forEach(t => {
+                            const row = `
+                                <tr class="hover:bg-gray-50 dark:hover:bg-slate-800 transition">
+                                    <td class="p-5 text-gray-600 dark:text-gray-300">${t.date}</td>
+                                    <td class="p-5 font-bold text-gray-800 dark:text-white">${t.forfait}</td>
+                                    <td class="p-5"><span class="bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded text-[10px] font-bold">${t.zone}</span></td>
+                                    <td class="p-5 font-mono text-xs text-gray-500">${t.mac}</td>
+                                    <td class="p-5 font-bold text-brand-blue">${t.prix}</td>
+                                    <td class="p-5 text-right">
+                                        <button onclick="viewTicket('${t.login}', '${t.password}')" class="text-brand-blue hover:text-blue-700 font-bold text-xs uppercase">
+                                            Voir Ticket
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                            tbody.innerHTML += row;
+                        });
                     }
                 }
             } catch (e) {
                 console.error(e);
-                tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-red-400">Erreur lors du chargement de l\'historique.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-red-400">Erreur lors du chargement.</td></tr>';
             }
         }
 
@@ -642,8 +837,27 @@
             }
         }
 
-        async function toggleBlock() {
+        function toggleBlock() {
             if (!currentClientId) return;
+            if (currentClientIsBlocked) {
+                // Si déjà bloqué, on débloque direct
+                executeToggleBlock();
+            } else {
+                // Sinon on ouvre la modale pour demander la raison
+                document.getElementById('block-reason-input').value = '';
+                document.getElementById('block-client-modal').classList.remove('hidden');
+            }
+        }
+
+        function closeBlockClientModal() {
+            document.getElementById('block-client-modal').classList.add('hidden');
+        }
+
+        async function executeToggleBlock() {
+            if (!currentClientId) return;
+            
+            const reason = document.getElementById('block-reason-input') ? document.getElementById('block-reason-input').value : '';
+            closeBlockClientModal();
             
             try {
                 const response = await fetch(`/clients/${currentClientId}/block`, {
@@ -651,17 +865,47 @@
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
+                    },
+                    body: JSON.stringify({ reason: reason })
                 });
                 
                 const data = await response.json();
                 if (data.success) {
-                    updateBlockButtonUI(data.is_blocked);
+                    currentClientIsBlocked = data.is_blocked;
+                    // Mettre à jour les KPIs avec des données fraîches
+                    loadClientHistory(currentClientId);
                     showToast(data.message, 'success');
                 }
             } catch (e) {
                 console.error(e);
                 showToast('Erreur lors du changement de statut', 'error');
+            }
+        }
+        
+        // --- FILTRES TABLEAU ---
+        function filterHistoryTable() {
+            const filterValue = document.getElementById('history-price-filter').value;
+            const tbody = document.getElementById('history-table-body');
+            const rows = tbody.getElementsByTagName('tr');
+
+            for (let i = 0; i < rows.length; i++) {
+                // Assume row[4] is price
+                const cells = rows[i].getElementsByTagName('td');
+                if (cells.length < 5) continue; // Skip state rows like loading or empty
+
+                let showRow = true;
+                if (filterValue !== "") {
+                    // Extract price integer from "1 000 F" -> 1000
+                    const priceText = cells[4].innerText.replace(/[^0-9]/g, '');
+                    const price = parseInt(priceText, 10) || 0;
+
+                    if (filterValue === "0-500") showRow = price <= 500;
+                    else if (filterValue === "500-1000") showRow = price > 500 && price <= 1000;
+                    else if (filterValue === "1000-5000") showRow = price > 1000 && price <= 5000;
+                    else if (filterValue === "5000+") showRow = price > 5000;
+                }
+
+                rows[i].style.display = showRow ? "" : "none";
             }
         }
         

@@ -2,7 +2,7 @@
 
 @extends('layout')
 
-@section('title', ' Dashboard')
+@section('title', 'Wifi Zones')
 
 
 
@@ -17,7 +17,7 @@
 <div id="zone-list" class="animate-fade-in">
     <div class="flex justify-between items-center mb-8">
         <div>
-            <h2 class="text-3xl font-bold text-gray-800 dark:text-white">Mes Zones</h2>
+            <h2 class="text-3xl font-bold text-gray-800 dark:text-white">Wifi Zones</h2>
             <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">Gérez vos emplacements physiques.</p>
         </div>
         <button onclick="openWizard()" class="bg-brand-sidebarLight dark:bg-brand-sidebarDark text-white px-5 py-3 rounded-xl text-sm font-bold shadow-lg hover:brightness-110 transition flex items-center gap-2">

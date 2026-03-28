@@ -651,8 +651,10 @@ class ClientPortalController extends Controller
             return redirect()->route('client.landing')->with('error', 'Zone non trouvée. Veuillez vous reconnecter.');
         }
         
-        // Récupérer les forfaits de cette zone avec vérification des tickets disponibles
+        // Récupérer les forfaits de cette zone en filtrant les brouillons (prix = 0) et inactifs
         $forfaits = \App\Models\Forfait::where('wifizones_id', $wifizone->id)
+            ->where('prix', '>', 0)
+            ->where('is_active', true)
             ->withCount(['tickets' => function($query) {
                 $query->where('statut', 'libre');
             }])
@@ -691,6 +693,16 @@ class ClientPortalController extends Controller
 
         // MAJ Dépense Client
         $client->increment('total_depense', $forfait->prix);
+
+        // 5. Vérifier si le stock a besoin d'être rechargé (Auto-Replenish — via Queue, non-bloquant)
+        if ($forfait->auto_replenish && $forfait->stock_max) {
+            $currentStock = \App\Models\Ticket::where('forfaits_id', $forfait->id)->where('statut', 'libre')->count();
+            $seuil = ceil($forfait->stock_max * ($forfait->seuil_alerte / 100));
+            if ($currentStock <= $seuil) {
+                \App\Jobs\GenerateMikrotikTicketsJob::dispatch($forfait->id);
+                Log::info("🚀 Auto-Replenish dispatché en arrière-plan pour {$forfait->nom}");
+            }
+        }
 
         // 4. Redirection vers la livraison
         return redirect()->route('client.ticket', ['ticket' => $ticket->id]);
@@ -842,7 +854,7 @@ class ClientPortalController extends Controller
 
             // Vérifier les identifiants
             $storedUsername = $wifiZone->ticket_admin_username;
-            $storedPassword = $wifiZone->ticket_admin_password;
+            $storedPassword = Crypt::decryptString($wifiZone->ticket_admin_password);
 
             if (!$storedUsername || !$storedPassword) {
                 return response()->json([

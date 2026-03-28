@@ -25,7 +25,6 @@
 </head>
 <body class="bg-brand-sidebarLight dark:bg-brand-sidebarDark text-slate-800 dark:text-slate-100 h-screen w-screen overflow-hidden flex transition-colors duration-300">
 
-    <div id="sidebar-container"></div>
     <!-- MAIN CONTENT -->
     <main class="flex-1 py-4 pr-4 pl-0 h-full relative">
         <div class="bg-brand-bgLight dark:bg-brand-bgDark w-full h-full rounded-2xl shadow-2xl overflow-y-auto no-scrollbar relative p-6 pb-10 transition-colors duration-300">
@@ -73,9 +72,9 @@
 
                             <!-- Bouton Copier (Stop Propagation pour ne pas ouvrir le détail) -->
                             <button onclick="event.stopPropagation(); showToast('Lien copié !')" class="w-full flex items-center justify-center gap-2 text-xs font-bold text-brand-blue hover:underline py-2">
-                                <i class="fas fa-copy w-4 h-4"></i>
+                                <i class="fas fa-copy text-sm"></i>
                                 Copier lien du Portail captif
-                        </div>
+                            </button>
 
                         <!-- Pied : Actions -->
                         <div class="flex gap-2 mt-auto">
@@ -84,8 +83,8 @@
                                 GÉRER LE STOCK
                             </button>
                             <!-- Bouton Paramètres (Ouvre le détail) -->
-                            <button onclick="event.stopPropagation(); showDetail('Bar Central', 'WZ-8821-XJ')" class="w-10 flex items-center justify-center bg-gray-100 dark:bg-slate-700 text-gray-500 rounded-xl hover:text-brand-blue transition">
-                                <i class="fas fa-cog w-5 h-5"></i>
+                            <button onclick="event.stopPropagation(); showDetail('Bar Central', 'WZ-8821-XJ')" class="w-10 h-10 flex items-center justify-center bg-gray-100 dark:bg-slate-700 text-gray-500 rounded-xl hover:text-brand-blue transition">
+                                <i class="fas fa-cog text-lg"></i>
                             </button>
                         </div>
                     </div>
@@ -121,7 +120,7 @@
 
                             <!-- Bouton Copier (Stop Propagation pour ne pas ouvrir le détail) -->
                             <button onclick="event.stopPropagation(); showToast('Lien copié !')" class="w-full flex items-center justify-center gap-2 text-xs font-bold text-brand-blue hover:underline py-2">
-                                <i class="fas fa-copy w-4 h-4"></i>
+                                <i class="fas fa-copy text-sm"></i>
                                 Copier lien du Portail captif
                             </button>
                         </div>
@@ -132,8 +131,8 @@
                                 GÉRER LE STOCK
                             </button>
                             <!-- Bouton Paramètres (Ouvre le détail) -->
-                            <button onclick="event.stopPropagation(); showDetail('Campus Nord', 'WZ-4402-AB')" class="w-10 flex items-center justify-center bg-gray-100 dark:bg-slate-700 text-gray-500 rounded-xl hover:text-brand-blue transition">
-                                <i class="fas fa-cog w-5 h-5"></i>
+                            <button onclick="event.stopPropagation(); showDetail('Campus Nord', 'WZ-4402-AB')" class="w-10 h-10 flex items-center justify-center bg-gray-100 dark:bg-slate-700 text-gray-500 rounded-xl hover:text-brand-blue transition">
+                                <i class="fas fa-cog text-lg"></i>
                             </button>
                         </div>
                     </div>
@@ -143,12 +142,12 @@
             <!-- VUE 2 : DÉTAIL D'UNE ZONE -->
             <div id="zone-detail" class="hidden animate-fade-in">
                 <div class="flex justify-between items-center mb-6">
-                    <button onclick="showList()" class="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-brand-dark transition text-sm font-bold"><i class="fas fa-arrow-left w-4 h-4"></i>Retour aux zones</button>
+                    <button onclick="showList()" class="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-brand-dark transition text-sm font-bold"><i class="fas fa-arrow-left text-sm"></i>Retour aux zones</button>
                     <div class="bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 font-mono text-xs px-3 py-1.5 rounded-lg">ID: <span id="display-zone-id" class="text-gray-800 dark:text-white font-bold">WZ-XXXX</span></div>
                 </div>
                 <div class="flex items-start gap-5 mb-8">
                     <div class="w-16 h-16 rounded-2xl bg-brand-blue flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
-                        <i class="fas fa-map-marker-alt w-8 h-8"></i>
+                        <i class="fas fa-map-marker-alt text-3xl"></i>
                     </div>
                     <div>
                         <h2 class="text-3xl font-bold text-gray-800 dark:text-white" id="zone-title">Titre de la zone</h2>
@@ -299,7 +298,7 @@
                     <div class="pt-4 flex justify-between items-center">
                         <button onclick="closeWizard()" class="border border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-300 px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-50 dark:hover:bg-slate-700 transition">Annuler</button>
                         <button onclick="goToStep2()" class="bg-brand-blue text-white px-6 py-3 rounded-xl text-sm font-bold hover:brightness-110 transition flex items-center gap-2">
-                            Suivant <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                            Suivant <i class="fas fa-arrow-right text-sm"></i>
                         </button>
                     </div>
                 </div>

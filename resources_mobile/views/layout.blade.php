@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>WifiProfit - Dashboard</title>
+    <title>WiFiProfit - @yield('title', 'Dashboard')</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
    <script src="{{ asset('assets/js/config.js') }}"></script>
@@ -137,15 +137,15 @@
         <div class="flex items-center justify-around px-1 pb-3 overflow-x-auto no-scrollbar gap-1">
             <a href="{{ route('dashboard') }}" class="flex flex-col items-center gap-1.5 min-w-[60px] {{ request()->routeIs('dashboard') ? 'text-brand-blue drop-shadow-[0_0_8px_rgba(14,165,233,0.5)]' : 'text-gray-400 hover:text-white' }} transition-all">
                 <i class="fas fa-th-large text-xl"></i>
-                <span class="text-[10px] font-medium">Accueil</span>
+                <span class="text-[10px] font-medium">Dashboard</span>
             </a>
             <a href="{{ route('wifizones') }}" class="flex flex-col items-center gap-1.5 min-w-[60px] {{ request()->routeIs('wifizones') ? 'text-brand-blue drop-shadow-[0_0_8px_rgba(14,165,233,0.5)]' : 'text-gray-400 hover:text-white' }} transition-all">
                 <i class="fas fa-map-marker-alt text-xl"></i>
-                <span class="text-[10px] font-medium">Zones</span>
+                <span class="text-[10px] font-medium">Wifi Zones</span>
             </a>
             <a href="{{ route('forfait_ticket') }}" class="flex flex-col items-center gap-1.5 min-w-[60px] {{ request()->routeIs('forfait_ticket') ? 'text-brand-blue drop-shadow-[0_0_8px_rgba(14,165,233,0.5)]' : 'text-gray-400 hover:text-white' }} transition-all">
                 <i class="fas fa-ticket-alt text-xl"></i>
-                <span class="text-[10px] font-medium">Tickets</span>
+                <span class="text-[10px] font-medium">Forfaits & Tickets</span>
             </a>
             <a href="{{ route('clients') }}" class="flex flex-col items-center gap-1.5 min-w-[60px] {{ request()->routeIs('clients') ? 'text-brand-blue drop-shadow-[0_0_8px_rgba(14,165,233,0.5)]' : 'text-gray-400 hover:text-white' }} transition-all">
                 <i class="fas fa-users text-xl"></i>
@@ -157,7 +157,7 @@
             </a>
             <a href="{{ route('settings') }}" class="flex flex-col items-center gap-1.5 min-w-[60px] {{ request()->routeIs('settings') ? 'text-brand-blue drop-shadow-[0_0_8px_rgba(14,165,233,0.5)]' : 'text-gray-400 hover:text-white' }} transition-all">
                 <i class="fas fa-cog text-xl"></i>
-                <span class="text-[10px] font-medium">Réglages</span>
+                <span class="text-[10px] font-medium">Paramètres</span>
             </a>
         </div>
     </nav>

@@ -44,6 +44,15 @@ class PaiementController extends Controller
         // Si une zone est sélectionnée, calculer le solde pour cette zone uniquement
         $balance = $this->calculateBalance($user->id, $filterZone);
 
+        // Calcul des revenus générés par chaque zone
+        $zoneRevenues = [];
+        foreach ($zones as $zone) {
+            $zoneRevenues[] = [
+                'name' => $zone->nom_zone,
+                'revenue' => $this->calculateBalance($user->id, $zone->id)
+            ];
+        }
+
         // Récupération des paiements filtrés (uniquement les zones du propriétaire)
         // On utilise la relation: Paiement -> Forfait -> Wifizone
         $paiements = Paiement::query()
@@ -70,7 +79,7 @@ class PaiementController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
 
-        return view('paiements', compact('balance', 'paiements', 'zones', 'filterZone'));
+        return view('paiements', compact('balance', 'paiements', 'zones', 'filterZone', 'zoneRevenues'));
     }
 
     /**
@@ -106,12 +115,18 @@ class PaiementController extends Controller
             ->where('statut', 'reussi')
             ->sum('montant');
 
-        // Calcul du total des retraits (retraits complétés ou en cours)
+        // Si une zone spécifique est sélectionnée, on retourne ses recettes brutes
+        // (les retraits étant globaux, les soustraire fausserait le chiffre)
+        if ($zoneId) {
+            return (float) $totalRevenue;
+        }
+
+        // Calcul du total des retraits globaux du propriétaire
         $totalWithdrawals = Retrait::where('proprio_id', $userId)
             ->whereIn('status', ['completed', 'processing'])
             ->sum('amount');
 
-        return $totalRevenue - $totalWithdrawals;
+        return (float) ($totalRevenue - $totalWithdrawals);
     }
 
     /**
@@ -131,6 +146,35 @@ class PaiementController extends Controller
         return response()->json([
             'success' => true,
             'balance' => $balance,
+        ]);
+    }
+
+    /**
+     * Endpoint API: Récupère la liste des transactions du propriétaire.
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getTransactions(Request $request)
+    {
+        $user = Auth::user();
+        $perPage = $request->input('per_page', 10);
+        $filterZone = $request->input('filter_zone');
+
+        // Récupérer les IDs des zones WiFi du propriétaire
+        $ownerZoneIds = Wifizone::where('proprio_id', $user->id)->pluck('id');
+
+        $transactions = \App\Models\Transaction::with(['client', 'ticket', 'wifizone'])
+            ->whereIn('wifizone_id', $ownerZoneIds)
+            ->when($filterZone, function($q) use ($filterZone) {
+                $q->where('wifizone_id', $filterZone);
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'transactions' => $transactions,
         ]);
     }
 }
